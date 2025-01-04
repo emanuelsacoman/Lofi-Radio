@@ -184,6 +184,7 @@ body{
                     flex-direction: row;
                     align-items: center;
                     justify-content: center;
+                    gap: calc(var(--gap-normal) * 0.2);
                     border: 1px solid var(--clr-accent);
                     border-radius: 5px;
                     padding: 5px;
