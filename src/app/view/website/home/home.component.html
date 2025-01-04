@@ -7,7 +7,14 @@
                     <div class="background" [style.backgroundImage]="'url(' + randomImage + ')'"></div>
                 </div>
                 <div class="title fadeIn">
-                    <h2>{{ currentVideoTitle || 'Loading...' }}</h2>
+                    <h2>
+                        <ng-container *ngIf="currentVideoTitle; else loading">
+                          {{ currentVideoTitle }}
+                        </ng-container>
+                        <ng-template #loading>
+                          <mat-spinner diameter="24"></mat-spinner>
+                        </ng-template>
+                      </h2>                      
                 </div>
             </div>
             <div class="down">

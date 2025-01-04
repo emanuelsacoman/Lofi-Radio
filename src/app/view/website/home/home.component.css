@@ -110,6 +110,11 @@ body{
                     width: var(--sz-img);
                     z-index: 1;
                     font-size: var(--sz-text-title);
+                    :is(h2){
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
                 }
             }
 

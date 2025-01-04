@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { YouTubePlayerModule } from '@angular/youtube-player';
 import { MatSliderModule } from '@angular/material/slider';
 import { FIREBASE_OPTIONS } from '@angular/fire/compat';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { createClient } from 'pexels';
 import { FormsModule } from '@angular/forms';
@@ -31,7 +32,8 @@ const client = createClient(environment.apikey);
     MatTooltipModule,
     YouTubePlayerModule,
     MatSliderModule,
-    FormsModule
+    FormsModule,
+    MatProgressSpinnerModule
   ],
   providers: [Title,
     { provide: FIREBASE_OPTIONS, useValue: environment.firebase }],
