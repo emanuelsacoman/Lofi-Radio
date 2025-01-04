@@ -1,5 +1,4 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AngularFireDatabase } from '@angular/fire/compat/database';
 import { BehaviorSubject, Subscription } from 'rxjs';
 
@@ -13,7 +12,6 @@ export class UserService implements OnDestroy {
 
   constructor(
     private db: AngularFireDatabase,
-    private auth: AngularFireAuth
   ) {
     this.userId = localStorage.getItem('visitorId');
     if (!this.userId) {
