@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "lofiradio",
+    "public": "dist/lofi",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
