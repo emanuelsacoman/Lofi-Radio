@@ -18,13 +18,13 @@
                 </div>
             </div>
             <div class="down">
-                <div class="button back" (click)="previousVideo()">
+                <div class="button back" (click)="previousVideo()" matTooltip="Previous Radio" matTooltipShowDelay="500" matTooltipPosition="below">
                     <mat-icon>skip_previous</mat-icon>
                 </div>
-                <div class="button pause" (click)="togglePlayPause()">
+                <div class="button pause" (click)="togglePlayPause()" matTooltip="Play/Pause" matTooltipShowDelay="500" matTooltipPosition="below">
                     <mat-icon>{{ isPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
                 </div>                  
-                <div class="button next" (click)="nextVideo()">
+                <div class="button next" (click)="nextVideo()" matTooltip="Next Radio" matTooltipShowDelay="500" matTooltipPosition="below">
                     <mat-icon>skip_next</mat-icon>
                 </div>
             </div>
@@ -43,16 +43,16 @@
 
         <div class="footer">
             <div class="left">
-                <a href="https://github.com/emanuelsacoman" target="_blank" matTooltip="Author">
+                <a href="https://github.com/emanuelsacoman" target="_blank" matTooltip="Author" matTooltipShowDelay="500" matTooltipPosition="above">
                     <mat-icon>code</mat-icon>
                 </a>
-                <div class="usercount" matTooltip="Others Listening">
+                <div class="usercount" matTooltip="Others Listening" matTooltipShowDelay="500" matTooltipPosition="above">
                     <mat-icon>person</mat-icon>
                     {{ connectedUsersCount }}
                 </div>                  
             </div>
             <div class="right">
-                <a href="https://www.pexels.com" target="_blank">
+                <a href="https://www.pexels.com" target="_blank" matTooltip="Images API" matTooltipShowDelay="500" matTooltipPosition="above">
                     <img src="https://images.pexels.com/lib/api/pexels-white.png" alt="Pexels"/>
                 </a>
             </div>
