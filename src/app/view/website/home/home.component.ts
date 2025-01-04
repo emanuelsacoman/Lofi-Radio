@@ -87,7 +87,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   changeBackground() {
-    this.loadRandomImage();
+    
     this.loadYouTubePlayer();
   }
 
@@ -100,6 +100,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.player) {
       this.player.loadVideoById(this.videoIds[this.currentIndex]);
       this.updateVideoTitle(); 
+      this.loadRandomImage();
     } else {
       this.player = new YT.Player('youtube-player', {
         videoId: this.videoIds[this.currentIndex],
