@@ -51,6 +51,12 @@
                     {{ connectedUsersCount }}
                 </div>                  
             </div>
+            <div class="theme-buttons">
+                <div class="colors purple" (click)="setTheme('purple')"></div>
+                <div class="colors blue" (click)="setTheme('blue')"></div>
+                <div class="colors green" (click)="setTheme('green')"></div>
+                <div class="colors cafe" (click)="setTheme('cafe')"></div>
+            </div>
             <div class="right">
                 <a href="https://www.pexels.com" target="_blank" matTooltip="Images API" matTooltipShowDelay="500" matTooltipPosition="above">
                     <img src="https://images.pexels.com/lib/api/pexels-white.png" alt="Pexels"/>
@@ -58,4 +64,5 @@
             </div>
         </div>
     </main>
+      
 </body>

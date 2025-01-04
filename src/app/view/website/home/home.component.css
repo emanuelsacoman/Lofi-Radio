@@ -4,18 +4,9 @@
 }
 
 :host{
-    --clr-background: #1f1e30;
-    --clr-primary: #aea4d3;
-    --clr-secondary: #4b3470;
-    --clr-accent: #805cb1;
-    --clr-accent-light: #8c70b5;
-    --clr-text: #eff1e4;
-
     --sz-text-title: clamp(12px, 3vw, 24px);
     --sz-img: clamp(8rem, 70vw, 500px);
-
     --gap-normal: 1rem;
-    
     --sz-icons-player: clamp(20px, 10vw, 30px);
     --gap-icons: clamp(0.5rem, 4vw, 3rem);
 }
@@ -171,8 +162,8 @@ body{
             bottom: 0;
             width: 100%;
             justify-content: space-between;
-            
-            .left, .right{  
+
+            .left, .right, .theme-buttons{  
                 display: flex;
                 flex-direction: row;
                 align-items: center;
@@ -208,11 +199,42 @@ body{
                     transform: scale(1.1);
                     filter: drop-shadow(0 0 0.75rem var(--clr-accent));
                 }
+                
+                .purple{
+                    background-color: purple;
+                }
+                
+                .blue{
+                    background-color: blue;
+                }
+
+                .green{
+                    background-color: green;
+                }
+
+                .cafe{
+                    background-color: #A0522D;
+                }
+                
+                .colors{
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    opacity: 0;
+                    transition: all 0.2s ease;
+                }
+
+                
+                
     
             }
         }
     }
 
+}
+
+.theme-buttons:hover > .colors{
+    opacity: 1;
 }
 
 ::ng-deep .mat-slider .mat-slider-track {

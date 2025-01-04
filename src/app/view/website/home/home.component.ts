@@ -4,6 +4,10 @@ import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
 import { environment } from 'src/environments/environment';
 
+type Palette = {
+  [key: string]: { [variable: string]: string };
+};
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -38,6 +42,41 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   volume: number = 50;
 
+  palettes: Palette = {
+    purple: {
+      '--clr-background': '#1f1e30',
+      '--clr-primary': '#aea4d3',
+      '--clr-secondary': '#4b3470',
+      '--clr-accent': '#805cb1',
+      '--clr-accent-light': '#707cb5',
+      '--clr-text': '#eff1e4',
+    },
+    blue: {
+      '--clr-background': '#191831',
+      '--clr-primary': '#544cca',
+      '--clr-secondary': '#343670',
+      '--clr-accent': '#605cb1',
+      '--clr-accent-light': '#3d9970',
+      '--clr-text': '#e4e7f1',
+    },
+    green: {
+      '--clr-background': '#081c15',
+      '--clr-primary': '#4cca4e',
+      '--clr-secondary': '#34703c',
+      '--clr-accent': '#5cb167',
+      '--clr-accent-light': '#70b580',
+      '--clr-text': '#e4f1e5',
+    },
+    cafe: {
+      '--clr-background': '#312818',
+      '--clr-primary': '#caa04c',
+      '--clr-secondary': '#704e34',
+      '--clr-accent': '#b1855c',
+      '--clr-accent-light': '#b59c70',
+      '--clr-text': '#f1ece4',
+    },
+  };
+
   constructor(private titleService: Title,
     private metaService: Meta,
     private cdRef: ChangeDetectorRef,
@@ -51,6 +90,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setVolume(50);
     this.loadRandomImage();
     this.fetchConnectedUsersCount();
+
+    const savedPalette = localStorage.getItem('selectedPalette') || 'purple';
+    this.setTheme(savedPalette);
   }
 
   fetchConnectedUsersCount() {
@@ -204,4 +246,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       console.log('Alterando volume para:', value);
     }
   }
+
+  setTheme(paletteKey: string) {
+    const palette = this.palettes[paletteKey as keyof typeof this.palettes];
+    if (palette) {
+      Object.entries(palette).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(key, value as string);
+      });
+      localStorage.setItem('selectedPalette', paletteKey);
+    }
+  }
+  
 }
