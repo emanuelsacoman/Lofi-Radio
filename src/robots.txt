@@ -1,6 +1,7 @@
+User-agent: *
+Disallow:
 Sitemap: https://lofiradio.web.app/sitemap.xml
 
-User-agent: *
 User-agent: Googlebot
 Allow: /
 User-agent: Googlebot-News
