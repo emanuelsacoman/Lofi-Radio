@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
+import { PexelsService } from 'src/app/services/pexels.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -36,14 +37,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private titleService: Title,
     private metaService: Meta,
-    private cdRef: ChangeDetectorRef) {
+    private cdRef: ChangeDetectorRef,
+    private pexelsService: PexelsService) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
   }
 
   ngOnInit(): void {
-    this.fetchRandomImage();
     this.setVolume(50);
+    this.loadRandomImage();
   }
 
   ngAfterViewInit() {
@@ -64,42 +66,17 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.metaService.updateTag({ name: 'description', content: description });
   }
 
-  async fetchRandomImage() {
-    try {
-      const queries = ['abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple', 'vintage', 'pixel art'];
-      const randomQuery = queries[Math.floor(Math.random() * queries.length)];
-  
-      const response = await fetch(
-        `https://api.pexels.com/v1/search?query=${randomQuery}&orientation=landscape&per_page=1&page=${this.getRandomPage()}`,
-        {
-          headers: { Authorization: this.API_KEY },
-        }
-      );
-  
-      if (!response.ok) {
-        throw new Error('Failed to fetch image from Pexels API');
-      }
-  
-      const data = await response.json();
-  
-      if (data.photos && data.photos.length > 0) {
-        const randomPhoto = data.photos[0];
-        this.randomImage = randomPhoto.src.large2x;
-      } else {
-        console.error('No images found');
-      }
-    } catch (error) {
-      console.error('Error fetching image:', error);
+  async loadRandomImage() {
+    const image = await this.pexelsService.fetchRandomImage();
+    if (image) {
+      this.randomImage = image;
+    } else {
+      console.error('Erro ao carregar imagem. Usando imagem padrão.');
     }
   }
 
-  private getRandomPage(): number {
-    const maxPages = 20;
-    return Math.floor(Math.random() * maxPages) + 1;
-  }
-
   changeBackground() {
-    this.fetchRandomImage();
+    this.loadRandomImage();
     this.loadYouTubePlayer();
   }
 

@@ -7,7 +7,7 @@
                     <div class="background" [style.backgroundImage]="'url(' + randomImage + ')'"></div>
                 </div>
                 <div class="title fadeIn">
-                    <h2>{{this.currentVideoTitle}}</h2>
+                    <h2>{{ currentVideoTitle || 'Loading...' }}</h2>
                 </div>
             </div>
             <div class="down">
