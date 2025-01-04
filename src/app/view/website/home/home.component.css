@@ -178,6 +178,17 @@ body{
                 align-items: center;
                 gap: var(--gap-normal);
                 padding: var(--gap-normal);
+
+                .usercount{
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid var(--clr-accent);
+                    border-radius: 5px;
+                    padding: 5px;
+                    color: var(--clr-primary);
+                }
     
                 :is(a){
                     text-decoration: none;

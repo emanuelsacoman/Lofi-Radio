@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { PexelsService } from 'src/app/services/pexels.service';
+import { UserService } from 'src/app/services/user.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -12,11 +13,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'Lofi Radio';
   description = 'Lofi radio streams for you to relax and study to.';
   randomImage: string = './assets/image/lofi.jpeg'; 
-
-  private API_KEY = environment.apikey;
-
+  
   player: any;
   isPlaying: boolean = false;
+
+  connectedUsersCount: number = 0;
 
   videoIds: string[] = [
     'jfKfPfyJRdk',  
@@ -27,6 +28,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     'rPjez8z61rI',  
     '7NOSDKb0HlU',  
     'N_7cSl2oq3o',  
+    'ralJmHG-DII',
   ];
 
   currentIndex: number = 0;
@@ -38,7 +40,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private titleService: Title,
     private metaService: Meta,
     private cdRef: ChangeDetectorRef,
-    private pexelsService: PexelsService) {
+    private pexelsService: PexelsService,
+    private userService: UserService) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
   }
@@ -46,6 +49,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.setVolume(50);
     this.loadRandomImage();
+    this.fetchConnectedUsersCount();
+  }
+
+  fetchConnectedUsersCount() {
+    this.userService.getConnectedUsersCount().subscribe(count => {
+      this.connectedUsersCount = count;
+      console.log('Número de visitantes conectados:', this.connectedUsersCount);
+    });
   }
 
   ngAfterViewInit() {
