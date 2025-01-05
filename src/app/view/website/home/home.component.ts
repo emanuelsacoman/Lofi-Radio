@@ -135,24 +135,38 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadYouTubePlayer() {
-    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
-      console.error('API do YouTube não carregada corretamente.');
-      return;
-    }
+    const maxRetries = 10; 
+    let retryCount = 0;
+    const retryInterval = 500; 
   
-    if (this.player) {
-      this.player.loadVideoById(this.videoIds[this.currentIndex]);
-      this.updateVideoTitle(); 
-      this.loadRandomImage();
-    } else {
-      this.player = new YT.Player('youtube-player', {
-        videoId: this.videoIds[this.currentIndex],
-        events: {
-          onReady: (event: any) => this.onPlayerReady(event),
-          onStateChange: (event: any) => this.onPlayerStateChange(event),
-        },
-      });
-    }
+    const initializePlayer = () => {
+      if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.warn(`Tentativa ${retryCount} de ${maxRetries}: API do YouTube não carregada ainda.`);
+          setTimeout(initializePlayer, retryInterval);
+        } else {
+          console.error('API do YouTube não carregada corretamente após várias tentativas.');
+        }
+        return;
+      }
+  
+      if (this.player) {
+        this.player.loadVideoById(this.videoIds[this.currentIndex]);
+        this.updateVideoTitle();
+        this.loadRandomImage();
+      } else {
+        this.player = new YT.Player('youtube-player', {
+          videoId: this.videoIds[this.currentIndex],
+          events: {
+            onReady: (event) => this.onPlayerReady(event),
+            onStateChange: (event) => this.onPlayerStateChange(event),
+          },
+        });
+      }
+    };
+  
+    initializePlayer();
   }  
 
   onPlayerReady(event: any): void {
