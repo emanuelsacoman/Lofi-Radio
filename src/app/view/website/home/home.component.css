@@ -1,3 +1,4 @@
+
 * {
     padding: 0;
     margin: 0;
@@ -151,7 +152,7 @@ body{
                 margin-top: 20px;
 
                 #volume-slider{
-                    width: var(--sz-img);
+                    width: var(--sz-img);                    
                 }
             }
         }
