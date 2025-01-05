@@ -12,7 +12,7 @@
                           {{ currentVideoTitle }}
                         </ng-container>
                         <ng-template #loading>
-                          <mat-spinner diameter="24"></mat-spinner>
+                          <mat-spinner class="spinner" diameter="24"></mat-spinner>
                         </ng-template>
                       </h2>                      
                 </div>
@@ -33,7 +33,14 @@
                     <input id="volume-value" [(ngModel)]="volume" (input)="setVolume(volume)" matSliderThumb [value]="volume">
                 </mat-slider>              
             </div>
+            <div class="theme-buttons">
+                <div class="colors purple" (click)="setTheme('purple')"></div>
+                <div class="colors blue" (click)="setTheme('blue')"></div>
+                <div class="colors green" (click)="setTheme('green')"></div>
+                <div class="colors cafe" (click)="setTheme('cafe')"></div>
+            </div>
         </div>
+
         <youtube-player 
             id="youtube-player" 
             [ngStyle]="{'z-index': '-99', 'visibility': 'hidden', 'position': 'absolute', 'top': '-9999px'}"
@@ -50,12 +57,6 @@
                     <mat-icon>person</mat-icon>
                     {{ connectedUsersCount }}
                 </div>                  
-            </div>
-            <div class="theme-buttons">
-                <div class="colors purple" (click)="setTheme('purple')"></div>
-                <div class="colors blue" (click)="setTheme('blue')"></div>
-                <div class="colors green" (click)="setTheme('green')"></div>
-                <div class="colors cafe" (click)="setTheme('cafe')"></div>
             </div>
             <div class="right">
                 <a href="https://www.pexels.com" target="_blank" matTooltip="Images API" matTooltipShowDelay="500" matTooltipPosition="above">
