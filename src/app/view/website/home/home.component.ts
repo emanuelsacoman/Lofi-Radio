@@ -78,6 +78,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       '--clr-accent-light': '#b59c70',
       '--clr-text': '#f1ece4',
     },
+    gray: {
+      '--clr-background': '#322f2a',
+      '--clr-primary': '#d3c8b2',
+      '--clr-secondary': '#d3c8b2',
+      '--clr-accent': '#b9b09f',
+      '--clr-accent-light': '#b9b09f',
+      '--clr-text': '#d6d3cd',
+    },
   };
 
   constructor(

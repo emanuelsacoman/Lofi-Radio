@@ -1,11 +1,9 @@
-
 * {
     padding: 0;
     margin: 0;
 }
 
 :host {
-    
     --sz-text-title: clamp(12px, 3vw, 24px);
     --sz-text-owner: clamp(10px, 1.5vw, 20px);
     --sz-img: clamp(8rem, 70vw, 500px);
@@ -97,6 +95,10 @@ body{
             background-color: #795548;
         }
 
+        .theme-buttons .gray {
+            background-color: #5c5553;
+        }
+
         .colors{
             transition: all .2s ease;
         }
@@ -126,8 +128,6 @@ body{
                 display: flex;
                 flex-direction: column;
                 gap: var(--gap-normal);
-                height: 100%;
-                width: 100%;
                 align-items: center;
                 
                 .card{
