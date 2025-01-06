@@ -4,7 +4,7 @@
 }
 
 :host {
-    --sz-text-title: clamp(12px, 3vw, 24px);
+    --sz-text-title: clamp(14px, 3vw, 24px);
     --sz-text-owner: clamp(10px, 1.5vw, 20px);
     --sz-text-index: clamp(20px, 3vw, 26px);
     --sz-img: clamp(8rem, 50vw, 400px);
@@ -63,6 +63,7 @@ body{
             background: transparent;
             overflow: visible;
             transition: all 0.2s ease;
+            z-index: 99;
         }
 
         .transparent-panel mat-expansion-panel-header:hover{
@@ -89,6 +90,7 @@ body{
             border-radius: 5px;
             display: inline-block;
             cursor: pointer;
+            z-index: 98;
         }
     
         .theme-buttons .purple {
@@ -205,9 +207,9 @@ body{
                     text-align: center;
                     width: var(--sz-img);
                     z-index: 1;
-                    font-size: var(--sz-text-title);
 
                     :is(h2){
+                        font-size: var(--sz-text-title);
                         display: flex;
                         align-items: center;
                         justify-content: center;
@@ -264,6 +266,7 @@ body{
             opacity: 1;
             display: flex;
             flex-direction: column;
+            z-index: 98;
             
             gap: var(--gap-normal);
             justify-content: center;
