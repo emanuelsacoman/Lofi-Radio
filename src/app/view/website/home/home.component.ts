@@ -32,8 +32,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     'erUTqlcsDJI',
     'TfmECBzmOn4',
     '7p41rWD3s-c',
-    'Vg13S-zzol0',
-    'IItQExvO_xM',
     'techmgGVOhk',
     'TfYBaIsVzhs',
     'p53rW6sMfqw',
