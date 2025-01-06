@@ -36,7 +36,8 @@ body{
             width: 100%;
             position: absolute;
             top: 0;
-            
+            mix-blend-mode: hue;
+            z-index: 2;            
         }
 
         .aside{
@@ -137,7 +138,9 @@ body{
                 color: var(--clr-secondary);
                 z-index: 0;
                 font-size: var(--sz-text-owner);
+                mix-blend-mode: hue;
             }
+
             .top{
                 display: flex;
                 flex-direction: column;
