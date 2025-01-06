@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '
 import { Meta, Title } from '@angular/platform-browser';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
+import { environment } from 'src/environments/environment';
 
 type Palette = {
   [key: string]: { [variable: string]: string };
@@ -41,6 +42,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   currentIndex: number = 0;
   currentVideoId: string = this.videoIds[this.currentIndex];
   currentVideoTitle: string = '';
+  currentVideoOwner: string = ''; 
   volume: number = 50;
 
   palettes: Palette = {
@@ -104,6 +106,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.currentVideoId = this.videoIds[this.currentIndex];
     }
+
+    this.fetchVideoOwnerInfo(this.currentVideoId);
   }
 
   fetchConnectedUsersCount() {
@@ -138,6 +142,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   changeBackground() {
+    this.loadRandomImage();
     this.loadYouTubePlayer();
   }
 
@@ -158,7 +163,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.player) {
         this.player.loadVideoById(this.videoIds[this.currentIndex]);
         this.updateVideoTitle();
-        this.loadRandomImage();
+        this.fetchVideoOwnerInfo(this.videoIds[this.currentIndex]); 
       } else {
         this.player = new YT.Player('youtube-player', {
           videoId: this.videoIds[this.currentIndex],
@@ -171,6 +176,26 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     };
 
     initializePlayer();
+  }
+
+  fetchVideoOwnerInfo(videoId: string) {
+    const API_KEY = environment.youtubeapikey; 
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${API_KEY}`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.items && data.items.length > 0) {
+          const channelTitle = data.items[0].snippet.channelTitle;
+          this.updateVideoOwner(channelTitle);
+        }
+      })
+      .catch(error => console.error('Erro ao obter informações do vídeo:', error));
+  }
+
+  updateVideoOwner(channelName: string) {
+    this.currentVideoOwner = channelName; 
+    console.log('Dono do vídeo:', channelName);
   }
 
   onPlayerReady(event: any): void {
@@ -261,7 +286,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const palette = this.palettes[paletteKey as keyof typeof this.palettes];
     if (palette) {
       Object.entries(palette).forEach(([key, value]) => {
-        document.documentElement.style.setProperty(key, value as string);
+        document.documentElement.style.setProperty(key, value);
       });
       localStorage.setItem('selectedPalette', paletteKey);
     }

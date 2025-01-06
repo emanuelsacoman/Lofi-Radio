@@ -23,6 +23,9 @@
                 <div class="card">
                     <img [src]="randomImage" alt="Random Card">
                     <div class="background" [style.backgroundImage]="'url(' + randomImage + ')'"></div>
+                    <div *ngIf="currentVideoOwner" class="video-owner">
+                        <p>{{ currentVideoOwner }}</p>
+                    </div>
                 </div>
                 <div class="title fadeIn">
                     <h2>
