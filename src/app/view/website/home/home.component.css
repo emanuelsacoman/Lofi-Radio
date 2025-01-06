@@ -6,6 +6,7 @@
 :host {
     --sz-text-title: clamp(12px, 3vw, 24px);
     --sz-text-owner: clamp(10px, 1.5vw, 20px);
+    --sz-text-index: clamp(20px, 3vw, 26px);
     --sz-img: clamp(8rem, 40vw, 400px);
     --gap-normal: 1rem;
     --sz-icons-player: clamp(20px, 10vw, 30px);
@@ -26,6 +27,17 @@ body{
         align-items: center;
         height: 100%;
         width: 100%;
+
+        .index{
+            color: var(--clr-secondary);
+            font-size: var(--sz-text-index);
+            text-align: center;
+            margin-top: var(--gap-normal);
+            width: 100%;
+            position: absolute;
+            top: 0;
+            
+        }
 
         .aside{
             position: absolute;

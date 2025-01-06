@@ -40,6 +40,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     '0p6UidTS7Ao',
   ];
   currentIndex: number = 0;
+  totalVideos: number = this.videoIds.length;
   currentVideoId: string = this.videoIds[this.currentIndex];
   currentVideoTitle: string = '';
   currentVideoOwner: string = ''; 
