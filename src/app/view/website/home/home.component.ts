@@ -101,7 +101,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.setVolume(50);
+    const savedVolume = localStorage.getItem('volume');
+    if (savedVolume) {
+      this.setVolume(parseInt(savedVolume, 10));
+    } else {
+      this.setVolume(50); 
+    }
+    
     this.loadRandomImage();
     this.fetchConnectedUsersCount();
 
@@ -286,9 +292,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setVolume(value: number): void {
+    this.volume = value;
     if (this.player) {
       this.player.setVolume(value);
     }
+
+    localStorage.setItem('volume', value.toString());
   }
 
   setTheme(paletteKey: string) {
