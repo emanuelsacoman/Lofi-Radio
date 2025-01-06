@@ -36,7 +36,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     'TfYBaIsVzhs',
     'p53rW6sMfqw',
     'RrkrdYm3HPQ',
-    'pIrmAN-O1Ok',
     '0p6UidTS7Ao',
   ];
   currentIndex: number = 0;
