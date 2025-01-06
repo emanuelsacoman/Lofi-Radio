@@ -10,7 +10,28 @@ export class PexelsService {
   constructor() {}
 
   async fetchRandomImage(): Promise<string | null> {
-    const queries = ['abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple', 'vintage', 'pixel art', 'medieval', 'flowers', 'garden', 'ambient', 'sky', 'mountain', 'rain', 'clouds'];
+    const queries = [
+      'abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple', 
+      'vintage', 'pixel art', 'medieval', 'flowers', 'garden', 'ambient', 'sky', 'mountain', 'rain', 'clouds', 
+      'fantasy', 'cyberpunk', 'steampunk', 'retro', 'futuristic', 'technology', 'dark', 'light', 'minimalist', 
+      'surreal', 'pop art', 'cartoon', 'anime', 'forest', 'ocean', 'sea', 'waterfall', 'sunset', 'sunrise', 
+      'desert', 'cave', 'castle', 'robot', 'alien', 'galaxy', 'stars', 'planet', 'underwater', 'nebula', 
+      'vaporwave', 'synthwave', 'neon', 'urban', 'rural', 'village', 'ruins', 'industrial', 'mechanical', 
+      'woodland', 'autumn', 'winter', 'spring', 'summer', 'tropical', 'island', 'snow', 'fire', 'lightning', 
+      'storm', 'horizon', 'wildlife', 'birds', 'animals', 'wolves', 'dragons', 'magic', 'spiritual', 'haunted', 
+      'ethereal', 'gold', 'silver', 'bronze', 'crystals', 'jungle', 'path', 'bridge', 'skyline', 'city lights', 
+      'rainforest', 'meadow', 'field', 'flowers', 'roses', 'daisies', 'butterflies', 'moonlight', 'night', 
+      'day', 'dawn', 'dusk', 'street', 'marketplace', 'festival', 'carnival', 'balloons', 'kites', 'water', 
+      'ice', 'fireworks', 'fairy', 'witch', 'wizard', 'alchemy', 'spacecraft', 'exploration', 'adventure', 
+      'epic', 'mystery', 'mythology', 'temple', 'pyramids', 'culture', 'artifacts', 'treasure', 'cliff', 
+      'valley', 'hills', 'cloudy', 'fog', 'mist', 'rainbow', 'reflection', 'rivers', 'streams', 'waves', 
+      'coral', 'deep sea', 'wild', 'chaotic', 'orderly', 'pattern', 'ornament', 'geometric', 'sacred', 
+      'harmony', 'balance', 'contrast', 'gradient', 'colorful', 'monochrome', 'sepia', 'pastel', 'bright', 
+      'glow', 'shine', 'luminous', 'energy', 'power', 'calm', 'peaceful', 'serene', 'tranquil', 'dynamic', 
+      'action', 'movement', 'stillness', 'shadow', 'shade', 'texture', 'fabric', 'glass', 'mirror', 
+      'reflection', 'waves', 'stone', 'marble', 'granite', 'architecture', 'modern', 'classic', 'ancient'
+    ];
+    
     const randomQuery = queries[Math.floor(Math.random() * queries.length)];
     const maxPages = 50;
     const randomPage = Math.floor(Math.random() * maxPages) + 1;
