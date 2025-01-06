@@ -38,6 +38,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     'p53rW6sMfqw',
     'RrkrdYm3HPQ',
     '0p6UidTS7Ao',
+    'UrfOxtLiBCI',
+    'hiGzdab8bsE',
+    'IKXfLgNMpVc'
   ];
   currentIndex: number = 0;
   totalVideos: number = this.videoIds.length;
