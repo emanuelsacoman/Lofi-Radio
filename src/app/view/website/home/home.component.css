@@ -6,7 +6,7 @@
 :host {
     --sz-text-title: clamp(12px, 3vw, 24px);
     --sz-text-owner: clamp(10px, 1.5vw, 20px);
-    --sz-img: clamp(8rem, 70vw, 500px);
+    --sz-img: clamp(8rem, 40vw, 400px);
     --gap-normal: 1rem;
     --sz-icons-player: clamp(20px, 10vw, 30px);
     --gap-icons: clamp(0.5rem, 4vw, 3rem);
@@ -134,7 +134,7 @@ body{
                     display: block;
                     border: 1px solid var(--clr-accent);
                     width: var(--sz-img);
-                    height: auto;
+                    max-height: 300px;
                     border-radius: 50px;
                     z-index: 1;
                     position: relative;
