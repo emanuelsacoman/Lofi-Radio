@@ -14,7 +14,7 @@
 }
 
 body{
-    height: 100dvh;
+    min-height: 100dvh;
     width: 100vw;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     background: var(--clr-background);
