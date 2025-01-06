@@ -2,7 +2,6 @@ import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '
 import { Meta, Title } from '@angular/platform-browser';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
-import { environment } from 'src/environments/environment';
 
 type Palette = {
   [key: string]: { [variable: string]: string };
@@ -16,30 +15,35 @@ type Palette = {
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'Lofi Radio';
   description = 'Lofi radio streams for you to relax and study to.';
-  randomImage: string = './assets/image/lofi.jpeg'; 
-  
+  randomImage: string = './assets/image/lofi.jpeg';
   player: any;
   isPlaying: boolean = false;
-
   connectedUsersCount: number = 0;
-
   videoIds: string[] = [
-    'jfKfPfyJRdk',  
-    '4xDzrJKXOOY',  
-    'HuFYqnbVbzY',  
-    '28KRPhVzCus',  
-    'Na0w3Mz46GA',  
-    'rPjez8z61rI',  
-    '7NOSDKb0HlU',  
-    'N_7cSl2oq3o',  
+    'jfKfPfyJRdk',
+    '4xDzrJKXOOY',
+    'HuFYqnbVbzY',
+    '28KRPhVzCus',
+    'Na0w3Mz46GA',
+    'rPjez8z61rI',
+    '7NOSDKb0HlU',
+    'N_7cSl2oq3o',
     'ralJmHG-DII',
     'erUTqlcsDJI',
+    'TfmECBzmOn4',
+    '7p41rWD3s-c',
+    'Vg13S-zzol0',
+    'IItQExvO_xM',
+    'techmgGVOhk',
+    'TfYBaIsVzhs',
+    'p53rW6sMfqw',
+    'RrkrdYm3HPQ',
+    'pIrmAN-O1Ok',
+    '0p6UidTS7Ao',
   ];
-
   currentIndex: number = 0;
   currentVideoId: string = this.videoIds[this.currentIndex];
   currentVideoTitle: string = '';
-
   volume: number = 50;
 
   palettes: Palette = {
@@ -77,11 +81,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     },
   };
 
-  constructor(private titleService: Title,
+  constructor(
+    private titleService: Title,
     private metaService: Meta,
     private cdRef: ChangeDetectorRef,
     private pexelsService: PexelsService,
-    private userService: UserService) {
+    private userService: UserService
+  ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
   }
@@ -93,12 +99,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const savedPalette = localStorage.getItem('selectedPalette') || 'purple';
     this.setTheme(savedPalette);
+
+    const savedVideoId = localStorage.getItem('currentVideoId');
+    if (savedVideoId && this.videoIds.includes(savedVideoId)) {
+      this.currentIndex = this.videoIds.indexOf(savedVideoId);
+      this.currentVideoId = savedVideoId;
+    } else {
+      this.currentVideoId = this.videoIds[this.currentIndex];
+    }
   }
 
   fetchConnectedUsersCount() {
     this.userService.getConnectedUsersCount().subscribe(count => {
       this.connectedUsersCount = count;
-      console.log('Número de visitantes conectados:', this.connectedUsersCount);
     });
   }
 
@@ -124,33 +137,27 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const image = await this.pexelsService.fetchRandomImage();
     if (image) {
       this.randomImage = image;
-    } else {
-      console.error('Erro ao carregar imagem. Usando imagem padrão.');
     }
   }
 
   changeBackground() {
-    
     this.loadYouTubePlayer();
   }
 
   loadYouTubePlayer() {
-    const maxRetries = 10; 
+    const maxRetries = 10;
     let retryCount = 0;
-    const retryInterval = 500; 
-  
+    const retryInterval = 500;
+
     const initializePlayer = () => {
       if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
         if (retryCount < maxRetries) {
           retryCount++;
-          console.warn(`Tentativa ${retryCount} de ${maxRetries}: API do YouTube não carregada ainda.`);
           setTimeout(initializePlayer, retryInterval);
-        } else {
-          console.error('API do YouTube não carregada corretamente após várias tentativas.');
         }
         return;
       }
-  
+
       if (this.player) {
         this.player.loadVideoById(this.videoIds[this.currentIndex]);
         this.updateVideoTitle();
@@ -159,64 +166,59 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.player = new YT.Player('youtube-player', {
           videoId: this.videoIds[this.currentIndex],
           events: {
-            onReady: (event) => this.onPlayerReady(event),
-            onStateChange: (event) => this.onPlayerStateChange(event),
+            onReady: event => this.onPlayerReady(event),
+            onStateChange: event => this.onPlayerStateChange(event),
           },
         });
       }
     };
-  
+
     initializePlayer();
-  }  
+  }
 
   onPlayerReady(event: any): void {
-    console.log('Player está pronto');
     this.isPlaying = false;
     this.updateVideoTitle();
 
     if (this.player) {
-      this.player.setVolume(this.volume); 
+      this.player.setVolume(this.volume);
     }
-    
+
     const playerIframe = document.getElementById('youtube-player');
     if (playerIframe) {
-      playerIframe.style.visibility = 'hidden'; 
-      playerIframe.style.height = '0';           
-      playerIframe.style.width = '0';            
+      playerIframe.style.visibility = 'hidden';
+      playerIframe.style.height = '0';
+      playerIframe.style.width = '0';
     }
-  }  
+  }
 
   updateVideoTitle() {
     if (this.player) {
       const videoData = this.player.getVideoData();
       if (videoData && videoData.title) {
         this.currentVideoTitle = videoData.title;
-        console.log('Título do vídeo:', this.currentVideoTitle);
-        this.cdRef.detectChanges(); 
+        this.cdRef.detectChanges();
       } else {
-        console.warn('Título do vídeo não disponível ainda.');
-        this.waitForPlayer(); 
+        this.waitForPlayer();
       }
     } else {
-      console.warn('Player ainda não está pronto.');
-      this.waitForPlayer(); 
+      this.waitForPlayer();
     }
   }
-  
+
   waitForPlayer() {
     const interval = setInterval(() => {
       if (this.player && this.player.getVideoData()) {
-        this.updateVideoTitle(); 
-        clearInterval(interval); 
+        this.updateVideoTitle();
+        clearInterval(interval);
       }
-    }, 100); 
-  }  
+    }, 100);
+  }
 
   onPlayerStateChange(event: any): void {
-    console.log('Estado do player mudou:', event.data);
-    
     if (event.data === YT.PlayerState.PLAYING) {
       this.isPlaying = true;
+      localStorage.setItem('currentVideoId', this.videoIds[this.currentIndex]);
     } else if (event.data === YT.PlayerState.PAUSED) {
       this.isPlaying = false;
     }
@@ -224,40 +226,37 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   togglePlayPause(): void {
     if (this.isPlaying) {
-      this.player.pauseVideo(); 
+      this.player.pauseVideo();
     } else {
-      this.player.playVideo();  
+      this.player.playVideo();
     }
   }
 
   nextVideo(): void {
     if (this.currentIndex < this.videoIds.length - 1) {
       this.currentIndex++;
-      this.currentVideoId = this.videoIds[this.currentIndex];
-      this.changeBackground();
     } else {
-      this.currentIndex = 0; 
-      this.currentVideoId = this.videoIds[this.currentIndex];
-      this.changeBackground();
+      this.currentIndex = 0;
     }
+    this.currentVideoId = this.videoIds[this.currentIndex];
+    localStorage.setItem('currentVideoId', this.currentVideoId);
+    this.changeBackground();
   }
 
   previousVideo(): void {
     if (this.currentIndex > 0) {
       this.currentIndex--;
-      this.currentVideoId = this.videoIds[this.currentIndex];
-      this.changeBackground();
     } else {
-      this.currentIndex = this.videoIds.length - 1; 
-      this.currentVideoId = this.videoIds[this.currentIndex];
-      this.changeBackground();
+      this.currentIndex = this.videoIds.length - 1;
     }
+    this.currentVideoId = this.videoIds[this.currentIndex];
+    localStorage.setItem('currentVideoId', this.currentVideoId);
+    this.changeBackground();
   }
 
   setVolume(value: number): void {
     if (this.player) {
-      this.player.setVolume(value); 
-      console.log('Alterando volume para:', value);
+      this.player.setVolume(value);
     }
   }
 
@@ -270,5 +269,4 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       localStorage.setItem('selectedPalette', paletteKey);
     }
   }
-  
 }
