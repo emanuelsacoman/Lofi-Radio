@@ -50,7 +50,7 @@ body{
             box-shadow: none; 
         }
         
-        mat-accordion{
+        :is(mat-accordion){
             display: flex;
             align-items: center;
             justify-content: center;
