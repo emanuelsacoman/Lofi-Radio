@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { environment } from 'src/environments/environment';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
+import {MatExpansionModule} from '@angular/material/expansion';
 
 const client = createClient(environment.apikey);
 
@@ -37,6 +38,7 @@ const client = createClient(environment.apikey);
     FormsModule,
     AngularFireModule.initializeApp(environment.firebase),
     AngularFireDatabaseModule,
+    MatExpansionModule,
   ],
   providers: [Title,
     { provide: FIREBASE_OPTIONS, useValue: environment.firebase }],

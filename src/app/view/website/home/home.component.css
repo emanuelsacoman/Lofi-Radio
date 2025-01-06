@@ -27,7 +27,87 @@ body{
         align-items: center;
         height: 100%;
         width: 100%;
+
+        .aside{
+            position: absolute;
+            left: -1rem;
+            top: 0;
+        }        
         
+        .transparent-panel {
+            background: transparent;
+            box-shadow: none; 
+        }
+        
+        mat-accordion{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        
+        .transparent-panel mat-expansion-panel-header {
+            padding: 0;
+            margin-left: 33%;
+            background: transparent;
+            overflow: visible;
+            transition: all 0.2s ease;
+        }
+
+        .transparent-panel mat-expansion-panel-header:hover{
+            filter: drop-shadow(0 0 0.50rem var(--clr-accent));
+        }
+
+        .transparent-panel mat-expansion-panel-header:hover mat-icon{
+            transform: scale(1.1);
+        }
+        
+        .transparent-panel mat-expansion-panel-header mat-icon {
+            color: var(--clr-primary);
+            font-size: var(--sz-icons-player);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            height: 100%;
+        }
+       
+        .theme-buttons .colors {
+            height: var(--sz-icons-player);
+            width: var(--sz-icons-player);
+            margin: 5px;
+            border-radius: 5px;
+            display: inline-block;
+            cursor: pointer;
+        }
+    
+        .theme-buttons .purple {
+            background-color: #9c27b0;
+        }
+        
+        .theme-buttons .blue {
+            background-color: #2196f3;
+        }
+        
+        .theme-buttons .green {
+            background-color: #4caf50;
+        }
+        
+        .theme-buttons .cafe {
+            background-color: #795548;
+        }
+
+        .colors{
+            transition: all .2s ease;
+        }
+
+        .colors:hover{
+            filter: brightness(1.1);
+        }
+
+        .colors:not(:hover) {
+            filter: brightness(0.8);
+        }
+  
         .musicArea{
             display: flex;
             flex-direction: column;
@@ -158,42 +238,18 @@ body{
         }
 
         .theme-buttons{
-            opacity: 0;
+            opacity: 1;
             display: flex;
+            flex-direction: column;
+            
             gap: var(--gap-normal);
             justify-content: center;
             align-items: center;
             width: 100%;
-            height: 20px;
+            height: 100%;
             animation: fadeOut 1s ease alternate;
             transition: all 0.2s ease;
-
-            .colors{
-                height: 10px;
-                width: 10px;
-                border-radius: 50%;
-                cursor: pointer;
-            }
-
-            .purple{
-                background-color: purple;
-            }
-            
-            .blue{
-                background-color: blue;
-            }
-
-            .green{
-                background-color: green;
-            }
-
-            .cafe{
-                background-color: #A0522D;
-            }
-        }
-
-        .theme-buttons:hover{
-            opacity: 1;
+   
         }
 
         .footer{

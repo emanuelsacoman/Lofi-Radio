@@ -1,5 +1,23 @@
 <body>
     <main class="fadeIn">
+        <div class="aside">
+            <mat-accordion>
+                    <mat-expansion-panel class="transparent-panel" hideToggle>
+                <mat-expansion-panel-header matTooltip="Palette" matTooltipShowDelay="500" matTooltipPosition="right">
+                    <mat-panel-title>
+                        <mat-icon aria-label="Palette">palette</mat-icon>
+                    </mat-panel-title>
+                </mat-expansion-panel-header>
+                    <div class="theme-buttons">
+                        <div class="colors purple" (click)="setTheme('purple')" aria-label="Purple Theme"></div>
+                        <div class="colors blue" (click)="setTheme('blue')" aria-label="Blue Theme"></div>
+                        <div class="colors green" (click)="setTheme('green')" aria-label="Green Theme"></div>
+                        <div class="colors cafe" (click)="setTheme('cafe')" aria-label="Cafe Theme"></div>
+                    </div>
+                </mat-expansion-panel>
+            </mat-accordion>          
+        </div>
+          
         <div class="musicArea">
             <div class="top">
                 <div class="card">
@@ -32,12 +50,6 @@
                 <mat-slider id="volume-slider" min="0" max="100" step="1" discrete thumbLabel>
                     <input id="volume-value" [(ngModel)]="volume" (input)="setVolume(volume)" matSliderThumb [value]="volume">
                 </mat-slider>              
-            </div>
-            <div class="theme-buttons">
-                <div class="colors purple" (click)="setTheme('purple')"></div>
-                <div class="colors blue" (click)="setTheme('blue')"></div>
-                <div class="colors green" (click)="setTheme('green')"></div>
-                <div class="colors cafe" (click)="setTheme('cafe')"></div>
             </div>
         </div>
 
