@@ -10,9 +10,9 @@ export class PexelsService {
   constructor() {}
 
   async fetchRandomImage(): Promise<string | null> {
-    const queries = ['abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple', 'vintage', 'pixel art'];
+    const queries = ['abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple', 'vintage', 'pixel art', 'medieval', 'flowers', 'garden', 'ambient', 'sky', 'mountain', 'rain', 'clouds'];
     const randomQuery = queries[Math.floor(Math.random() * queries.length)];
-    const maxPages = 20;
+    const maxPages = 50;
     const randomPage = Math.floor(Math.random() * maxPages) + 1;
 
     try {
