@@ -368,16 +368,20 @@ body{
     height: 100%;
     overflow: hidden;
     pointer-events: none;
-  }
+}
   
-  .emoji {
+.emoji {
     position: absolute;
     bottom: -50px; 
     animation: float ease-in-out forwards;
     font-size: 2rem;
     filter: drop-shadow(0 0 0.75rem var(--clr-accent));
     color: var(--clr-primary);
-  }
+}
+
+span{
+    user-select: none;
+}
 
   @keyframes float {
     0% {
