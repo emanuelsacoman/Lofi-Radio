@@ -118,6 +118,13 @@ body{
             background-color: #5c5553;
         }
 
+        .theme-buttons .whine {
+            background-color: #ab3838;
+        }
+        .theme-buttons .pink {
+            background-color: #c640ae;
+        }
+
         .colors{
             transition: all .2s ease;
         }
