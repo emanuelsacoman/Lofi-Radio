@@ -65,6 +65,39 @@
             [width]="500">
         </youtube-player>
 
+        <div class="emoji-container">
+            <div class="emojibutton" (click)="addEmoji('♥')">
+              <span style="color: var(--clr-secondary);">♥</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('♡')">
+              <span style="color: var(--clr-secondary);">♡</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('✦')">
+              <span style="color: var(--clr-secondary);">✦</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('✧')">
+              <span style="color: var(--clr-secondary);">✧</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('♫')">
+              <span style="color: var(--clr-secondary);">♫</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('♪')">
+              <span style="color: var(--clr-secondary);">♪</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('★')">
+                <span style="color: var(--clr-secondary);">★</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('☆')">
+                <span style="color: var(--clr-secondary);">☆</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('❆')">
+                <span style="color: var(--clr-secondary);">❆</span>
+            </div>
+            <div class="emojibutton" (click)="addEmoji('❅')">
+                <span style="color: var(--clr-secondary);">❅</span>
+            </div>
+        </div>
+
         <div class="footer">
             <div class="left">
                 <a href="https://github.com/emanuelsacoman" target="_blank" matTooltip="Author" matTooltipShowDelay="500" matTooltipPosition="above">
@@ -75,6 +108,16 @@
                     {{ connectedUsersCount }}
                 </div>                  
             </div>
+              
+              <div class="floating-emojis">
+                <div *ngFor="let emoji of floatingEmojis" class="emoji" 
+                     [style.left]="emoji.x + '%'" 
+                     [style.animationDuration]="emoji.animationDuration + 's'"
+                     [style.animationDelay]="emoji.animationDelay + 's'">
+                  {{ emoji.emoji }}
+                </div>
+              </div>   
+              
             <div class="right">
                 <a href="https://www.pexels.com" target="_blank" matTooltip="Images API" matTooltipShowDelay="500" matTooltipPosition="above">
                     <img src="https://images.pexels.com/lib/api/pexels-white.png" alt="Pexels"/>

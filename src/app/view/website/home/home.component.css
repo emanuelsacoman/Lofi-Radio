@@ -10,7 +10,11 @@
     --sz-img: clamp(8rem, 50vw, 400px);
     --gap-normal: 1rem;
     --sz-icons-player: clamp(20px, 10vw, 30px);
+    --sz-emoji: clamp(16px, 4vw, 24px);
+    --sz-bottom: clamp(4rem, 8vw, 70px);
     --gap-icons: clamp(0.5rem, 4vw, 3rem);
+    --gap-emoji: clamp(0.1rem, 50vw, 1rem);
+    --padding-footer: clamp(0.1rem, 4vw, 1rem);
 }
 
 body{
@@ -285,17 +289,16 @@ body{
             position: absolute;
             display: flex;
             flex-direction: row;
-            gap: var(--gap-normal);
             bottom: 0;
             width: 100%;
             justify-content: space-between;
-
+            
             .left, .right{  
                 display: flex;
                 flex-direction: row;
                 align-items: center;
                 gap: var(--gap-normal);
-                padding: var(--gap-normal);
+                padding: var(--padding-footer);
 
                 .usercount{
                     display: flex;
@@ -316,7 +319,7 @@ body{
                     transition: all 0.2s ease;
                     
                     :is(img){
-                        width: 5rem;
+                        width: var(--sz-bottom);
                         height: auto;
                     }
                 }
@@ -333,6 +336,59 @@ body{
     }
 
 }
+
+.emoji-container{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gap-emoji);
+    flex-wrap: wrap;
+    margin-top: 20px;
+
+    .emojibutton{
+        cursor: pointer;
+        font-size: var(--sz-emoji);
+        transition: all .2s ease;
+    }
+
+    .emojibutton:hover{
+        filter: brightness(1.2);
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+    }
+}
+
+.floating-emojis {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  
+  .emoji {
+    position: absolute;
+    bottom: -50px; 
+    animation: float ease-in-out forwards;
+    font-size: 2rem;
+    filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+    color: var(--clr-primary);
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0); 
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-550%); 
+      opacity: 0;
+    }
+  }
 
 .fadeIn{
     animation: fadeIn .2s ease-in forwards;

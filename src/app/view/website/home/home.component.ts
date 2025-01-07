@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
+import { EmojiService } from 'src/app/services/emoji.service';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
 import { environment } from 'src/environments/environment';
@@ -48,6 +49,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   currentVideoTitle: string = '';
   currentVideoOwner: string = ''; 
   volume: number = 50;
+  floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number }[] = [];
 
   palettes: Palette = {
     purple: {
@@ -97,7 +99,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private metaService: Meta,
     private cdRef: ChangeDetectorRef,
     private pexelsService: PexelsService,
-    private userService: UserService
+    private userService: UserService,
+    private emojiService: EmojiService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -113,6 +116,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.loadRandomImage();
     this.fetchConnectedUsersCount();
+    this.emoji();
 
     const savedPalette = localStorage.getItem('selectedPalette') || 'purple';
     this.setTheme(savedPalette);
@@ -126,6 +130,32 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.fetchVideoOwnerInfo(this.currentVideoId);
+  }
+
+  emoji(): void {
+    this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
+      if (emojis.length > 0) {
+        const emojiData = emojis[0];
+        const randomX = Math.random() * 100; 
+        const randomDuration = Math.random() * (5 - 2) + 2; 
+        const randomDelay = Math.random() * 2; 
+        
+        this.floatingEmojis.push({ 
+          emoji: emojiData.emoji, 
+          x: randomX,
+          animationDuration: randomDuration,
+          animationDelay: randomDelay
+        });
+
+        setTimeout(() => {
+          this.floatingEmojis.shift();
+        }, 5000);
+      }
+    });
+  }
+
+  addEmoji(emoji: string): void {
+    this.emojiService.sendEmoji(emoji);
   }
 
   fetchConnectedUsersCount() {
