@@ -109,14 +109,17 @@
                 </div>                  
             </div>
               
-              <div class="floating-emojis">
-                <div *ngFor="let emoji of floatingEmojis" class="emoji" 
+            <div class="floating-emojis">
+                <div *ngFor="let emoji of floatingEmojis" 
+                     class="emoji" 
                      [style.left]="emoji.x + '%'" 
                      [style.animationDuration]="emoji.animationDuration + 's'"
-                     [style.animationDelay]="emoji.animationDelay + 's'">
+                     [style.animationDelay]="emoji.animationDelay + 's'"
+                     [style.transform]="'scale(' + emoji.scale + ')'"
+                     [style.transformOrigin]="'center'">
                   {{ emoji.emoji }}
                 </div>
-              </div>   
+              </div>       
               
             <div class="right">
                 <a href="https://www.pexels.com" target="_blank" matTooltip="Images API" matTooltipShowDelay="500" matTooltipPosition="above">

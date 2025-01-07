@@ -49,8 +49,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   currentVideoTitle: string = '';
   currentVideoOwner: string = ''; 
   volume: number = 50;
-  floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number }[] = [];
-
+  
   palettes: Palette = {
     purple: {
       '--clr-background': '#1f1e30',
@@ -93,7 +92,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       '--clr-text': '#d6d3cd',
     },
   };
-
+  
   constructor(
     private titleService: Title,
     private metaService: Meta,
@@ -105,7 +104,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
   }
-
+  
   ngOnInit(): void {
     const savedVolume = localStorage.getItem('volume');
     if (savedVolume) {
@@ -117,10 +116,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadRandomImage();
     this.fetchConnectedUsersCount();
     this.emoji();
-
+    
     const savedPalette = localStorage.getItem('selectedPalette') || 'purple';
     this.setTheme(savedPalette);
-
+    
     const savedVideoId = localStorage.getItem('currentVideoId');
     if (savedVideoId && this.videoIds.includes(savedVideoId)) {
       this.currentIndex = this.videoIds.indexOf(savedVideoId);
@@ -128,10 +127,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.currentVideoId = this.videoIds[this.currentIndex];
     }
-
+    
     this.fetchVideoOwnerInfo(this.currentVideoId);
   }
-
+  floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number, scale: number }[] = [];
+  
   emoji(): void {
     this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
       if (emojis.length > 0) {
@@ -139,12 +139,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         const randomX = Math.random() * 100; 
         const randomDuration = Math.random() * (5 - 2) + 2; 
         const randomDelay = Math.random() * 2; 
+        const randomScale = Math.random() * (1.25 - 0.75) + 0.75;
         
         this.floatingEmojis.push({ 
           emoji: emojiData.emoji, 
           x: randomX,
           animationDuration: randomDuration,
-          animationDelay: randomDelay
+          animationDelay: randomDelay,
+          scale: randomScale
         });
 
         setTimeout(() => {
