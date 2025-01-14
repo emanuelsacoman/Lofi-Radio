@@ -10,7 +10,7 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^16.2.0",
+    "@angular/animations": "^16.2.12",
     "@angular/cdk": "^16.2.14",
     "@angular/common": "^16.2.0",
     "@angular/compiler": "^16.2.0",
@@ -25,6 +25,7 @@
     "@firebase/auth": "^1.8.1",
     "dotenv": "^16.4.7",
     "firebase": "^11.1.0",
+    "ng-angular-popup": "^0.5.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "wavesurfer.js": "^7.8.14",

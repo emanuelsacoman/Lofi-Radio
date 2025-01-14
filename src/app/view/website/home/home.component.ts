@@ -1,5 +1,7 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
+import { Router } from '@angular/router';
+import { AuthService } from 'src/app/services/auth.service';
 import { EmojiService } from 'src/app/services/emoji.service';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
@@ -115,7 +117,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private cdRef: ChangeDetectorRef,
     private pexelsService: PexelsService,
     private userService: UserService,
-    private emojiService: EmojiService
+    private emojiService: EmojiService,
+    private router: Router,
+    private auth: AuthService,
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -359,5 +363,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       });
       localStorage.setItem('selectedPalette', paletteKey);
     }
+  }
+
+  getLogin(){
+    return this.auth.isLoggedIn;
+  }
+
+  goAdm(){
+    this.router.navigate(['/adm']);
   }
 }

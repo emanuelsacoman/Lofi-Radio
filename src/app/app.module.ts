@@ -12,11 +12,16 @@ import { MatSliderModule } from '@angular/material/slider';
 import { FIREBASE_OPTIONS } from '@angular/fire/compat';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { createClient } from 'pexels';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { environment } from 'src/environments/environment';
-import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
 import {MatExpansionModule} from '@angular/material/expansion';
+import { LoginComponent } from './view/website/login/login.component';
+import { NgToastModule } from 'ng-angular-popup';
+import { provideAuth, getAuth } from '@angular/fire/auth';
+import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { AdmComponent } from './view/adm/adm/adm.component';
 
 const client = createClient(environment.apikey);
 
@@ -24,7 +29,9 @@ const client = createClient(environment.apikey);
 @NgModule({
   declarations: [
     AppComponent,
-    HomeComponent
+    HomeComponent,
+    LoginComponent,
+    AdmComponent
   ],
   imports: [
     BrowserModule,
@@ -36,9 +43,13 @@ const client = createClient(environment.apikey);
     MatSliderModule,
     MatProgressSpinnerModule,
     FormsModule,
-    AngularFireModule.initializeApp(environment.firebase),
     AngularFireDatabaseModule,
     MatExpansionModule,
+    NgToastModule,
+    ReactiveFormsModule,
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirestore(() => getFirestore()),
+    provideAuth(() => getAuth()),
   ],
   providers: [Title,
     { provide: FIREBASE_OPTIONS, useValue: environment.firebase }],

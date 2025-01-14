@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+body {
+    min-height: 100dvh;
+    color: #EAEAEA;
+    background-color: #1E1E1E;
+    position: sticky;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+input {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    background-color: #2C2C2C;
+    color: #EAEAEA;
+    border: 1px solid #4A4A4A;
+}
+
+.all {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100dvh;
+}
+
+.titulo {
+    font-size: clamp(24px, 5vw, 36px);
+    color: #A8DADC;
+}
+
+.form {
+    height: fit-content;
+    width: fit-content;
+    padding: 2%;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    background-color: #2C2C2C;
+}
+
+.item {
+    width: 40vw;
+    height: 4vh;
+    font-size: clamp(15px, 2vw, 24px); 
+    background-color: #1E1E1E;
+    color: #EAEAEA;
+    border: 1px solid #4A4A4A;
+}
+
+.sendButton {
+    width: 20vw;
+    min-width: fit-content;
+    height: auto;
+    font-size: clamp(15px, 2vw, 24px);
+    background-color: #4A4A4A;
+    color: #EAEAEA;
+}
+
+.sendButton:active {
+    background-color: #A8DADC;
+    color: #1E1E1E;
+}
+
+p, .alert {
+    color: #E63946;
+    background-color: #1E1E1E;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.5vh;
+    margin-block-start: 0.5vh;
+    font-size: clamp(12px, 2vw, 20px);
+    border-radius: 5px;
+    border: 1px solid #4A4A4A;
+}
+
+.formTrue {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    background-color: #1E1E1E;
+    height: 100%;
+}
+
+.picSpace {
+    width: clamp(10px, 5vw, 30px);
+    height: auto;
+}
+
+.pic {
+    width: 90%;
+    height: auto;
+    max-width: 100%;
+    display: block; 
+    margin: 0 auto; 
+}
+
+.fadeIn {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media screen and (max-width: 570px) {
+    .picSpace {
+        display: none;
+    }
+
+    .item {
+        width: 60vw;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .item {
+        width: 90vw;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+}
