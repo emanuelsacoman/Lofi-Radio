@@ -50,6 +50,7 @@ export class AdmComponent {
   
     if (!chipValue || chipValue.trim() === "") {
       console.warn("O campo 'chipname' está vazio ou inválido.");
+      this.toastService.warning("Atenção!", "Campo vazio", 5000)
       return; 
     }
     
@@ -58,6 +59,7 @@ export class AdmComponent {
   
     if (!match || !match[1]) {
       console.warn("O link fornecido não é válido ou não contém um código de vídeo do YouTube.");
+      this.toastService.error("Erro!", "Código de vídeo inválido.", 5000)
       return;
     }
   
