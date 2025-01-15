@@ -3,6 +3,8 @@ import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { EmojiService } from 'src/app/services/emoji.service';
+import { FirebaseService } from 'src/app/services/firebase.service';
+import { Chip } from 'src/app/services/interfaces/chip';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
 import { environment } from 'src/environments/environment';
@@ -23,28 +25,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   player: any;
   isPlaying: boolean = false;
   connectedUsersCount: number = 0;
-  videoIds: string[] = [
-    'jfKfPfyJRdk',
-    '4xDzrJKXOOY',
-    'HuFYqnbVbzY',
-    '28KRPhVzCus',
-    'Na0w3Mz46GA',
-    'rPjez8z61rI',
-    '7NOSDKb0HlU',
-    'N_7cSl2oq3o',
-    'ralJmHG-DII',
-    'erUTqlcsDJI',
-    'TfmECBzmOn4',
-    '7p41rWD3s-c',
-    'techmgGVOhk',
-    'TfYBaIsVzhs',
-    'p53rW6sMfqw',
-    'RrkrdYm3HPQ',
-    '0p6UidTS7Ao',
-    'UrfOxtLiBCI',
-    'hiGzdab8bsE',
-    'IKXfLgNMpVc'
-  ];
+  isFirstLoad: boolean = true;
+  public chipArray: Chip[] = [];
+  videoIds: string[] = [];
+
   currentIndex: number = 0;
   totalVideos: number = this.videoIds.length;
   currentVideoId: string = this.videoIds[this.currentIndex];
@@ -118,15 +102,47 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private pexelsService: PexelsService,
     private userService: UserService,
     private emojiService: EmojiService,
-    private router: Router,
     private auth: AuthService,
+    private router: Router,
+    private firebase: FirebaseService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
+
+    this.firebase.obterTodosChip().subscribe((res) => {
+      this.chipArray = res.map((chip) => {
+        return {
+          id: chip.payload.doc.id,
+          ...(chip.payload.doc.data() as any),
+        } as Chip;
+      });
+      this.addChipnamesToVideoIds();
+    })
   }
+
+  addChipnamesToVideoIds(): void {
+    this.chipArray.sort((a, b) => {
+      return (a.order || 0) - (b.order || 0);  
+    });
+  
+    this.chipArray.forEach((chip) => {
+      if (chip.chipname && !this.videoIds.includes(chip.chipname)) {
+        this.videoIds.push(chip.chipname);
+      }
+    });
+  
+    this.totalVideos = this.videoIds.length;
+  }  
   
   ngOnInit(): void {
     const savedVolume = localStorage.getItem('volume');
+    const savedIndex = localStorage.getItem('currentIndex');
+    if (savedIndex) {
+      this.currentIndex = parseInt(savedIndex, 10);
+      this.currentVideoId = this.videoIds[this.currentIndex];
+    } else {
+      this.currentVideoId = this.videoIds[this.currentIndex];
+    }
     if (savedVolume) {
       this.setVolume(parseInt(savedVolume, 10));
     } else {
@@ -146,9 +162,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentVideoId = savedVideoId;
     } else {
       this.currentVideoId = this.videoIds[this.currentIndex];
-    }
-    
+    }    
     this.fetchVideoOwnerInfo(this.currentVideoId);
+    this.totalVideos = this.videoIds.length;
   }
   floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number, scale: number }[] = [];
   
@@ -265,13 +281,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   updateVideoOwner(channelName: string) {
     this.currentVideoOwner = channelName; 
-    console.log('Dono do vídeo:', channelName);
   }
 
   onPlayerReady(event: any): void {
     this.isPlaying = false;
-    this.updateVideoTitle();
-
+    this.loadYouTubePlayer();
+    
     if (this.player) {
       this.player.setVolume(this.volume);
     }
@@ -283,6 +298,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       playerIframe.style.width = '0';
     }
   }
+
 
   updateVideoTitle() {
     if (this.player) {
@@ -311,10 +327,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (event.data === YT.PlayerState.PLAYING) {
       this.isPlaying = true;
       localStorage.setItem('currentVideoId', this.videoIds[this.currentIndex]);
+  
+      this.updateVideoTitle();
+      
+      if (this.isFirstLoad) {
+        setTimeout(() => {
+          this.player.pauseVideo(); 
+          this.isFirstLoad = false; 
+        }, 0); 
+      }
     } else if (event.data === YT.PlayerState.PAUSED) {
       this.isPlaying = false;
     }
-  }
+  }   
+
 
   togglePlayPause(): void {
     if (this.isPlaying) {
@@ -332,9 +358,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.currentVideoId = this.videoIds[this.currentIndex];
     localStorage.setItem('currentVideoId', this.currentVideoId);
+    localStorage.setItem('currentIndex', this.currentIndex.toString());
     this.changeBackground();
   }
-
+  
   previousVideo(): void {
     if (this.currentIndex > 0) {
       this.currentIndex--;
@@ -343,8 +370,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.currentVideoId = this.videoIds[this.currentIndex];
     localStorage.setItem('currentVideoId', this.currentVideoId);
+    localStorage.setItem('currentIndex', this.currentIndex.toString());
     this.changeBackground();
-  }
+  }  
 
   setVolume(value: number): void {
     this.volume = value;

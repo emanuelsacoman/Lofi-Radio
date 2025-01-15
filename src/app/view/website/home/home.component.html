@@ -22,7 +22,9 @@
             </mat-accordion> 
         </div>
         <div class="adm">
-            <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
+            <div *ngIf="getLogin()">
+                <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
+            </div>
         </div>
           
         <div class="musicArea">

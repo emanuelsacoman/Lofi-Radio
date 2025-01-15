@@ -1,0 +1,189 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+
+:host{
+    --sz-text-title: clamp(14px, 3vw, 24px);
+    --sz-text-owner: clamp(10px, 1.5vw, 20px);
+    --sz-text-index: clamp(20px, 3vw, 26px);
+    --sz-img: clamp(8rem, 50vw, 400px);
+    --gap-normal: 1rem;
+    --sz-icons-player: clamp(20px, 10vw, 30px);
+    --sz-emoji: clamp(18px, 4vw, 30px);
+    --sz-bottom: clamp(4rem, 8vw, 70px);
+    --gap-icons: clamp(0.5rem, 4vw, 3rem);
+    --gap-emoji: clamp(0.1rem, 50vw, 1rem);
+    --padding-footer: clamp(0.1rem, 4vw, 1rem);
+}
+
+body{
+    background-color: #252525;
+    min-height: 100%;
+    width: auto;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.icon{
+    font-size: var(--sz-emoji);
+    cursor: pointer;
+    overflow: visible;
+}
+
+.item{
+    display: flex;
+    padding: 10px;
+    font-size: clamp(1.3rem, 5vw, 2rem);
+    align-items: center;
+    justify-content: center;
+    outline: 2px solid #000;
+    transition: all 0.3s ease;
+}
+
+.header{
+    grid-area: header;
+    background-color: #b3f1ff; 
+    align-items: center;
+    justify-content: space-between;
+}
+
+.content{
+    grid-area: content;
+    background-color: #ffdfba;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.featurered{
+    grid-area: fred;
+    background-color: #ffb3ba; 
+}
+
+.featurepurple{
+    grid-area: fpurple;
+    background-color: #cab3ff; 
+}
+
+.featureyellow{
+    grid-area: fyellow;
+    background-color: #ffffba;
+}
+
+.signup {
+    grid-area: signup;
+    background-color: #baffe3;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.formChip {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+}
+
+.inputs-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.input {
+    display: flex;
+    flex-direction: column;
+}
+
+input[type="text"] {
+    width: 85%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus {
+    border-color: #007bff;
+}
+
+.addbuton {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: flex-start;
+}
+
+.addbuton:hover {
+    background-color: #0056b3;
+}
+
+.cardchip {
+    background-color: #007bff;
+    color: #fff;
+    padding: var(--padding-footer);
+    font-size: 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cardchip:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+.container{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 1fr);
+    grid-template-rows: 100px 200px 200px 1fr;
+    grid-template-areas: 
+    "   header   header   header    "
+    "   fyellow   fpurple   fred    "
+    "   signup   content   content    "
+    "   signup   content   content "
+    ;
+}
+
+@media screen and (max-width: 1023px){
+    .container{
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: 100px auto auto 150px;
+        grid-template-areas: 
+        "   header   header     "
+        "   signup   fyellow    "
+        "   content   content   "
+        "   fred   fpurple      "
+        ;
+    }
+}
+
+@media screen and (max-width: 767px){
+    .container{
+        grid-template-columns: 1fr;
+        grid-template-rows: 100px auto 100px auto repeat(2, 100px);
+        grid-template-areas: 
+        "   header  "
+        "   fyellow "
+        "   signup  "
+        "   content "
+        "   fred    "
+        "   fpurple "
+        ;
+    }
+    
+}

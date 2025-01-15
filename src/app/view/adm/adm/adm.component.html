@@ -1,5 +1,34 @@
 <body>
-    <main>
-        
+    <main class="container">
+        <div class="header item">
+            <mat-icon class="icon" (click)="goBack()">
+                arrow_back
+            </mat-icon>
+            <mat-icon class="icon" (click)="logout()">
+              logout
+            </mat-icon>
+        </div>
+        <div class="featureyellow item">FEATURE-YELLOW</div>
+        <div class="featurepurple item">FEATURE-PURPLE</div>
+        <div class="featurered item">FEATURE-RED</div>
+        <div class="signup item">
+            <form class="formChip" (ngSubmit)="chipCreateForm()" [formGroup]="chipCreate" #formDir="ngForm">
+                <div class="inputs-groups">
+                  <div class="input-group">
+                    <div class="input">
+                      <input type="text" id="chipname" placeholder="Insira a rádio" formControlName="chipname" required/>
+                    </div>
+                  </div>
+                  <button class="addbuton" type="submit">ADD</button>
+                </div>
+              </form>
+        </div>
+        <div class="content item">
+            <div class="chips" *ngFor="let chip of chipArray">
+                <div class="cardchip" (click)="deleteChip(chip.id)">
+                  <p>{{ chip.chipname }}</p>
+                </div>
+            </div>
+        </div>
     </main>
 </body>
