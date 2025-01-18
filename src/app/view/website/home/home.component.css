@@ -330,6 +330,24 @@ body{
                 gap: var(--gap-normal);
                 padding: var(--padding-footer);
 
+                :is(mat-icon){
+                    color: var(--clr-primary);
+                    font-size: var(--sz-text-title);
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                }
+
+                :is(mat-icon):hover{
+                    filter: brightness(1.2);
+                    transform: scale(1.1);
+                    filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+                }
+
+                :is(mat-icon):active{
+                    transform: scale(0.9);
+                    filter: brightness(0.8);
+                }
+
                 .usercount{
                     display: flex;
                     flex-direction: row;
@@ -387,6 +405,11 @@ body{
         filter: brightness(1.2);
         transform: scale(1.1);
         filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+    }
+
+    .emojibutton:active{
+        transform: scale(0.9);
+        filter: brightness(0.8);
     }
 }
 
