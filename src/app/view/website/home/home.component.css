@@ -468,3 +468,16 @@ span{
         opacity: 0;
     }
 }
+
+@keyframes click-animation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(180deg);
+    }
+}
+
+.animate {
+    animation: click-animation 0.5s ease-in-out;
+}

@@ -35,6 +35,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   currentVideoTitle: string = '';
   currentVideoOwner: string = ''; 
   volume: number = 50;
+
+  isAnimating = false;
   
   palettes: Palette = {
     purple: {
@@ -201,7 +203,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.connectedUsersCount = count;
     });
   }
+  
+  triggerAnimation() {
+    this.isAnimating = true;
+    this.loadRandomImage();
 
+    setTimeout(() => {
+      this.isAnimating = false;
+    }, 500); 
+  }
+  
   ngAfterViewInit() {
     this.loadYouTubePlayer();
   }
