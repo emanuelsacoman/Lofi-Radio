@@ -5,6 +5,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { FirebaseService } from 'src/app/services/firebase.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { ToastService } from 'src/app/services/toast.service';
+import { UserService } from 'src/app/services/user.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,12 +19,15 @@ export class AdmComponent {
   chipname!: string;
   public chipArray: Chip[] = [];
 
+  connectedUsersCount: number = 0;
+
   constructor(
     private router: Router,
     private firebase: FirebaseService,
     private formBuilder: FormBuilder,
     private toastService: ToastService,
     private auth: AuthService,
+    private userService: UserService
   ){
     this.firebase.obterTodosChip().subscribe((res) => {
       this.chipArray = res.map((chip) => {
@@ -37,6 +41,7 @@ export class AdmComponent {
 
   ngOnInit(){
     this.initChip();
+    this.fetchConnectedUsersCount();
   }
 
   initChip(){
@@ -118,5 +123,11 @@ export class AdmComponent {
       }
     });
   }  
+
+  fetchConnectedUsersCount() {
+    this.userService.getConnectedUsersCount().subscribe(count => {
+      this.connectedUsersCount = count;
+    });
+  }
 
 }

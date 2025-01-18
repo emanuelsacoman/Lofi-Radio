@@ -164,6 +164,17 @@ input[type="text"]:focus {
     background-color: #ff9f9f;
 }
 
+.usercount{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--gap-normal) * 0.2);
+    color: black;
+    display: flex;
+    flex-direction: column;
+}
+
 .container{
     display: grid;
     grid-template-columns: repeat(auto-fill, 1fr);

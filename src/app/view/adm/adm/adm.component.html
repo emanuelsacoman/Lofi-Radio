@@ -8,7 +8,15 @@
               logout
             </mat-icon>
         </div>
-        <div class="featureyellow item">FEATURE-YELLOW</div>
+        <div class="featureyellow item">
+          <div class="usercount">
+            <p>People right now!</p>
+            <div>
+              <mat-icon>person</mat-icon>
+              {{ connectedUsersCount }}
+            </div>
+          </div>  
+        </div>
         <div class="featurepurple item">FEATURE-PURPLE</div>
         <div class="featurered item">FEATURE-RED</div>
         <div class="signup item">
