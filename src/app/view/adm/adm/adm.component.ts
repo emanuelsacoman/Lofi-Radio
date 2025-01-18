@@ -31,7 +31,7 @@ export class AdmComponent {
           id: chip.payload.doc.id,
           ...(chip.payload.doc.data() as any),
         } as Chip;
-      });
+      }).sort((a,b) => a.order - b.order);
     });
   }
 

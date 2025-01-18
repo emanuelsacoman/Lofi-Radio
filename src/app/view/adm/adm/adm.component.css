@@ -139,12 +139,29 @@ input[type="text"]:focus {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+
+    .order{
+        background-color: rgba(255, 143, 143, 0.675);
+        width: fit-content;
+        height: fit-content;
+        padding: 5px;
+        border-radius: 10px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        transition: all .2s ease;
+    }
 }
 
 .cardchip:hover {
     background-color: #0056b3;
     transform: scale(1.05);
     box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+.cardchip:hover .order{
+    background-color: #ff9f9f;
 }
 
 .container{
