@@ -233,10 +233,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadYouTubePlayer() {
-    const maxRetries = 10;
-    let retryCount = 0;
-    const retryInterval = 500;
-
+    const maxRetries = 10; 
+    let retryCount = 0; 
+    const retryInterval = 500; 
+  
     const initializePlayer = () => {
       if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
         if (retryCount < maxRetries) {
@@ -245,7 +245,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         return;
       }
-
+  
+      if (this.videoIds.length === 0) {
+        console.warn('Nenhum vídeo disponível para carregar. Tentando novamente...');
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(() => this.loadYouTubePlayer(), retryInterval);
+        } else {
+          console.error('Falha ao carregar vídeos após várias tentativas.');
+        }
+        return;
+      }
+  
       if (this.player) {
         this.player.loadVideoById(this.videoIds[this.currentIndex]);
         this.updateVideoTitle();
@@ -260,7 +271,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
     };
-
     initializePlayer();
   }
 
