@@ -247,11 +247,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const maxRetries = 10; 
     let retryCount = 0; 
     const retryInterval = 500; 
+
+    const radioStatic = new Audio('assets/sound/static.mp3');
+    radioStatic.loop = true;
   
     const initializePlayer = () => {
       if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
         if (retryCount < maxRetries) {
           retryCount++;
+          if(retryCount === 1) radioStatic.play();
           setTimeout(initializePlayer, retryInterval);
         }
         return;
@@ -276,7 +280,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.player = new YT.Player('youtube-player', {
           videoId: this.videoIds[this.currentIndex],
           events: {
-            onReady: event => this.onPlayerReady(event),
+            onReady: event => {
+              radioStatic.pause();
+              radioStatic.currentTime = 0;
+              this.onPlayerReady(event);
+            },
             onStateChange: event => this.onPlayerStateChange(event),
           },
         });
@@ -372,6 +380,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   nextVideo(): void {
+    const radioStatic = new Audio('assets/sound/static.mp3');
+    radioStatic.loop = true;
+    radioStatic.volume = 0.2;
+    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
+  
+    setTimeout(() => {
+      radioStatic.pause();
+      radioStatic.currentTime = 0;
+    }, 200); 
+  
     if (this.currentIndex < this.videoIds.length - 1) {
       this.currentIndex++;
     } else {
@@ -384,6 +402,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   previousVideo(): void {
+    const radioStatic = new Audio('assets/sound/static.mp3');
+    radioStatic.loop = true;
+    radioStatic.volume = 0.2;
+    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
+  
+    setTimeout(() => {
+      radioStatic.pause();
+      radioStatic.currentTime = 0;
+    }, 200); 
+  
     if (this.currentIndex > 0) {
       this.currentIndex--;
     } else {
@@ -393,7 +421,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     localStorage.setItem('currentVideoId', this.currentVideoId);
     localStorage.setItem('currentIndex', this.currentIndex.toString());
     this.changeBackground();
-  }  
+  }   
 
   setVolume(value: number): void {
     this.volume = value;
