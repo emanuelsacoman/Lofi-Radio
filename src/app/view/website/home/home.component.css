@@ -37,7 +37,6 @@ body{
             font-size: var(--sz-text-index);
             text-align: center;
             margin-top: var(--gap-normal);
-            width: 100%;
             position: absolute;
             top: 0;
             mix-blend-mode: hue;
@@ -58,7 +57,7 @@ body{
             transform: all .2s ease;
             
             .admicon{
-                transform: all .2s ease;
+                transition: all .2s ease;
                 cursor: pointer;
                 font-size: var(--sz-icons-player);
                 width: 100%;
@@ -66,7 +65,7 @@ body{
             }
             
             .admicon:hover{
-                transform: all .2s ease;
+                transition: all .2s ease;
                 filter: brightness(1.2);
                 transform: scale(1.1);
                 filter: drop-shadow(0 0 0.75rem var(--clr-accent));

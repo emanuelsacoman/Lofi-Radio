@@ -22,7 +22,7 @@
             </mat-accordion> 
         </div>
         <div class="adm">
-            <div *ngIf="getLogin()">
+            <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="left">
                 <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
             </div>
         </div>
