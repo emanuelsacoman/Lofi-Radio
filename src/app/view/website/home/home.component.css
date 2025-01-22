@@ -330,20 +330,20 @@ body{
                 gap: var(--gap-normal);
                 padding: var(--padding-footer);
 
-                :is(mat-icon){
+                .icon{
                     color: var(--clr-primary);
                     font-size: var(--sz-text-title);
                     transition: all 0.2s ease;
                     cursor: pointer;
                 }
 
-                :is(mat-icon):hover{
+                .icon:hover{
                     filter: brightness(1.2);
                     transform: scale(1.1);
                     filter: drop-shadow(0 0 0.75rem var(--clr-accent));
                 }
 
-                :is(mat-icon):active{
+                .icon:active{
                     transform: scale(0.9);
                     filter: brightness(0.8);
                 }
