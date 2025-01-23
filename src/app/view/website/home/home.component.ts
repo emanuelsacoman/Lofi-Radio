@@ -376,7 +376,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   nextVideo(): void {
     const radioStatic = new Audio('assets/sound/static.mp3');
     radioStatic.loop = true;
-    radioStatic.volume = 0.2;
+    radioStatic.volume = 0.1;
     radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
   
     setTimeout(() => {
@@ -398,7 +398,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   previousVideo(): void {
     const radioStatic = new Audio('assets/sound/static.mp3');
     radioStatic.loop = true;
-    radioStatic.volume = 0.2;
+    radioStatic.volume = 0.1;
     radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
   
     setTimeout(() => {
