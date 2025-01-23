@@ -247,15 +247,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const maxRetries = 10; 
     let retryCount = 0; 
     const retryInterval = 500; 
-
-    const radioStatic = new Audio('assets/sound/static.mp3');
-    radioStatic.loop = true;
   
     const initializePlayer = () => {
       if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
         if (retryCount < maxRetries) {
           retryCount++;
-          if(retryCount === 1) radioStatic.play();
           setTimeout(initializePlayer, retryInterval);
         }
         return;
@@ -281,8 +277,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           videoId: this.videoIds[this.currentIndex],
           events: {
             onReady: event => {
-              radioStatic.pause();
-              radioStatic.currentTime = 0;
               this.onPlayerReady(event);
             },
             onStateChange: event => this.onPlayerStateChange(event),
