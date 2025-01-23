@@ -330,6 +330,13 @@ body{
                 gap: var(--gap-normal);
                 padding: var(--padding-footer);
 
+                :is(a){
+                    :is(img){
+                        width: 100%;
+                        height: auto;
+                    }
+                }
+
                 .icon{
                     color: var(--clr-primary);
                     font-size: var(--sz-icons-footer);
