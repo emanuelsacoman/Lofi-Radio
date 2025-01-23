@@ -7,6 +7,7 @@
     --sz-text-title: clamp(14px, 3vw, 24px);
     --sz-text-owner: clamp(10px, 1.5vw, 20px);
     --sz-text-index: clamp(20px, 3vw, 26px);
+    --sz-icons-footer: clamp(18px, 3vw, 24px);
     --sz-img: clamp(8rem, 50vw, 400px);
     --gap-normal: 1rem;
     --sz-icons-player: clamp(20px, 10vw, 30px);
@@ -331,9 +332,12 @@ body{
 
                 .icon{
                     color: var(--clr-primary);
-                    font-size: var(--sz-text-title);
+                    font-size: var(--sz-icons-footer);
                     transition: all 0.2s ease;
                     cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
 
                 .icon:hover{
@@ -426,9 +430,10 @@ body{
     position: absolute;
     bottom: -50px; 
     animation: float ease-in-out forwards;
-    font-size: 2rem;
+    font-size: clamp(1.3rem, 5vw, 2rem);
     filter: drop-shadow(0 0 0.75rem var(--clr-accent));
     color: var(--clr-primary);
+    
 }
 
 span{
