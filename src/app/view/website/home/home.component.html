@@ -3,20 +3,26 @@
         <p class="index">{{ currentIndex + 1 }} / {{ totalVideos }}</p>
         <div class="aside">
             <mat-accordion>
-                    <mat-expansion-panel class="transparent-panel" hideToggle>
-                <mat-expansion-panel-header matTooltip="Palette" matTooltipShowDelay="500" matTooltipPosition="right">
-                    <mat-panel-title>
-                        <mat-icon aria-label="Palette">palette</mat-icon>
-                    </mat-panel-title>
-                </mat-expansion-panel-header>
-                    <div class="theme-buttons">
-                        <div class="colors purple" (click)="setTheme('purple')" aria-label="Purple Theme"></div>
-                        <div class="colors pink" (click)="setTheme('pink')" aria-label="Pink Theme"></div>
-                        <div class="colors blue" (click)="setTheme('blue')" aria-label="Blue Theme"></div>
-                        <div class="colors green" (click)="setTheme('green')" aria-label="Green Theme"></div>
-                        <div class="colors whine" (click)="setTheme('whine')" aria-label="Whine Theme"></div>
-                        <div class="colors cafe" (click)="setTheme('cafe')" aria-label="Cafe Theme"></div>
-                        <div class="colors gray" (click)="setTheme('gray')" aria-label="Gray Theme"></div>
+                <mat-expansion-panel class="transparent-panel" hideToggle>
+                    <mat-expansion-panel-header 
+                        matTooltip="Palette" 
+                        matTooltipShowDelay="500" 
+                        matTooltipPosition="right" 
+                        aria-label="Expand Palette Colors" 
+                        role="button" 
+                        tabindex="0">
+                        <mat-panel-title>
+                            <mat-icon aria-label="Palette">palette</mat-icon>
+                        </mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div class="theme-buttons" aria-label="Select Theme">
+                        <div class="colors purple" (click)="setTheme('purple')" aria-label="Theme Purple" role="button" tabindex="0"></div>
+                        <div class="colors pink" (click)="setTheme('pink')" aria-label="Theme Pink" role="button" tabindex="0"></div>
+                        <div class="colors blue" (click)="setTheme('blue')" aria-label="Theme Blue" role="button" tabindex="0"></div>
+                        <div class="colors green" (click)="setTheme('green')" aria-label="Theme Green" role="button" tabindex="0"></div>
+                        <div class="colors whine" (click)="setTheme('whine')" aria-label="Theme Whine" role="button" tabindex="0"></div>
+                        <div class="colors cafe" (click)="setTheme('cafe')" aria-label="Theme Coffee" role="button" tabindex="0"></div>
+                        <div class="colors gray" (click)="setTheme('gray')" aria-label="Theme Gray" role="button" tabindex="0"></div>
                     </div>
                 </mat-expansion-panel>
             </mat-accordion> 
@@ -107,9 +113,15 @@
 
         <div class="footer">
             <div class="left">
-                <a class="icon" href="https://github.com/emanuelsacoman" target="_blank" matTooltip="Author" matTooltipShowDelay="500" matTooltipPosition="above">
+                <a class="icon" 
+                    href="https://github.com/emanuelsacoman" 
+                    target="_blank" 
+                    matTooltip="Author" 
+                    matTooltipShowDelay="500" 
+                    matTooltipPosition="above" 
+                    aria-label="Author">
                     <mat-icon>code</mat-icon>
-                </a>
+                    </a>
                 <div class="usercount" matTooltip="Others Listening" matTooltipShowDelay="500" matTooltipPosition="above">
                     <mat-icon>person</mat-icon>
                     {{ connectedUsersCount }}
