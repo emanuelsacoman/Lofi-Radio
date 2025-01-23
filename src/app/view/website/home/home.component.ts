@@ -20,7 +20,7 @@ type Palette = {
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'Lofi Radio';
-  description = 'Lofi radio streams for you to relax and study to.';
+  description = 'Chill radio streams for you to relax and study to. | Lofi, Vaporwave, Chillwave, Ambience, Rain and more!';
   randomImage: string = './assets/image/lofi.jpeg';
   player: any;
   isPlaying: boolean = false;
