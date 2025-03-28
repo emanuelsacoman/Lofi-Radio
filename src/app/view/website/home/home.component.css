@@ -291,9 +291,9 @@ body{
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-top: 20px;                              
-
-                #volume-slider{
+                margin-top: 20px;  
+                
+                #volume-slider{ 
                     width: var(--sz-img); 
                 }
             }
@@ -368,11 +368,6 @@ body{
                     border-radius: 5px;
                     padding: 5px;
                     color: var(--clr-primary);
-                }
-
-                .usercount:hover > mat-icon {
-                        transform-origin: 50% 100%;     
-                        animation: shake forwards ease-in-out 0.8s;
                 }
     
                 :is(a){
@@ -494,26 +489,6 @@ span{
     }
 }
 
-@keyframes shake {
-    0% {
-      transform: rotate(0deg) scaleY(1);
-    }
-    20% {
-      transform: rotate(15deg) scaleY(1.1);
-    }
-    40% {
-      transform: rotate(-10deg) scaleY(0.9);
-    }
-    60% {
-      transform: rotate(10deg) scaleY(1.05);
-    }
-    80% {
-      transform: rotate(-5deg) scaleY(0.95);
-    }
-    100% {
-      transform: rotate(0deg) scaleY(1);
-    }
-}  
 
 .animate {
     animation: click-animation 0.5s ease-in-out;
