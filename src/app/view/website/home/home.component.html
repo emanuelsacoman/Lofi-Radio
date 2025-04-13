@@ -65,9 +65,18 @@
                 </div>
             </div>
             <div class="volume">
-                <mat-slider id="volume-slider" min="0" max="100" step="1" discrete thumbLabel>
-                    <input id="volume-value" [(ngModel)]="volume" (input)="setVolume(volume)" matSliderThumb [value]="volume">
-                </mat-slider>              
+                <input 
+                  type="range" 
+                  id="volume-slider" 
+                  min="0" 
+                  max="100" 
+                  step="1" 
+                  [(ngModel)]="volume" 
+                  [style.background]="getSliderBackground()"
+                  [matTooltip]="'' + volume"
+                  matTooltipShowDelay="500" 
+                  matTooltipPosition="above"
+                />
             </div>
         </div>
 

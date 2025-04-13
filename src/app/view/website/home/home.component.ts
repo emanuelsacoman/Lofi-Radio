@@ -74,7 +74,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     gray: {
       '--clr-background': '#322f2a',
       '--clr-primary': '#d3c8b2',
-      '--clr-secondary': '#d3c8b2',
+      '--clr-secondary': '#787163',
       '--clr-accent': '#b9b09f',
       '--clr-accent-light': '#b9b09f',
       '--clr-text': '#d6d3cd',
@@ -442,5 +442,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   goAdm(){
     this.router.navigate(['/adm']);
+  }
+
+  getSliderBackground(): string {
+    return `linear-gradient(to right, var(--clr-primary) 0%, var(--clr-primary) ${this.volume}%, var(--clr-secondary) ${this.volume}%, var(--clr-secondary) 100%)`;
   }
 }
