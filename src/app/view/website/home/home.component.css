@@ -69,7 +69,7 @@ body{
                 transition: all .2s ease;
                 filter: brightness(1.2);
                 transform: scale(1.1);
-                filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+                filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
             }
         }
 
@@ -274,13 +274,13 @@ body{
                     :is(mat-icon:hover){
                         filter: brightness(1.2);
                         transform: scale(1.1);
-                        filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+                        filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
                     }
 
                     :is(mat-icon:active){
                         filter: brightness(0.8);
                         transform: scale(0.9);
-                        filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+                        filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
                     }
                 }
                 
@@ -305,32 +305,33 @@ body{
                 height: 7px;
                 border-radius: 5px;
                 outline: none;
+                transition: all 0.2s ease;
             }
             
-            /* Webkit */
             .volume input[type="range"]::-webkit-slider-runnable-track {
                 height: 10px;
                 border-radius: 5px;
             }
             
-            /* Webkit */
+            /* Thumb padrão para navegadores Webkit (Chrome, Safari) */
             .volume input[type="range"]::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 height: 20px;
                 width: 20px;
                 background: var(--clr-primary);
                 border-radius: 50%;
-                margin-top: -5px; 
+                margin-top: -5px;
                 cursor: pointer;
                 border: 2px solid var(--clr-primary);
+                transition: all 0.2s ease;
             }
             
-            /* Firefox */
-            .volume input[type="range"]::-moz-range-track {
-                height: 10px;
-                border-radius: 5px;
+            /* Efeito de hover no thumb para Webkit */
+            .volume input[type="range"]::-webkit-slider-thumb:hover {
+                filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
             }
             
+            /* Thumb padrão para Firefox */
             .volume input[type="range"]::-moz-range-thumb {
                 height: 20px;
                 width: 20px;
@@ -338,25 +339,15 @@ body{
                 border-radius: 50%;
                 border: 2px solid var(--clr-primary);
                 cursor: pointer;
+                transition: all 0.2s ease;
             }
             
-            /* IE */
-            .volume input[type="range"]::-ms-track {
-                width: 100%;
-                height: 10px;
-                background: transparent;
-                border-color: transparent;
-                color: transparent;
+            /* Efeito de hover no thumb para Firefox */
+            .volume input[type="range"]::-moz-range-thumb:hover {
+                filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
             }
             
-            .volume input[type="range"]::-ms-fill-lower {
-                border-radius: 5px;
-            }
-            
-            .volume input[type="range"]::-ms-fill-upper {
-                border-radius: 5px;
-            }
-            
+            /* Thumb padrão para IE/Edge */
             .volume input[type="range"]::-ms-thumb {
                 height: 20px;
                 width: 20px;
@@ -364,6 +355,12 @@ body{
                 border-radius: 50%;
                 border: 2px solid var(--clr-primary);
                 cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            /* Efeito de hover no thumb para IE/Edge (nem sempre suportado) */
+            .volume input[type="range"]::-ms-thumb:hover {
+                filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
             }
             
         }
@@ -419,7 +416,7 @@ body{
                 .icon:hover{
                     filter: brightness(1.2);
                     transform: scale(1.1);
-                    filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+                    filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
                 }
 
                 .icon:active{
@@ -454,7 +451,7 @@ body{
                 :is(a:hover){
                     filter: brightness(1.2);
                     transform: scale(1.1);
-                    filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+                    filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
                 }               
                                
     
@@ -483,7 +480,7 @@ body{
     .emojibutton:hover{
         filter: brightness(1.2);
         transform: scale(1.1);
-        filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+        filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
     }
 
     .emojibutton:active{
@@ -507,7 +504,7 @@ body{
     bottom: -50px; 
     animation: float ease-in-out forwards;
     font-size: clamp(1.3rem, 5vw, 2rem);
-    filter: drop-shadow(0 0 0.75rem var(--clr-accent));
+    filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
     color: var(--clr-primary);
     
 }
