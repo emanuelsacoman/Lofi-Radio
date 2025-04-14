@@ -22,6 +22,8 @@ import { provideAuth, getAuth } from '@angular/fire/auth';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { AdmComponent } from './view/adm/adm/adm.component';
+import { HttpClientModule } from '@angular/common/http';
+import { MatListModule } from '@angular/material/list';
 
 const client = createClient(environment.apikey);
 
@@ -50,6 +52,8 @@ const client = createClient(environment.apikey);
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideFirestore(() => getFirestore()),
     provideAuth(() => getAuth()),
+    HttpClientModule,
+    MatListModule
   ],
   providers: [Title,
     { provide: FIREBASE_OPTIONS, useValue: environment.firebase }],

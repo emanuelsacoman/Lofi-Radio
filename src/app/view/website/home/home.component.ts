@@ -7,6 +7,7 @@ import { FirebaseService } from 'src/app/services/firebase.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
+import { YoutubeService } from 'src/app/services/youtube.service';
 import { environment } from 'src/environments/environment';
 
 type Palette = {
@@ -28,6 +29,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   isFirstLoad: boolean = true;
   public chipArray: Chip[] = [];
   videoIds: string[] = [];
+  videoTitles: string[] = [];
+  showList = false;
 
   currentIndex: number = 0;
   totalVideos: number = this.videoIds.length;
@@ -106,7 +109,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private emojiService: EmojiService,
     private auth: AuthService,
     private router: Router,
-    private firebase: FirebaseService
+    private firebase: FirebaseService,
+    private youtubeService: YoutubeService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -118,22 +122,98 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           ...(chip.payload.doc.data() as any),
         } as Chip;
       });
+    
       this.addChipnamesToVideoIds();
-    })
+    
+      this.totalVideos = this.videoIds.length;
+    
+      const savedIndex = localStorage.getItem('currentIndex');
+      const savedVideoId = localStorage.getItem('currentVideoId');
+    
+      if (savedVideoId && this.videoIds.includes(savedVideoId)) {
+        this.currentIndex = this.videoIds.indexOf(savedVideoId);
+        this.currentVideoId = savedVideoId;
+      } else if (savedIndex) {
+        this.currentIndex = parseInt(savedIndex, 10);
+        this.currentVideoId = this.videoIds[this.currentIndex];
+      } else {
+        this.currentVideoId = this.videoIds[this.currentIndex];
+      }
+    
+      this.fetchVideoOwnerInfo(this.currentVideoId);
+      this.loadYouTubePlayer(); 
+    });
+    
+  }
+
+  toggleList(): void {
+    this.showList = !this.showList;
   }
 
   addChipnamesToVideoIds(): void {
-    this.chipArray.sort((a, b) => {
-      return (a.order || 0) - (b.order || 0);  
-    });
+    this.videoIds = [];
+    this.videoTitles = [];
   
-    this.chipArray.forEach((chip) => {
-      if (chip.chipname && !this.videoIds.includes(chip.chipname)) {
-        this.videoIds.push(chip.chipname);
+    this.chipArray.sort((a, b) => (a.order || 0) - (b.order || 0));
+  
+    const chipnames = this.chipArray
+      .filter(chip => chip.chipname && !this.videoIds.includes(chip.chipname))
+      .map(chip => chip.chipname!);
+  
+    this.videoIds = [...chipnames];
+  
+    const titlePromises = chipnames.map(chipname =>
+      this.youtubeService.getVideoTitle(chipname).toPromise()
+    );
+  
+    Promise.all(titlePromises).then(titles => {
+      this.videoTitles = titles;
+      this.totalVideos = this.videoIds.length;
+  
+      // Garante que currentVideoId e currentIndex sejam definidos corretamente
+      const savedIndex = localStorage.getItem('currentIndex');
+      const savedVideoId = localStorage.getItem('currentVideoId');
+  
+      if (savedVideoId && this.videoIds.includes(savedVideoId)) {
+        this.currentIndex = this.videoIds.indexOf(savedVideoId);
+        this.currentVideoId = savedVideoId;
+      } else if (savedIndex) {
+        this.currentIndex = parseInt(savedIndex, 10);
+        this.currentVideoId = this.videoIds[this.currentIndex];
+      } else {
+        this.currentVideoId = this.videoIds[this.currentIndex];
       }
-    });
   
-    this.totalVideos = this.videoIds.length;
+      this.fetchVideoOwnerInfo(this.currentVideoId);
+      this.loadYouTubePlayer();
+      this.cdRef.detectChanges(); 
+    });
+  }
+  
+  
+  selectVideo(index: number): void {
+    console.log('Selecionado índice:', index);
+    console.log('Título:', this.videoTitles[index]);
+    console.log('Video ID:', this.videoIds[index]);
+  
+    const radioStatic = new Audio('assets/sound/static.mp3');
+    radioStatic.loop = true;
+    radioStatic.volume = 0.1;
+    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
+  
+    setTimeout(() => {
+      radioStatic.pause();
+      radioStatic.currentTime = 0;
+    }, 200);
+  
+    this.currentIndex = index;
+    this.currentVideoId = this.videoIds[this.currentIndex];
+  
+    localStorage.setItem('currentVideoId', this.currentVideoId);
+    localStorage.setItem('currentIndex', this.currentIndex.toString());
+  
+    this.changeBackground();
+    this.showList = false;
   }  
   
   ngOnInit(): void {
@@ -214,7 +294,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   ngAfterViewInit() {
-    this.loadYouTubePlayer();
+    
   }
 
   ngOnDestroy() {
