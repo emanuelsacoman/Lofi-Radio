@@ -17,7 +17,11 @@
             </div>
           </div>  
         </div>
-        <div class="featurepurple item">FEATURE-PURPLE</div>
+        <div class="featurepurple item">
+          <h3>Status da Cota</h3>
+          <p>{{ quotaStatus }}</p>
+          <button (click)="resetQuotaStatus()">Resetar Cota</button>
+        </div>
         <div class="featurered item">FEATURE-RED</div>
         <div class="signup item">
             <form class="formChip" (ngSubmit)="chipCreateForm()" [formGroup]="chipCreate" #formDir="ngForm">

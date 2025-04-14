@@ -213,7 +213,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     localStorage.setItem('currentIndex', this.currentIndex.toString());
   
     this.changeBackground();
-    this.showList = false;
   }  
   
   ngOnInit(): void {

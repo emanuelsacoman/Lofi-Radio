@@ -6,6 +6,7 @@ import { FirebaseService } from 'src/app/services/firebase.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { ToastService } from 'src/app/services/toast.service';
 import { UserService } from 'src/app/services/user.service';
+import { YoutubeService } from 'src/app/services/youtube.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -21,13 +22,16 @@ export class AdmComponent {
 
   connectedUsersCount: number = 0;
 
+  quotaStatus: string = '';
+
   constructor(
     private router: Router,
     private firebase: FirebaseService,
     private formBuilder: FormBuilder,
     private toastService: ToastService,
     private auth: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private youtubeService: YoutubeService
   ){
     this.firebase.obterTodosChip().subscribe((res) => {
       this.chipArray = res.map((chip) => {
@@ -42,7 +46,20 @@ export class AdmComponent {
   ngOnInit(){
     this.initChip();
     this.fetchConnectedUsersCount();
+    this.ytStatus();    
   }
+
+  ytStatus() {
+    this.youtubeService.getQuotaStatus().subscribe((status) => {
+      this.quotaStatus = status;
+    });
+  }
+
+  resetQuotaStatus() {
+    this.youtubeService.resetQuotaStatus();
+    this.quotaStatus = 'Quota reset expected at midnight UTC.';
+  }
+
 
   initChip(){
     this.chipCreate = this.formBuilder.group({

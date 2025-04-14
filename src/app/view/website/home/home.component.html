@@ -4,18 +4,6 @@
             {{ currentIndex + 1 }} / {{ totalVideos }}
         </p>
           
-        <div class="video-overlay" *ngIf="showList" (click)="toggleList()">
-            <mat-list class="video-list">
-                <mat-list-item *ngFor="let title of videoTitles; let i = index">
-                <span class="clickable-title" (click)="selectVideo(i)">
-                    {{ i + 1 }}. {{ title }}
-                </span>
-                </mat-list-item>
-            </mat-list>
-        </div>          
-
-
-          
         <div class="aside">
             <mat-accordion>
                 <mat-expansion-panel class="transparent-panel" hideToggle>
@@ -96,7 +84,18 @@
                   matTooltipShowDelay="500" 
                   matTooltipPosition="above"
                 />
-              </div>              
+              </div>  
+              
+              <div class="list" [class.show]="showList">
+                <mat-list class="video-list">
+                    <mat-list-item *ngFor="let title of videoTitles; let i = index">
+                        <span class="clickable-title" (click)="selectVideo(i)">
+                            {{ i + 1 }}. {{ title }}
+                        </span>
+                        <div class="border"></div>
+                    </mat-list-item>
+                </mat-list>
+              </div>
         </div>
 
         <youtube-player 
