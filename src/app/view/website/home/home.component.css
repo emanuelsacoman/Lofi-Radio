@@ -369,11 +369,11 @@ body{
             }
 
             .list {
-                width: 25%;
-                max-height: 70%;
+                width: 40%;
+                max-height: 60%;
                 position: absolute;
                 z-index: 9999;
-                right: -40%;   
+                right: -100%;   
                 overflow-y: auto;
                 scrollbar-width: thin;
                 scrollbar-color: var(--clr-primary) var(--clr-secondary);
@@ -385,7 +385,7 @@ body{
             }
             
             .list.show {
-                right: 0; 
+                right: -10%; 
             }            
             
         }
