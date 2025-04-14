@@ -10,18 +10,20 @@
         </div>
         <div class="featureyellow item">
           <div class="usercount">
-            <p>People right now!</p>
-            <div>
+            <p class="user-label">People right now!</p>
+            <div class="user-info">
               <mat-icon>person</mat-icon>
-              {{ connectedUsersCount }}
+              <span>{{ connectedUsersCount }}</span>
             </div>
-          </div>  
+          </div>          
         </div>
         <div class="featurepurple item">
-          <h3>Status da Cota</h3>
-          <p>{{ quotaStatus }}</p>
-          <button (click)="resetQuotaStatus()">Resetar Cota</button>
-        </div>
+          <div class="quota-box">
+            <h3>Status da Cota</h3>
+            <p>{{ quotaStatus }}</p>
+            <button (click)="resetQuotaStatus()">Resetar Cota</button>
+          </div>
+        </div>        
         <div class="featurered item">FEATURE-RED</div>
         <div class="signup item">
             <form class="formChip" (ngSubmit)="chipCreateForm()" [formGroup]="chipCreate" #formDir="ngForm">
