@@ -5,10 +5,6 @@
         </p>
           
         <div class="video-overlay" *ngIf="showList" (click)="toggleList()">
-            <button mat-icon-button class="close-btn" (click)="toggleList()">
-                <mat-icon>close</mat-icon>
-            </button>
-            
             <mat-list class="video-list">
                 <mat-list-item *ngFor="let title of videoTitles; let i = index">
                 <span class="clickable-title" (click)="selectVideo(i)">

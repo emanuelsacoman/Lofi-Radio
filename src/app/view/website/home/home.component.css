@@ -603,32 +603,6 @@ mat-list-item:hover {
     filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
 }
   
-.close-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--clr-primary);
-    color: var(--clr-text);
-    border: none;
-    border-radius: 5px;
-    z-index: 200;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-self: center;
-    cursor: pointer;
-}
-
-.close-btn:hover {
-    filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
-}
-
-.close-btn mat-icon {
-    font-size: var(--sz-icons-player);
-    width: 100%;
-    height: 100%;
-}
-
 .clickable-title {
     cursor: pointer;
     width: 100%;
