@@ -4,7 +4,7 @@
             {{ currentIndex + 1 }} / {{ totalVideos }}
         </p>
           
-        <div class="video-overlay" *ngIf="showList">
+        <div class="video-overlay" *ngIf="showList" (click)="toggleList()">
             <button mat-icon-button class="close-btn" (click)="toggleList()">
                 <mat-icon>close</mat-icon>
             </button>
