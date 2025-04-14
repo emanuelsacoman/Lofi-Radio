@@ -497,14 +497,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.changeBackground();
   }   
 
-  setVolume(value: number): void {
-    this.volume = value;
+  setVolume(value: number | string): void {
+    const volumeValue = typeof value === 'string' ? parseInt(value, 10) : value;
+    this.volume = volumeValue;
     if (this.player) {
-      this.player.setVolume(value);
+      this.player.setVolume(volumeValue);
     }
-
-    localStorage.setItem('volume', value.toString());
-  }
+    localStorage.setItem('volume', volumeValue.toString());
+  }  
 
   setTheme(paletteKey: string) {
     const palette = this.palettes[paletteKey as keyof typeof this.palettes];

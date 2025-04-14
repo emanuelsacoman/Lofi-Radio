@@ -11,7 +11,7 @@
     --sz-img: clamp(8rem, 50vw, 400px);
     --gap-normal: 1rem;
     --sz-icons-player: clamp(20px, 10vw, 30px);
-    --sz-emoji: clamp(18px, 4vw, 30px);
+    --sz-emoji: clamp(20px, 4vw, 30px);
     --sz-bottom: clamp(4rem, 8vw, 70px);
     --gap-icons: clamp(0.5rem, 4vw, 3rem);
     --gap-emoji: clamp(0.1rem, 50vw, 1rem);

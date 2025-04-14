@@ -13,6 +13,8 @@
                 </mat-list-item>
             </mat-list>
         </div>          
+
+
           
         <div class="aside">
             <mat-accordion>
@@ -87,13 +89,14 @@
                   min="0" 
                   max="100" 
                   step="1" 
-                  [(ngModel)]="volume" 
+                  [(ngModel)]="volume"
+                  (ngModelChange)="setVolume($event)" 
                   [style.background]="getSliderBackground()"
                   [matTooltip]="'' + volume"
                   matTooltipShowDelay="500" 
                   matTooltipPosition="above"
                 />
-            </div>
+              </div>              
         </div>
 
         <youtube-player 
@@ -128,12 +131,6 @@
             </div>
             <div class="emojibutton" (click)="addEmoji('☆')">
                 <span style="color: var(--clr-secondary);">☆</span>
-            </div>
-            <div class="emojibutton" (click)="addEmoji('❆')">
-                <span style="color: var(--clr-secondary);">❆</span>
-            </div>
-            <div class="emojibutton" (click)="addEmoji('❅')">
-                <span style="color: var(--clr-secondary);">❅</span>
             </div>
         </div>
 
