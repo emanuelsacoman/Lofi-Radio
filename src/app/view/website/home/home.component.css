@@ -16,7 +16,7 @@
     --gap-icons: clamp(0.5rem, 4vw, 3rem);
     --gap-emoji: clamp(0.1rem, 50vw, 1rem);
     --padding-footer: clamp(0.1rem, 4vw, 1rem);
-    --sz-text-yt-name: clamp(10px, 3vw, 20px);
+    --sz-text-yt-name: clamp(14px, 3vw, 20px);
 }
 
 body{
@@ -636,6 +636,7 @@ mat-list-item:hover {
     padding: 5px;
     font-size: var(--sz-text-yt-name);
     color: var(--clr-text);
+    font-weight: 500;
 }
   
 .clickable-title:hover {
