@@ -667,6 +667,7 @@ mat-list:has(>mat-list-item:hover) > mat-list-item:not(:hover) {
 
 @media (max-width: 1024px) {
     body{
+        transition: none;
         :is(main){
             .musicArea{
                 .list {
