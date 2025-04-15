@@ -369,11 +369,11 @@ body{
             }
 
             .list {
-                width: 35%;
+                width: clamp(250px, 35vw, 500px);
+                right: clamp(-500px, -35vw, -250px);
                 max-height: 60%;
                 position: absolute;
                 z-index: 9999;
-                right: -35%;   
                 overflow-y: auto;
                 scrollbar-width: thin;
                 scrollbar-color: var(--clr-primary) var(--clr-secondary);
