@@ -237,7 +237,7 @@ body{
                         50% {
                             transform: scale(1.1) rotate(10deg) skew(10deg, 10deg);
                             opacity: 0.7;
-                          filter: blur(80px) brightness(1.2);
+                            filter: blur(80px) brightness(1.2);
                         }
                         75% {
                           transform: scale(1.03) rotate(5deg) skew(5deg, 5deg);
