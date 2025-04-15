@@ -18,11 +18,19 @@
           </div>          
         </div>
         <div class="featurepurple item">
-          <div class="quota-box">
-            <h3>Status da Cota</h3>
-            <p>{{ quotaStatus }}</p>
-            <button (click)="resetQuotaStatus()">Resetar Cota</button>
-          </div>
+          <div class="quota-box" [ngClass]="{'out-of-quota': isQuotaExhausted()}">
+            <h3>Status da Quota</h3>
+            <p class="quota-status">
+              <i class="status-icon" *ngIf="isQuotaExhausted()">&#9888;</i>
+              {{ quotaStatus }}
+            </p>
+
+            <div *ngIf="isQuotaExhausted()" class="quota-warning">
+              <p>
+                <strong>Attention:</strong> You have exceeded your quota. The reset is scheduled for midnight UTC (which corresponds to 4 AM local time).
+              </p>
+            </div>
+          </div>         
         </div>        
         <div class="featurered item">FEATURE-RED</div>
         <div class="signup item">

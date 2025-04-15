@@ -60,7 +60,4 @@ export class YoutubeService {
     return of(status ? status : 'Quota status not available');
   }
 
-  resetQuotaStatus() {
-    this.saveQuotaStatusToCache('Quota reset expected at midnight UTC.');
-  }
 }

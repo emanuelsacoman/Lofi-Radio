@@ -23,6 +23,9 @@ export class AdmComponent {
   connectedUsersCount: number = 0;
 
   quotaStatus: string = '';
+  countdown: string = '';
+
+  private countdownInterval: any;
 
   constructor(
     private router: Router,
@@ -46,7 +49,13 @@ export class AdmComponent {
   ngOnInit(){
     this.initChip();
     this.fetchConnectedUsersCount();
-    this.ytStatus();    
+    this.ytStatus();  
+  }
+
+  ngOnDestroy() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
   }
 
   ytStatus() {
@@ -54,12 +63,6 @@ export class AdmComponent {
       this.quotaStatus = status;
     });
   }
-
-  resetQuotaStatus() {
-    this.youtubeService.resetQuotaStatus();
-    this.quotaStatus = 'Quota reset expected at midnight UTC.';
-  }
-
 
   initChip(){
     this.chipCreate = this.formBuilder.group({
@@ -145,6 +148,10 @@ export class AdmComponent {
     this.userService.getConnectedUsersCount().subscribe(count => {
       this.connectedUsersCount = count;
     });
+  }
+
+  isQuotaExhausted(): boolean {
+    return this.quotaStatus.toLowerCase().includes('exceeded');
   }
 
 }
