@@ -30,7 +30,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   public chipArray: Chip[] = [];
   videoIds: string[] = [];
   videoTitles: string[] = [];
-  showList = false;
+  showList: boolean = false;
 
   currentIndex: number = 0;
   totalVideos: number = this.videoIds.length;
