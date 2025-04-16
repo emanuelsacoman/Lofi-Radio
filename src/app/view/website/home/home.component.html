@@ -31,11 +31,22 @@
             </mat-accordion> 
         </div>
         <div class="adm">
-            <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="left">
-                <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
-            </div>
             <div>
-                <mat-icon matTooltip="Radio List" matTooltipShowDelay="500" matTooltipPosition="left" class="listicon" (click)="toggleList()">list</mat-icon>
+                <mat-icon
+                  class="listicon fullscreen" 
+                  matTooltip="Full Screen"
+                  matTooltipShowDelay="500"
+                  matTooltipPosition="below"
+                  (click)="toggleFullScreen()"
+                >
+                  fullscreen
+                </mat-icon>
+              </div>
+            <div>
+                <mat-icon matTooltip="Radio List" matTooltipShowDelay="500" matTooltipPosition="below" class="listicon" (click)="toggleList()">list</mat-icon>
+            </div>
+            <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="below">
+                <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
             </div>
         </div>
           
@@ -146,7 +157,17 @@
                     matTooltipPosition="above" 
                     aria-label="Author">
                     <mat-icon>code</mat-icon>
-                    </a>
+                </a>
+                <!-- <a class="icon" 
+                    href="https://codebucketweb.web.app" 
+                    target="_blank" 
+                    matTooltip="CodeBucket" 
+                    matTooltipShowDelay="500" 
+                    matTooltipPosition="above" 
+                    aria-label="CodeBucket">
+                    <img src="./assets/image/codebucket.webp" alt="CodeBucket">
+                </a> -->
+
                 <div class="usercount" matTooltip="Others Listening" matTooltipShowDelay="500" matTooltipPosition="above">
                     <mat-icon>person</mat-icon>
                     {{ connectedUsersCount }}

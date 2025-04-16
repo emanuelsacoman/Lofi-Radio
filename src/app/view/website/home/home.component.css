@@ -62,9 +62,10 @@ body{
             color: var(--clr-primary);
             transform: all .2s ease;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
+            gap: var(--gap-normal);
             
             .admicon, .listicon{
                 transition: all .2s ease;
@@ -156,7 +157,7 @@ body{
         .theme-buttons .pink {
             background-color: #c640ae;
         }
-
+        
         .colors{
             transition: all .2s ease;
         }
@@ -440,6 +441,11 @@ body{
                     display: flex;
                     align-items: center;
                     justify-content: center;
+
+                    :is(img){
+                        width: var(--sz-emoji);
+                        height: auto;
+                    }
                 }
 
                 .icon:hover{
@@ -685,6 +691,9 @@ mat-list:has(>mat-list-item:hover) > mat-list-item:not(:hover) {
                     right: -60%;   
                 }
             }
+        }
+        .fullscreen{
+            display: none;
         }
     }
 }

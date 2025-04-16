@@ -40,6 +40,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   volume: number = 50;
 
   isAnimating = false;
+  isFullScreen = false;
 
   favorites: boolean[] = [];
   
@@ -542,4 +543,34 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.favorites[index] = !this.favorites[index];
     localStorage.setItem('favorites', JSON.stringify(this.favorites));
   }
+
+  toggleFullScreen() {
+    if (!this.isFullScreen) {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).msRequestFullscreen) {
+        (elem as any).msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
+    }
+    this.isFullScreen = !this.isFullScreen;
+  }
+
+  panelOpen = false;
+
+  togglePanel() {
+    this.panelOpen = !this.panelOpen;
+  }
+
+  
 }
