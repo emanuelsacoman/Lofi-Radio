@@ -34,8 +34,8 @@
             <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="left">
                 <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
             </div>
-            <div (click)="toggleList()" matTooltip="Radio List" matTooltipShowDelay="500" matTooltipPosition="left">
-                <mat-icon class="listicon">list</mat-icon>
+            <div>
+                <mat-icon matTooltip="Radio List" matTooltipShowDelay="500" matTooltipPosition="left" class="listicon" (click)="toggleList()">list</mat-icon>
             </div>
         </div>
           
