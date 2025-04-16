@@ -9,7 +9,7 @@ import { environment } from 'src/environments/environment';
 export class YoutubeService {
   private apiKey = environment.youtubeapikey;
   private apiUrl = 'https://www.googleapis.com/youtube/v3/videos';
-  private quotaKey = 'yt-api-quota-status';  // Chave para armazenar status da cota no localStorage
+  private quotaKey = 'yt-api-quota-status';  
 
   constructor(private http: HttpClient) {}
 

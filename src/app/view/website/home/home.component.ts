@@ -36,10 +36,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   totalVideos: number = this.videoIds.length;
   currentVideoId: string = this.videoIds[this.currentIndex];
   currentVideoTitle: string = '';
-  currentVideoOwner: string = ''; 
+  currentVideoOwner: string = '';
   volume: number = 50;
 
   isAnimating = false;
+
+  favorites: boolean[] = [];
   
   palettes: Palette = {
     purple: {
@@ -143,7 +145,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.fetchVideoOwnerInfo(this.currentVideoId);
       this.loadYouTubePlayer(); 
     });
-    
   }
 
   toggleList(): void {
@@ -170,7 +171,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.videoTitles = titles;
       this.totalVideos = this.videoIds.length;
   
-      // Garante que currentVideoId e currentIndex sejam definidos corretamente
+      const storedFavorites = localStorage.getItem('favorites');
+      if (storedFavorites) {
+        this.favorites = JSON.parse(storedFavorites);
+        if (this.favorites.length !== this.videoTitles.length) {
+          this.favorites = this.videoTitles.map((_, i) => this.favorites[i] || false);
+        }
+      } else {
+        this.favorites = this.videoTitles.map(() => false);
+      }
+      
       const savedIndex = localStorage.getItem('currentIndex');
       const savedVideoId = localStorage.getItem('currentVideoId');
   
@@ -186,10 +196,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
       this.fetchVideoOwnerInfo(this.currentVideoId);
       this.loadYouTubePlayer();
-      this.cdRef.detectChanges(); 
+      this.cdRef.detectChanges();
     });
   }
-  
   
   selectVideo(index: number): void {
     console.log('Selecionado índice:', index);
@@ -213,7 +222,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     localStorage.setItem('currentIndex', this.currentIndex.toString());
   
     this.changeBackground();
-  }  
+  }
   
   ngOnInit(): void {
     const savedVolume = localStorage.getItem('volume');
@@ -247,6 +256,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fetchVideoOwnerInfo(this.currentVideoId);
     this.totalVideos = this.videoIds.length;
   }
+  
   floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number, scale: number }[] = [];
   
   emoji(): void {
@@ -382,7 +392,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   updateVideoOwner(channelName: string) {
-    this.currentVideoOwner = channelName; 
+    this.currentVideoOwner = channelName;
   }
 
   onPlayerReady(event: any): void {
@@ -400,7 +410,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       playerIframe.style.width = '0';
     }
   }
-
 
   updateVideoTitle() {
     if (this.player) {
@@ -436,13 +445,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         setTimeout(() => {
           this.player.pauseVideo(); 
           this.isFirstLoad = false; 
-        }, 0); 
+        }, 0);
       }
     } else if (event.data === YT.PlayerState.PAUSED) {
       this.isPlaying = false;
     }
   }   
-
 
   togglePlayPause(): void {
     if (this.isPlaying) {
@@ -461,7 +469,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => {
       radioStatic.pause();
       radioStatic.currentTime = 0;
-    }, 200); 
+    }, 200);
   
     if (this.currentIndex < this.videoIds.length - 1) {
       this.currentIndex++;
@@ -483,7 +491,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => {
       radioStatic.pause();
       radioStatic.currentTime = 0;
-    }, 200); 
+    }, 200);
   
     if (this.currentIndex > 0) {
       this.currentIndex--;
@@ -525,5 +533,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getSliderBackground(): string {
     return `linear-gradient(to right, var(--clr-primary) 0%, var(--clr-primary) ${this.volume}%, var(--clr-secondary) ${this.volume}%, var(--clr-secondary) 100%)`;
+  }
+
+  favorite(index: number, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.favorites[index] = !this.favorites[index];
+    localStorage.setItem('favorites', JSON.stringify(this.favorites));
   }
 }

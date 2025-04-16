@@ -657,6 +657,16 @@ mat-list:has(>mat-list-item:hover) > mat-list-item:not(:hover) {
     font-size: var(--sz-text-yt-name);
     color: var(--clr-text);
     font-weight: 500;
+
+    .favorite{
+        color: var(--clr-primary);
+        transition: all 0.2s ease;
+    }
+
+    .favorite:active{
+        filter: brightness(1.2);
+        transform: scale(1.1);
+    }
 }
 
 @media (min-width: 1025px) {

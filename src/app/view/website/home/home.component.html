@@ -34,7 +34,7 @@
             <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="left">
                 <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
             </div>
-            <div (click)="toggleList()" matTooltip="List" matTooltipShowDelay="500" matTooltipPosition="left">
+            <div (click)="toggleList()" matTooltip="Radio List" matTooltipShowDelay="500" matTooltipPosition="left">
                 <mat-icon class="listicon">list</mat-icon>
             </div>
         </div>
@@ -90,8 +90,11 @@
                 <mat-list class="video-list">
                     <mat-list-item *ngFor="let title of videoTitles; let i = index">
                         <span class="clickable-title" (click)="selectVideo(i)">
+                            <mat-icon class="favorite" (click)="favorite(i, $event)">
+                              {{ favorites[i] ? '♥' : '♡' }}
+                            </mat-icon>
                             {{ i + 1 }}. {{ title }}
-                        </span>
+                          </span>
                         <div class="border"></div>
                     </mat-list-item>
                 </mat-list>
