@@ -54,7 +54,7 @@
             <div class="top">
                 <div class="card">
                     <img [src]="randomImage" alt="Random Card">
-                    <div class="background" [style.backgroundImage]="'url(' + randomImage + ')'"></div>
+                    <div class="background" [style.backgroundImage]="'url(' + randomImage + ')'" loading="lazy"></div>
                     <div *ngIf="currentVideoOwner" class="video-owner">
                         <p>{{ currentVideoOwner }}</p>
                     </div>
