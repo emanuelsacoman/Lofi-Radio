@@ -22,7 +22,7 @@ type Palette = {
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'Lofi Radio';
   description = 'Lofi Radio for you to relax and study to. | Lofi, Vaporwave, Chillwave, Ambience, Rain and more!';
-  randomImage: string = './assets/image/lofi.jpeg';
+  randomImage: string = './assets/image/loadinglofi.gif';
   player: any;
   isPlaying: boolean = false;
   connectedUsersCount: number = 0;
