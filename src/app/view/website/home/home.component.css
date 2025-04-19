@@ -730,6 +730,7 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
       }
 
       .musicArea .list {
+        transition: none !important;
         width: 70%;
         right: -70%;
       }
