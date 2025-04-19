@@ -65,7 +65,7 @@
                           {{ currentVideoTitle }}
                         </ng-container>
                         <ng-template #loading>
-                          <mat-spinner class="spinner" diameter="24"></mat-spinner>
+                          <mat-spinner class="spinner" arial-label="Loading data" diameter="24"></mat-spinner>
                         </ng-template>
                     </h2>                      
                 </div>
@@ -88,6 +88,7 @@
                   min="0" 
                   max="100" 
                   step="1" 
+                  aria;label="Volume Slider"
                   [(ngModel)]="volume"
                   (ngModelChange)="setVolume($event)" 
                   [style.background]="getSliderBackground()"
