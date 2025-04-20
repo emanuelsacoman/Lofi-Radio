@@ -361,13 +361,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       // 3) Se o player não existe, cria ele e sai
       if (!this.player) {
         this.player = new YT.Player('youtube-player', {
-          videoId: this.videoIds[this.currentIndex],
-          events: {
-            onReady:      e => this.onPlayerReady(e),
-            onStateChange: e => this.onPlayerStateChange(e),
+          host: 'https://www.youtube-nocookie.com',
+          playerVars: {
+            enablejsapi: 1,
+            origin: window.location.origin,
+            modestbranding: 1,
+            rel: 0,
           },
+          videoId: this.currentVideoId,
+          events: {
+            onReady:    e => this.onPlayerReady(e),
+            onStateChange: e => this.onPlayerStateChange(e),
+          }
         });
-        return;
+        
       }
   
       // 4) Se o player já existe, tente carregar o vídeo: guard + retry
