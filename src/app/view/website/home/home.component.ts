@@ -334,48 +334,62 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadYouTubePlayer() {
-    const maxRetries = 10; 
-    let retryCount = 0; 
-    const retryInterval = 500; 
+    const maxRetries   = 10;
+    let retryCount     = 0;
+    const retryInterval = 500;
   
     const initializePlayer = () => {
+      // 1) Espera a API do YT estar disponível
       if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
-        if (retryCount < maxRetries) {
-          retryCount++;
+        if (retryCount++ < maxRetries) {
           setTimeout(initializePlayer, retryInterval);
         }
         return;
       }
   
+      // 2) Se ainda não tiver vídeos, só retry
       if (this.videoIds.length === 0) {
-        console.warn('Nenhum vídeo disponível para carregar. Tentando novamente...');
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(() => this.loadYouTubePlayer(), retryInterval);
+        if (retryCount++ < maxRetries) {
+          console.warn('Nenhum vídeo disponível… retry');
+          setTimeout(initializePlayer, retryInterval);
         } else {
-          console.error('Falha ao carregar vídeos após várias tentativas.');
+          console.error('Não carregou vídeos após várias tentativas.');
         }
         return;
       }
   
-      if (this.player) {
-        this.player.loadVideoById(this.videoIds[this.currentIndex]);
-        this.updateVideoTitle();
-        this.fetchVideoOwnerInfo(this.videoIds[this.currentIndex]); 
-      } else {
+      // 3) Se o player não existe, cria ele e sai
+      if (!this.player) {
         this.player = new YT.Player('youtube-player', {
           videoId: this.videoIds[this.currentIndex],
           events: {
-            onReady: event => {
-              this.onPlayerReady(event);
-            },
-            onStateChange: event => this.onPlayerStateChange(event),
+            onReady:      e => this.onPlayerReady(e),
+            onStateChange: e => this.onPlayerStateChange(e),
           },
         });
+        return;
+      }
+  
+      // 4) Se o player já existe, tente carregar o vídeo: guard + retry
+      if (typeof this.player.loadVideoById === 'function') {
+        try {
+          this.player.loadVideoById(this.videoIds[this.currentIndex]);
+          this.updateVideoTitle();
+          this.fetchVideoOwnerInfo(this.videoIds[this.currentIndex]);
+        } catch (err) {
+          console.error('Erro inesperado carregando vídeo:', err);
+        }
+      } else if (retryCount++ < maxRetries) {
+        console.warn('Player ainda não pronto (sem loadVideoById). Retry…');
+        setTimeout(initializePlayer, retryInterval);
+      } else {
+        console.error('loadVideoById não disponível após várias tentativas.');
       }
     };
+  
     initializePlayer();
   }
+  
 
   fetchVideoOwnerInfo(videoId: string) {
     const API_KEY = environment.youtubeapikey; 
