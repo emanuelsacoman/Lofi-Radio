@@ -567,9 +567,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     return `linear-gradient(to right, var(--clr-primary) 0%, var(--clr-primary) ${this.volume}%, var(--clr-secondary) ${this.volume}%, var(--clr-secondary) 100%)`;
   }
 
-  favorite(index: number, event?: MouseEvent): void {
+  favorite(index: number, event?: MouseEvent) {
     if (event) {
-      event.stopPropagation();
+      event.stopPropagation(); 
+      event.preventDefault();
     }
     this.favorites[index] = !this.favorites[index];
     localStorage.setItem('favorites', JSON.stringify(this.favorites));

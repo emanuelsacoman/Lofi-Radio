@@ -83,9 +83,19 @@
                 <div class="button next" (click)="nextVideo()" matTooltip="Next Radio" matTooltipShowDelay="500" matTooltipPosition="below">
                     <mat-icon>skip_next</mat-icon>
                 </div>
-                <!-- <div class="button heart" (click)="favorite()" matTooltip="Favorite Radio" matTooltipShowDelay="500" matTooltipPosition="below">
-                    <mat-icon>skip_next</mat-icon>
-                </div> -->
+                
+                <div
+                    class="button heart"
+                    matTooltip="Favorite Radio"
+                    matTooltipShowDelay="500"
+                    matTooltipPosition="below"
+                    (click)="favorite(currentIndex, $event)"
+                    >
+                    <mat-icon>
+                        {{ favorites[currentIndex] ? 'favorite' : 'favorite_border' }}
+                    </mat-icon>
+                </div>
+
             </div>
             <div class="volume">
                 <input 
