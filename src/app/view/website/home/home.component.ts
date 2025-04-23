@@ -483,15 +483,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   nextVideo(): void {
-    const radioStatic = new Audio('assets/sound/static.mp3');
-    radioStatic.loop = true;
-    radioStatic.volume = 0.1;
-    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
-  
-    setTimeout(() => {
-      radioStatic.pause();
-      radioStatic.currentTime = 0;
-    }, 200);
+    this.noise();
   
     if (this.currentIndex < this.videoIds.length - 1) {
       this.currentIndex++;
@@ -505,15 +497,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   previousVideo(): void {
-    const radioStatic = new Audio('assets/sound/static.mp3');
-    radioStatic.loop = true;
-    radioStatic.volume = 0.1;
-    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
-  
-    setTimeout(() => {
-      radioStatic.pause();
-      radioStatic.currentTime = 0;
-    }, 200);
+    this.noise();
   
     if (this.currentIndex > 0) {
       this.currentIndex--;
@@ -524,7 +508,33 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     localStorage.setItem('currentVideoId', this.currentVideoId);
     localStorage.setItem('currentIndex', this.currentIndex.toString());
     this.changeBackground();
-  }   
+  }  
+  
+  shuffle(){
+    let randomIndex;
+    do {
+      randomIndex = Math.floor(Math.random() * this.videoIds.length);
+    } while (randomIndex === this.currentIndex && this.videoIds.length > 1);
+
+    this.currentIndex = randomIndex;
+    this.currentVideoId = this.videoIds[this.currentIndex];
+    localStorage.setItem('currentVideoId', this.currentVideoId);
+    localStorage.setItem('currentIndex', this.currentIndex.toString());
+    this.changeBackground();
+    this.noise();
+  }
+
+  noise(){
+    const radioStatic = new Audio('assets/sound/static.mp3');
+    radioStatic.loop = true;
+    radioStatic.volume = 0.1;
+    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
+  
+    setTimeout(() => {
+      radioStatic.pause();
+      radioStatic.currentTime = 0;
+    }, 200);
+  }
 
   setVolume(value: number | string): void {
     const volumeValue = typeof value === 'string' ? parseInt(value, 10) : value;

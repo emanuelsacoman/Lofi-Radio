@@ -71,6 +71,9 @@
                 </div>
             </div>
             <div class="down">
+                <div class="button shuffle" (click)="shuffle()" matTooltip="Shuffle Radio" matTooltipShowDelay="500" matTooltipPosition="below">
+                    <mat-icon>shuffle</mat-icon>
+                </div>
                 <div class="button back" (click)="previousVideo()" matTooltip="Previous Radio" matTooltipShowDelay="500" matTooltipPosition="below">
                     <mat-icon>skip_previous</mat-icon>
                 </div>
@@ -80,6 +83,9 @@
                 <div class="button next" (click)="nextVideo()" matTooltip="Next Radio" matTooltipShowDelay="500" matTooltipPosition="below">
                     <mat-icon>skip_next</mat-icon>
                 </div>
+                <!-- <div class="button heart" (click)="favorite()" matTooltip="Favorite Radio" matTooltipShowDelay="500" matTooltipPosition="below">
+                    <mat-icon>skip_next</mat-icon>
+                </div> -->
             </div>
             <div class="volume">
                 <input 
