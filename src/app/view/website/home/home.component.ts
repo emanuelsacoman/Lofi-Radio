@@ -31,6 +31,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   videoIds: string[] = [];
   videoTitles: string[] = [];
   showList: boolean = false;
+  public isFirstVisit: boolean = false; 
+  public newItems: boolean[] = [];
 
   currentIndex: number = 0;
   totalVideos: number = this.videoIds.length;
@@ -194,6 +196,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       } else {
         this.currentVideoId = this.videoIds[this.currentIndex];
       }
+
+      this.initializeNewItems();
   
       this.fetchVideoOwnerInfo(this.currentVideoId);
       this.loadYouTubePlayer();
@@ -226,6 +230,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   ngOnInit(): void {
+    const visited = localStorage.getItem('hasVisited');
+
+    if (visited === null) {
+      this.isFirstVisit = true;
+      localStorage.setItem('hasVisited', 'true');
+    } else {
+      this.isFirstVisit = false;
+    }
+
     const savedVolume = localStorage.getItem('volume');
     const savedIndex = localStorage.getItem('currentIndex');
     if (savedIndex) {
@@ -257,6 +270,27 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fetchVideoOwnerInfo(this.currentVideoId);
     this.totalVideos = this.videoIds.length;
   }
+
+  public markAsSeen(index: number): void {
+    if (this.newItems[index]) {
+      const id = this.videoIds[index];
+      localStorage.setItem(`seen_${id}`, 'true');
+      this.newItems[index] = false;
+    }
+  }
+
+  private initializeNewItems(): void {
+    this.newItems = this.videoIds.map(id => {
+      const seenKey = `seen_${id}`;
+      const seen = localStorage.getItem(seenKey);
+  
+      if (this.isFirstVisit) {
+        localStorage.setItem(seenKey, 'true');
+        return false;
+      }
+      return seen === null;
+    });
+  }  
   
   floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number, scale: number }[] = [];
   

@@ -116,15 +116,18 @@
               
               <div class="list" [class.show]="showList">
                 <mat-list class="video-list">
-                    <mat-list-item *ngFor="let title of videoTitles; let i = index">
-                        <span class="clickable-title" (click)="selectVideo(i)">
-                            <mat-icon class="favorite" (click)="favorite(i, $event)">
-                              {{ favorites[i] ? '♥' : '♡' }}
-                            </mat-icon>
-                            {{ i + 1 }}. {{ title }}
-                          </span>
-                        <div class="border"></div>
-                    </mat-list-item>
+                    <mat-list-item *ngFor="let title of videoTitles; let i = index"
+                    (mouseenter)="markAsSeen(i)">
+                    <!-- label NEW aparece só se não for primeira visita e newItems[i] true -->
+                    <p *ngIf="!isFirstVisit && newItems[i]" class="new-label">NEW</p>
+                    <span class="clickable-title" (click)="selectVideo(i)">
+                        <mat-icon class="favorite" (click)="favorite(i, $event)">
+                            {{ favorites[i] ? '♥' : '♡' }}
+                        </mat-icon>
+                        {{ i + 1 }}. {{ title }}
+                        </span>
+                    <div class="border"></div>
+                </mat-list-item>
                 </mat-list>
               </div>
         </div>

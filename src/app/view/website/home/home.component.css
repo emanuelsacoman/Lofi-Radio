@@ -627,6 +627,19 @@ mat-list-item {
   font-size: 16px;
   transition: all 0.2s ease;
   position: relative;
+
+  .new-label {
+    position: absolute;              
+    left: -20px;               
+    transform: rotate(-45deg) translate(0, 0);
+    background-color: var(--clr-accent);
+    color: var(--clr-text);
+    padding: 2px 30px;
+    border-radius: 2px;
+    white-space: nowrap;      
+    font-size: 0.75em;
+    text-align: center;
+  }
 }
 
 mat-list-item:hover {
@@ -656,8 +669,8 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
 
 .clickable-title {
   cursor: pointer;
-  width: 100%;
-  display: block;
+  width: auto;
+  display: block;   
   font-size: var(--sz-text-yt-name);
   color: var(--clr-text);
   font-weight: 500;
