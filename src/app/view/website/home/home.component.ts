@@ -20,18 +20,25 @@ type Palette = {
   styleUrls: ['./home.component.css'],
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  title = 'Lofi Radio';
-  description = 'Lofi Radio for you to relax and study to. | Lofi, Vaporwave, Chillwave, Ambience, Rain and more!';
+  title = 'Lofi Radio - 24/7 Chill Beats to Relax, Study & Work';
+  description = 'Lofi Radio – 24/7 Chill Beats to Relax, Study & Work. Stream Lofi, Vaporwave, Chillwave, ambience, rain sounds and more to boost your focus and unwind.';
+
   randomImage: string = './assets/image/loadinglofi.gif';
+
   player: any;
   isPlaying: boolean = false;
+
   connectedUsersCount: number = 0;
+
   isFirstLoad: boolean = true;
+
   public chipArray: Chip[] = [];
   videoIds: string[] = [];
   videoTitles: string[] = [];
   showList: boolean = false;
+
   public isFirstVisit: boolean = false; 
+
   public newItems: boolean[] = [];
 
   currentIndex: number = 0;
@@ -42,6 +49,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   volume: number = 50;
 
   isAnimating = false;
+  
   isFullScreen = false;
 
   favorites: boolean[] = [];
