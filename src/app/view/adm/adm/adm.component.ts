@@ -43,6 +43,10 @@ export class AdmComponent {
           ...(chip.payload.doc.data() as any),
         } as Chip;
       }).sort((a,b) => a.order - b.order);
+      this.chipArray.forEach(chip => {
+        this.youtubeService.getVideoTitle(chip.chipname)
+          .subscribe(title => chip.title = title);
+      });
     });
   }
 

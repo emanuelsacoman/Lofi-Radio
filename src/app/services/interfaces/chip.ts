@@ -2,6 +2,7 @@ export class Chip{
     private _id!: string;
     private _chipname!: string;
     private _order!: number;
+    title?: string;
     
     constructor(id: string, chipname: string){
         this._chipname = chipname;
