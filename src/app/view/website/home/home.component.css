@@ -79,6 +79,7 @@ body {
           pointer-events: none;
           transform: rotate(-30deg);
           animation: pulses 2s infinite ease-in-out;
+          font-size: var(--sz-icons-footer);
         }
       }
 
