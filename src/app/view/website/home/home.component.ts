@@ -212,6 +212,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cdRef.detectChanges();
     });
   }
+
+  get hasNewItems(): boolean {
+    return this.newItems.some(item => item);
+  }
   
   selectVideo(index: number): void {
     console.log('Selecionado índice:', index);

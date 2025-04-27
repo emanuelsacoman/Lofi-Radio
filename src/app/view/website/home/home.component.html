@@ -42,9 +42,28 @@
                   fullscreen
                 </mat-icon>
               </div>
-            <div>
-                <mat-icon matTooltip="Radio List" matTooltipShowDelay="500" matTooltipPosition="below" class="listicon" (click)="toggleList()">list</mat-icon>
-            </div>
+              <div>
+                <div class="listIcons">
+                  <mat-icon
+                    matTooltip="Radio List"
+                    matTooltipShowDelay="500"
+                    matTooltipPosition="below"
+                    class="listicon"
+                    (click)="toggleList()"
+                  >
+                    list
+                  </mat-icon>
+              
+                  <!-- só aparece se houver pelo menos um newItems[i] === true -->
+                  <mat-icon
+                    *ngIf="hasNewItems"
+                    class="newWarning"
+                    aria-label="New"
+                  >
+                    new_releases
+                  </mat-icon>
+                </div>
+              </div>              
             <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="below">
                 <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
             </div>

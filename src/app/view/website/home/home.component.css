@@ -67,6 +67,22 @@ body {
       justify-content: center;
       gap: var(--gap-normal);
 
+      .listIcons{
+        position: relative;
+
+        .newWarning{
+          position: absolute;
+          top: -3px;
+          left: -5px;
+          background-color: transparent;
+          color: var(--clr-accent);  
+          pointer-events: none;
+          transform: rotate(-30deg);
+          animation: pulses 2s infinite ease-in-out;
+        }
+      }
+
+
       .admicon,
       .listicon {
         transition: all 0.2s ease;
@@ -586,6 +602,15 @@ span {
   }
   100% {
     transform: rotate(180deg);
+  }
+}
+
+@keyframes pulses {
+  0%, 100% {
+    transform: rotate(-30deg) scale(1);
+  }
+  50% {
+    transform: rotate(-30deg) scale(1.2);
   }
 }
 
