@@ -131,50 +131,56 @@ input[type="text"]:focus {
 }
 
 .chips-container {
+    display: table;
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 0;
-    list-style: none;
+    border-collapse: collapse;
+    margin: var(--gap-normal) 0;
   }
   
   .chips {
-    margin-bottom: 8px;
+    display: table-row;
   }
   
   .cardchip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #007bff;
-    color: #fff;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    border-radius: 4px;
+    display: table-cell;
+    padding: var(--gap-normal) var(--gap-icons);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    vertical-align: middle;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: none;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    position: relative;
-    border-left: 4px solid var(--clr-accent);
+    transition: background-color 0.3s ease;
+  }
+  
+  .cardchip p.chipname {
+    width: clamp(100px, 50%, 300px);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    font-weight: bold;
+    font-size: var(--sz-text-owner);
+  }
+  
+  .cardchip p.creator {
+    width: clamp(80px, 30%, 200px);
+    display: inline-block;
+    font-size: var(--sz-text-owner);
+    color: var(--clr-accent-light, #888);
+    padding-left: var(--gap-normal);
   }
   
   .cardchip .order {
-    background-color: rgba(255, 143, 143, 0.675);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    width: clamp(40px, 10%, 80px);
+    display: inline-block;
+    text-align: right;
+    font-size: var(--sz-text-owner);
+    padding-left: var(--gap-normal);
   }
   
   .cardchip:hover {
-    background-color: #0056b3;
+    background-color: rgba(0, 0, 0, 0.05);
   }
   
-  .cardchip:hover .order {
-    background-color: #ff9f9f;
-  }
-  
-
 .usercount{
     display: flex;
     flex-direction: row;
