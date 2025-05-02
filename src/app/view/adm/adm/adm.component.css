@@ -148,6 +148,7 @@ input[type="text"]:focus {
     vertical-align: middle;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    background-color: rgba(49, 27, 27, 0.111);
   }
   
   .cardchip p.chipname {
