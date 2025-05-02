@@ -46,16 +46,26 @@
               </form>
         </div>
         <div class="content item">
-            <div class="chips" *ngFor="let chip of chipArray">
-              <div class="cardchip" (click)="deleteChip(chip.id)">
-                <p class="chipname">
-                  {{ chip.title || 'Carregando…' }}
-                </p>
-                <div class="order">
-                  <p>{{ chip.order }}</p>
-                </div>
-              </div>
+          <!-- envolva todos os chips neste container -->
+        <div
+          class="chips-container"
+          cdkDropList
+          [cdkDropListData]="chipArray"
+          (cdkDropListDropped)="onDrop($event)"
+          >
+          <div
+            class="chips"
+            *ngFor="let chip of chipArray; let i = index"
+            cdkDrag
+            [cdkDragData]="chip"
+          >
+            <div class="cardchip" (click)="deleteChip(chip.id)">
+              <p class="chipname">{{ chip.title || 'Carregando…' }}</p>
+              <p class="creator" *ngIf="chip.creator">por {{ chip.creator }}</p>
+              <div class="order"><p>{{ chip.order }}</p></div>
             </div>
+          </div>
+        </div>
 
         </div>
     </main>

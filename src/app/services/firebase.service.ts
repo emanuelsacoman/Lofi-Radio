@@ -53,4 +53,8 @@ export class FirebaseService {
       });
     });
   }
+
+  atualizarChip(id: string, data: Partial<Chip>): Promise<void> {
+    return this.firestore.collection(this.PATH).doc(id).update(data);
+  }
 }

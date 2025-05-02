@@ -24,6 +24,7 @@ import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { AdmComponent } from './view/adm/adm/adm.component';
 import { HttpClientModule } from '@angular/common/http';
 import { MatListModule } from '@angular/material/list';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 const client = createClient(environment.apikey);
 
@@ -53,7 +54,8 @@ const client = createClient(environment.apikey);
     provideFirestore(() => getFirestore()),
     provideAuth(() => getAuth()),
     HttpClientModule,
-    MatListModule
+    MatListModule,
+    DragDropModule
   ],
   providers: [Title,
     { provide: FIREBASE_OPTIONS, useValue: environment.firebase }],

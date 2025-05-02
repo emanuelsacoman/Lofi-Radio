@@ -196,7 +196,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   
     Promise.all(titlePromises).then(titles => {
-      this.videoTitles = titles;
+      this.videoTitles = titles.filter((title): title is string => title !== undefined);
       this.totalVideos = this.videoIds.length;
   
       const storedFavorites = localStorage.getItem('favorites');
