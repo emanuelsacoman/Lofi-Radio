@@ -19,14 +19,16 @@
                         </mat-panel-title>
                     </mat-expansion-panel-header>
                     <div class="theme-buttons" aria-label="Select Theme">
-                        <div class="colors purple" (click)="setTheme('purple')" aria-label="Theme Purple" role="button" tabindex="0"></div>
-                        <div class="colors pink" (click)="setTheme('pink')" aria-label="Theme Pink" role="button" tabindex="0"></div>
-                        <div class="colors blue" (click)="setTheme('blue')" aria-label="Theme Blue" role="button" tabindex="0"></div>
-                        <div class="colors green" (click)="setTheme('green')" aria-label="Theme Green" role="button" tabindex="0"></div>
-                        <div class="colors whine" (click)="setTheme('whine')" aria-label="Theme Whine" role="button" tabindex="0"></div>
-                        <div class="colors cafe" (click)="setTheme('cafe')" aria-label="Theme Coffee" role="button" tabindex="0"></div>
-                        <div class="colors gray" (click)="setTheme('gray')" aria-label="Theme Gray" role="button" tabindex="0"></div>
-                    </div>
+                      <div class="colors purple" (click)="setTheme('purple')" aria-label="Theme Purple" role="button" tabindex="0"></div>
+                      <div class="colors pink" (click)="setTheme('pink')" aria-label="Theme Pink" role="button" tabindex="0"></div>
+                      <div class="colors blue" (click)="setTheme('blue')" aria-label="Theme Blue" role="button" tabindex="0"></div>
+                      <div class="colors green" (click)="setTheme('green')" aria-label="Theme Green" role="button" tabindex="0"></div>
+                      <div class="colors orange" (click)="setTheme('orange')" aria-label="Theme Orange" role="button" tabindex="0"></div>
+                      <div class="colors whine" (click)="setTheme('whine')" aria-label="Theme Whine" role="button" tabindex="0"></div>
+                      <div class="colors cafe" (click)="setTheme('cafe')" aria-label="Theme Coffee" role="button" tabindex="0"></div>
+                      <div class="colors gray" (click)="setTheme('gray')" aria-label="Theme Gray" role="button" tabindex="0"></div>
+                      <div class="colors dark" (click)="setTheme('dark')" aria-label="Theme Dark" role="button" tabindex="0"></div>
+                    </div>                    
                 </mat-expansion-panel>
             </mat-accordion> 
         </div>
@@ -54,7 +56,6 @@
                     list
                   </mat-icon>
               
-                  <!-- só aparece se houver pelo menos um newItems[i] === true -->
                   <mat-icon
                     *ngIf="hasNewItems"
                     class="newWarning"

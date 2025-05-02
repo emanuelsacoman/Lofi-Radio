@@ -172,8 +172,17 @@ body {
     .theme-buttons .whine {
       background-color: #ab3838;
     }
+
     .theme-buttons .pink {
       background-color: #c640ae;
+    }
+
+    .theme-buttons .orange {
+      background-color: #e57b2a;
+    }
+
+    .theme-buttons .dark {
+      background-color: #000000;
     }
 
     .colors {
