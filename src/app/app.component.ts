@@ -7,4 +7,10 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'lofi';
+
+  showIntro = true;
+
+  onIntroFinished() {
+    this.showIntro = false;
+  }
 }

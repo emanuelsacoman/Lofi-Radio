@@ -25,6 +25,7 @@ import { AdmComponent } from './view/adm/adm/adm.component';
 import { HttpClientModule } from '@angular/common/http';
 import { MatListModule } from '@angular/material/list';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { VhsComponent } from './view/effect/vhs/vhs.component';
 
 const client = createClient(environment.apikey);
 
@@ -34,7 +35,8 @@ const client = createClient(environment.apikey);
     AppComponent,
     HomeComponent,
     LoginComponent,
-    AdmComponent
+    AdmComponent,
+    VhsComponent
   ],
   imports: [
     BrowserModule,
