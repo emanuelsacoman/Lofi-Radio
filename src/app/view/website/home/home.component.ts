@@ -259,6 +259,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   ngOnInit(): void {
+    this.playCassetteSound();
+
     const visited = localStorage.getItem('hasVisited');
 
     if (visited === null) {
@@ -298,6 +300,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }    
     this.fetchVideoOwnerInfo(this.currentVideoId);
     this.totalVideos = this.videoIds.length;
+  }
+
+  public playCassetteSound() {
+    const audio = new Audio('assets/sound/casset.mpeg');
+    audio.volume = 0.3; 
+    audio.play().catch(e => {
+      console.log('Casset sound blocked:', e);
+    });
   }
 
   public markAsSeen(index: number): void {
