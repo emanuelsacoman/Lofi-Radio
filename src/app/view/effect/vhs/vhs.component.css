@@ -5,13 +5,13 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
   z-index: 9999;
-  animation: fadeInOut 3s ease-in-out forwards;
+  animation: fadeInOut 1.5s ease-in-out forwards;
 }
 
 .tv-startup::before {
