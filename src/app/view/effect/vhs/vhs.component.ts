@@ -16,8 +16,8 @@ export class VhsComponent {
   }
 
   playCassetteSound() {
-    const audio = new Audio('assets/sound/casset.mpeg');
-    audio.volume = 0.3;
+    const audio = new Audio('assets/sound/turningOn.mp3');
+    audio.volume = 0.1;
     audio.play().catch(err => console.warn('Som bloqueado por autoplay:', err));
   }
 }
