@@ -143,9 +143,12 @@
                     <!-- label NEW aparece só se não for primeira visita e newItems[i] true -->
                     <p *ngIf="!isFirstVisit && newItems[i]" class="new-label">NEW</p>
                     <span class="clickable-title" (click)="selectVideo(i)">
-                        <mat-icon class="favorite" (click)="favorite(i, $event)">
-                            {{ favorites[i] ? '♥' : '♡' }}
-                        </mat-icon>
+                      <div class="isPlaying">
+                          <mat-icon *ngIf="currentIndex === i" class="playing"></mat-icon>
+                      </div>
+                      <mat-icon class="favorite" (click)="favorite(i, $event)">
+                        {{ favorites[i] ? '♥' : '♡' }}
+                      </mat-icon>
                         {{ i + 1 }}. {{ title }}
                         </span>
                     <div class="border"></div>

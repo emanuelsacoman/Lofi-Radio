@@ -654,6 +654,15 @@ span {
   padding: 30px 0px 30px 30px;
 }
 
+.isPlaying{
+  width: 100%;
+  background-color: color-mix(in srgb, var(--clr-accent) 30%, transparent);
+  filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent)) blur(10px);
+  transition: background-color 0.2s ease, filter 0.2s ease;
+  z-index: -10;
+  position: absolute;
+}
+
 mat-list-item {
   z-index: 99998;
   background: var(--clr-background);
