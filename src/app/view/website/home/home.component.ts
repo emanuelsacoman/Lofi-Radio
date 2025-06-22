@@ -632,6 +632,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   favorite(index: number, event?: MouseEvent) {
     if (event) {
+      this.addEmoji('♥');
       event.stopPropagation(); 
       event.preventDefault();
     }
