@@ -76,11 +76,13 @@
             <div class="top">
                 <div class="card">
                     <img [src]="randomImage" alt="Random Card">
-                    <div class="background" [style.backgroundImage]="'url(' + randomImage + ')'" loading="lazy"></div>
-                    <div *ngIf="currentVideoOwner" class="video-owner">
-                        <p>{{ currentVideoOwner }}</p>
-                    </div>
-                </div>
+                    <img [src]="randomImage" alt="Imagem de fundo" fetchpriority="high" class="background" />
+                    <img [src]="randomImage" alt="Imagem de fundo" fetchpriority="high" class="background2" />
+
+                  </div>
+                  <div *ngIf="currentVideoOwner" class="video-owner">
+                      <p>{{ currentVideoOwner }}</p>
+                  </div>
                 <div class="title fadeIn">
                     <h2>
                         <ng-container *ngIf="currentVideoTitle; else loading">
