@@ -296,7 +296,21 @@ body {
             position: relative;
             z-index: 1;
             height: 100%;
-          }
+
+            :is(p){
+              margin: 0;
+              padding: 0;
+              color: transparent;
+              background: linear-gradient(90deg, var(--clr-accent) 20%, var(--clr-text) 1%, var(--clr-accent) 30%);
+              mix-blend-mode: hue;
+              background-clip: text;
+              -webkit-background-clip: text;
+              background-size: 200% auto;
+              animation: moveBackground 30s infinite linear;
+            }
+
+            
+        }
 
         .title {
           margin-top: var(--gap-normal);
@@ -642,6 +656,15 @@ span {
   }
   50% {
     transform: rotate(-30deg) scale(1.2);
+  }
+}
+
+@keyframes moveBackground {
+  0%, 48% {
+    background-position: -100% center;
+  }
+  52%, 100% {
+    background-position: 100% center;
   }
 }
 
