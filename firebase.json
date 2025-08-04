@@ -24,6 +24,10 @@
         "destination": "/robots.txt"
       },
       {
+        "source": "/ads.txt",
+        "destination": "/ads.txt"
+      },
+      {
         "source": "/sitemap.xml",
         "destination": "/sitemap.xml"
       },
