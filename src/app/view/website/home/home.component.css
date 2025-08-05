@@ -786,7 +786,6 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
 @media (max-width: 1024px) {
   body {
     :is(main) {
-      .musicArea .card .background,
       .admicon,
       .listicon,
       .colors,
@@ -821,7 +820,6 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
         transition: none !important;
       }
 
-      .musicArea .card .background,
       .admicon,
       .listicon,
       .colors,
@@ -860,6 +858,7 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
       }
 
       .musicArea .card .background,
+      .musicArea .card .background2,
       .admicon,
       .listicon,
       .colors,
