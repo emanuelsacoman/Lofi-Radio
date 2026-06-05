@@ -1,71 +1,198 @@
-<body>
-    <main class="container">
-        <div class="header item">
-            <mat-icon class="icon" (click)="goBack()">
-                arrow_back
-            </mat-icon>
-            <mat-icon class="icon" (click)="logout()">
-              logout
-            </mat-icon>
-        </div>
-        <div class="featureyellow item">
-          <div class="usercount">
-            <p class="user-label">People right now!</p>
-            <div class="user-info">
-              <mat-icon>person</mat-icon>
-              <span>{{ connectedUsersCount }}</span>
-            </div>
-          </div>          
-        </div>
-        <div class="featurepurple item">
-          <div class="quota-box" [ngClass]="{'out-of-quota': isQuotaExhausted()}">
-            <h3>Status da Quota</h3>
-            <p class="quota-status">
-              <i class="status-icon" *ngIf="isQuotaExhausted()">&#9888;</i>
-              {{ quotaStatus }}
-            </p>
+<section class="admin-shell">
+  <header class="topbar">
+    <div class="topbar__brand">
+      <button class="icon-button" type="button" (click)="goBack()" matTooltip="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
 
-            <div *ngIf="isQuotaExhausted()" class="quota-warning">
-              <p>
-                <strong>Attention:</strong> You have exceeded your quota. The reset is scheduled for midnight UTC (which corresponds to 4 AM local time).
-              </p>
-            </div>
-          </div>         
-        </div>        
-        <div class="featurered item">FEATURE-RED</div>
-        <div class="signup item">
-            <form class="formChip" (ngSubmit)="chipCreateForm()" [formGroup]="chipCreate" #formDir="ngForm">
-                <div class="inputs-groups">
-                  <div class="input-group">
-                    <div class="input">
-                      <input type="text" id="chipname" placeholder="Insira a rádio" formControlName="chipname" required/>
-                    </div>
-                  </div>
-                  <button class="addbuton" type="submit">ADD</button>
-                </div>
-              </form>
+      <div class="topbar__title">
+        <span>Lofi Radio</span>
+        <h1>Admin</h1>
+      </div>
+    </div>
+
+    <button class="button button--ghost" type="button" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Sair</span>
+    </button>
+  </header>
+
+  <main class="admin-content">
+    <section class="metrics-grid" aria-label="Resumo">
+      <article class="metric-card">
+        <div class="metric-card__icon metric-card__icon--green">
+          <mat-icon>person</mat-icon>
         </div>
-        <div class="content item">
-          <div
-            class="chips-container"
-            cdkDropList
-            [cdkDropListData]="chipArray"
-            (cdkDropListDropped)="onDrop($event)"
-            >
-            <div
-              class="chips"
-              *ngFor="let chip of chipArray; let i = index"
-              cdkDrag
-              [cdkDragData]="chip"
-            >
-              <div class="cardchip" (click)="deleteChip(chip.id)">
-                <p class="chipname">{{ chip.title || 'Carregando…' }}</p>
-                <p class="creator" *ngIf="chip.creator">{{ chip.creator }}</p>
-                <div class="order"><p>{{ chip.order }}</p></div>
-              </div>
+        <div>
+          <span>Ouvintes</span>
+          <strong>{{ connectedUsersCount }}</strong>
+        </div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-card__icon metric-card__icon--blue">
+          <mat-icon>queue_music</mat-icon>
+        </div>
+        <div>
+          <span>Radios</span>
+          <strong>{{ chipArray.length }}</strong>
+        </div>
+      </article>
+
+      <article class="metric-card">
+        <div class="metric-card__icon metric-card__icon--violet">
+          <mat-icon>subscriptions</mat-icon>
+        </div>
+        <div>
+          <span>Youtubers</span>
+          <strong>{{ youtuberArray.length }}</strong>
+        </div>
+      </article>
+
+      <article class="metric-card" [class.metric-card--danger]="isQuotaExhausted()">
+        <div class="metric-card__icon metric-card__icon--amber">
+          <mat-icon>{{ isQuotaExhausted() ? 'warning' : 'data_usage' }}</mat-icon>
+        </div>
+        <div>
+          <span>Quota</span>
+          <strong>{{ quotaLabel }}</strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="workspace">
+      <aside class="tools-column">
+        <section class="tool-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Radio</span>
+              <h2>Adicionar video</h2>
             </div>
+            <mat-icon>add_circle</mat-icon>
           </div>
 
+          <form class="control-form" (ngSubmit)="chipCreateForm()" [formGroup]="chipCreate">
+            <label for="chipname">URL ou ID do video</label>
+            <div class="field-row">
+              <input type="text" id="chipname" placeholder="youtube.com/watch?v=..." formControlName="chipname" required>
+              <button class="button button--primary" type="submit" [disabled]="isAddingChip">
+                <mat-icon>{{ isAddingChip ? 'hourglass_empty' : 'add' }}</mat-icon>
+                <span>Adicionar</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="tool-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Youtubers</span>
+              <h2>Canais monitorados</h2>
+            </div>
+            <mat-icon>live_tv</mat-icon>
+          </div>
+
+          <form class="control-form" (ngSubmit)="youtuberCreateForm()" [formGroup]="youtuberCreate">
+            <label for="youtuber">Canal</label>
+            <div class="field-row">
+              <input type="text" id="youtuber" placeholder="@canal ou link" formControlName="youtuber" required>
+              <button class="button button--primary" type="submit" [disabled]="isAddingYoutuber">
+                <mat-icon>{{ isAddingYoutuber ? 'hourglass_empty' : 'person_add' }}</mat-icon>
+                <span>Salvar</span>
+              </button>
+            </div>
+          </form>
+
+          <button
+            class="button button--success button--full"
+            type="button"
+            (click)="syncCurrentLives()"
+            [disabled]="isSyncingLives || youtuberArray.length === 0"
+          >
+            <mat-icon>{{ isSyncingLives ? 'hourglass_empty' : 'radio' }}</mat-icon>
+            <span>{{ isSyncingLives ? 'Buscando' : 'Adicionar lives' }}</span>
+          </button>
+
+          <div class="channel-list" *ngIf="youtuberArray.length; else emptyYoutubers">
+            <article class="channel-row" *ngFor="let youtuber of youtuberArray; trackBy: trackByYoutuberId">
+              <img *ngIf="youtuber.thumbnailUrl" [src]="youtuber.thumbnailUrl || ''" [alt]="youtuber.title">
+              <span class="avatar-fallback" *ngIf="!youtuber.thumbnailUrl">
+                <mat-icon>account_circle</mat-icon>
+              </span>
+
+              <div class="channel-row__content">
+                <strong>{{ youtuber.title }}</strong>
+                <span>{{ youtuber.handle || youtuber.channelId }}</span>
+              </div>
+
+              <button class="row-action row-action--danger" type="button" (click)="deleteYoutuber(youtuber.id)" matTooltip="Remover">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </article>
+          </div>
+
+          <ng-template #emptyYoutubers>
+            <div class="empty-state empty-state--compact">
+              <mat-icon>subscriptions</mat-icon>
+              <span>Nenhum canal cadastrado</span>
+            </div>
+          </ng-template>
+        </section>
+      </aside>
+
+      <section class="list-panel">
+        <div class="list-panel__header">
+          <div>
+            <span>Playlist</span>
+            <h2>Radios cadastradas</h2>
+          </div>
+          <div class="list-panel__actions">
+            <button
+              class="button button--danger button--compact"
+              type="button"
+              (click)="cleanNonWorkingLives()"
+              [disabled]="isCleaningLives || chipArray.length === 0"
+            >
+              <mat-icon>{{ isCleaningLives ? 'hourglass_empty' : 'delete_sweep' }}</mat-icon>
+              <span>{{ isCleaningLives ? 'Verificando' : 'Limpar inativas' }}</span>
+            </button>
+            <span class="count-pill">{{ chipArray.length }}</span>
+          </div>
         </div>
-    </main>
-</body>
+
+        <div
+          class="radio-list"
+          *ngIf="chipArray.length; else emptyRadios"
+          cdkDropList
+          [cdkDropListData]="chipArray"
+          (cdkDropListDropped)="onDrop($event)"
+        >
+          <article class="radio-row" *ngFor="let chip of chipArray; trackBy: trackByChipId" cdkDrag [cdkDragData]="chip">
+            <button class="drag-handle" type="button" cdkDragHandle matTooltip="Mover">
+              <mat-icon>drag_indicator</mat-icon>
+            </button>
+
+            <span class="order-badge">{{ chip.order }}</span>
+
+            <div class="radio-row__content">
+              <strong>{{ chip.title || 'Carregando...' }}</strong>
+              <span>{{ chip.creator || 'YouTube' }}</span>
+              <code>{{ chip.chipname }}</code>
+            </div>
+
+            <button class="row-action row-action--danger" type="button" (click)="deleteChip(chip.id)" matTooltip="Remover">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </article>
+        </div>
+
+        <ng-template #emptyRadios>
+          <div class="empty-state">
+            <mat-icon>queue_music</mat-icon>
+            <span>Nenhuma radio cadastrada</span>
+          </div>
+        </ng-template>
+      </section>
+    </section>
+  </main>
+</section>
