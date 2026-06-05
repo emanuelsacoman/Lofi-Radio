@@ -224,12 +224,19 @@
             <div class="floating-emojis">
                 <div *ngFor="let emoji of floatingEmojis" 
                      class="emoji" 
-                     [style.left]="emoji.x + '%'" 
-                     [style.animationDuration]="emoji.animationDuration + 's'"
-                     [style.animationDelay]="emoji.animationDelay + 's'"
-                     [style.transform]="'scale(' + emoji.scale + ')'"
-                     [style.transformOrigin]="'center'">
-                  {{ emoji.emoji }}
+                     [style.left]="emoji.x + 'vw'"
+                     [ngStyle]="{
+                       '--drift': emoji.drift + 'vw',
+                       '--duration': emoji.duration + 's',
+                       '--delay': emoji.delay + 's',
+                       '--scale': emoji.scale,
+                       '--spin': emoji.spin + 'deg',
+                       '--glow': emoji.glow,
+                       '--trail-opacity': emoji.trailOpacity
+                     }">
+                  <span class="emoji-trail emoji-trail--far">{{ emoji.emoji }}</span>
+                  <span class="emoji-trail emoji-trail--near">{{ emoji.emoji }}</span>
+                  <span class="emoji-symbol">{{ emoji.emoji }}</span>
                 </div>
               </div>       
               

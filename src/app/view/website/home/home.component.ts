@@ -14,6 +14,18 @@ type Palette = {
   [key: string]: { [variable: string]: string };
 };
 
+type FloatingEmoji = {
+  emoji: string;
+  x: number;
+  drift: number;
+  duration: number;
+  delay: number;
+  scale: number;
+  spin: number;
+  glow: number;
+  trailOpacity: number;
+};
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -321,34 +333,42 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }  
   
-  floatingEmojis: { emoji: string, x: number, animationDuration: number, animationDelay: number, scale: number }[] = [];
+  floatingEmojis: FloatingEmoji[] = [];
   
   emoji(): void {
     this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
       if (emojis.length > 0) {
         const emojiData = emojis[0];
-        const randomX = Math.random() * 100; 
-        const randomDuration = Math.random() * (5 - 2) + 2; 
-        const randomDelay = Math.random() * 2; 
-        const randomScale = Math.random() * (1.25 - 0.75) + 0.75;
+        const drift = this.randomBetween(-18, 18);
+        const spin = Math.abs(drift) < 4 ? 0 : drift * this.randomBetween(2.5, 5);
         
-        this.floatingEmojis.push({ 
+        const floatingEmoji: FloatingEmoji = {
           emoji: emojiData.emoji, 
-          x: randomX,
-          animationDuration: randomDuration,
-          animationDelay: randomDelay,
-          scale: randomScale
-        });
+          x: this.randomBetween(12, 88),
+          drift,
+          duration: this.randomBetween(3.8, 6.2),
+          delay: this.randomBetween(0, 0.12),
+          scale: this.randomBetween(0.86, 1.16),
+          spin,
+          glow: this.randomBetween(0.15, 0.65),
+          trailOpacity: this.randomBetween(0.12, 0.36)
+        };
+
+        this.floatingEmojis.push(floatingEmoji);
 
         setTimeout(() => {
-          this.floatingEmojis.shift();
-        }, 5000);
+          this.floatingEmojis = this.floatingEmojis.filter(emoji => emoji !== floatingEmoji);
+        }, (floatingEmoji.duration + floatingEmoji.delay) * 1000 + 100);
       }
     });
   }
 
   addEmoji(emoji: string): void {
     this.emojiService.sendEmoji(emoji);
+  }
+
+  randomBetween(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
   }
 
   fetchConnectedUsersCount() {

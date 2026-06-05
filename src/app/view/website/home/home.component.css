@@ -587,35 +587,119 @@ body {
 
 .floating-emojis {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
+  z-index: 3;
 }
 
 .emoji {
   position: absolute;
-  bottom: -50px;
-  animation: float ease-in-out forwards;
-  font-size: clamp(1.3rem, 5vw, 2rem);
-  filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
+  bottom: -4rem;
+  width: 1px;
+  height: 1px;
+  animation: emoji-rise var(--duration) ease-out forwards;
+  animation-delay: var(--delay);
+  opacity: 0;
   color: var(--clr-primary);
+  filter:
+    drop-shadow(0 0 calc(4px + (14px * var(--glow))) color-mix(in srgb, var(--clr-accent) 55%, transparent))
+    drop-shadow(0 0 calc(2px + (8px * var(--glow))) color-mix(in srgb, var(--clr-primary) 32%, transparent));
+  will-change: transform, opacity;
+}
+
+.emoji-symbol,
+.emoji-trail {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: clamp(1.3rem, 5vw, 2rem);
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+.emoji-symbol {
+  animation: emoji-face var(--duration) linear forwards;
+  animation-delay: var(--delay);
+  text-shadow:
+    0 0 calc(7px + (9px * var(--glow))) color-mix(in srgb, var(--clr-accent) 42%, transparent),
+    0 0 calc(2px + (7px * var(--glow))) color-mix(in srgb, var(--clr-primary) 22%, transparent);
+}
+
+.emoji-trail {
+  color: color-mix(in srgb, var(--clr-primary) 62%, transparent);
+  filter: blur(1px);
+  opacity: 0;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--clr-accent) 28%, transparent);
+}
+
+.emoji-trail--near {
+  animation: emoji-trail-near var(--duration) ease-out forwards;
+  animation-delay: var(--delay);
+}
+
+.emoji-trail--far {
+  animation: emoji-trail-far var(--duration) ease-out forwards;
+  animation-delay: var(--delay);
 }
 
 span {
   user-select: none;
 }
 
-@keyframes float {
+@keyframes emoji-rise {
   0% {
-    transform: translateY(0);
-    opacity: 1;
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(var(--scale));
+  }
+  10% {
+    opacity: 0.92;
+  }
+  86% {
+    opacity: 0.82;
   }
   100% {
-    transform: translateY(-550%);
     opacity: 0;
+    transform: translate3d(var(--drift), -50vh, 0) scale(calc(var(--scale) * 0.92));
+  }
+}
+
+@keyframes emoji-face {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--spin));
+  }
+}
+
+@keyframes emoji-trail-near {
+  0%, 8% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
+  }
+  18%, 66% {
+    opacity: var(--trail-opacity);
+    transform: translate(calc(-50% - (var(--drift) * 0.05)), calc(-50% + 14px)) scale(0.88) rotate(calc(var(--spin) * 0.35));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - (var(--drift) * 0.07)), calc(-50% + 20px)) scale(0.76) rotate(calc(var(--spin) * 0.58));
+  }
+}
+
+@keyframes emoji-trail-far {
+  0%, 16% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9) rotate(0deg);
+  }
+  32%, 58% {
+    opacity: calc(var(--trail-opacity) * 0.55);
+    transform: translate(calc(-50% - (var(--drift) * 0.09)), calc(-50% + 27px)) scale(0.72) rotate(calc(var(--spin) * 0.22));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - (var(--drift) * 0.12)), calc(-50% + 36px)) scale(0.58) rotate(calc(var(--spin) * 0.42));
   }
 }
 
@@ -790,7 +874,6 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
       .listicon,
       .colors,
       .theme-buttons .colors,
-      .floating-emojis,
       .index,
       .aside,
       .adm {
@@ -824,7 +907,6 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
       .listicon,
       .colors,
       .theme-buttons .colors,
-      .floating-emojis,
       .index,
       .footer mat-icon,
       .right img {
@@ -863,7 +945,6 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
       .listicon,
       .colors,
       .theme-buttons .colors,
-      .floating-emojis,
       .index,
       .footer mat-icon,
       .right img {
