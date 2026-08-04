@@ -210,7 +210,7 @@ body {
         color: var(--clr-text);
         padding: 0.6rem 0.9rem;
         border-radius: 5px;
-        width: 50px;
+        width: 60px;
         outline: none;
         transition: all 0.2s ease;
         white-space: nowrap;
@@ -220,7 +220,7 @@ body {
       }
       
       :is(input:focus) {
-        width: 100px;
+        width: 85px;
       }
 
     }
