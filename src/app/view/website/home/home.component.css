@@ -206,7 +206,7 @@ body {
 
       input {
         border: 1px solid var(--clr-accent);
-        background: rgba(0, 0, 0, 0.35);
+        background: var(--clr-background);
         color: var(--clr-text);
         padding: 0.6rem 0.9rem;
         border-radius: 5px;
