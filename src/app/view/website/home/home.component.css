@@ -204,7 +204,7 @@ body {
       justify-content: center;
       z-index: 2;
 
-      input {
+      :is(input) {
         border: 1px solid var(--clr-accent);
         background: var(--clr-background);
         color: var(--clr-text);
@@ -219,7 +219,7 @@ body {
 
       }
       
-      input:focus {
+      :is(input:focus) {
         width: 100px;
       }
 
