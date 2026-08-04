@@ -246,10 +246,11 @@
                      type="text"
                      [(ngModel)]="imageQuery"
                      (keydown.enter)="applyImageQuery()"
-                     placeholder="Search for an image"
+                     placeholder="Search"
                      aria-label="Search for an image"
                      matTooltip="Search for an image"
                      matTooltipShowDelay="500"
+                     maxlength="30"
                    />
                </div>
                 <mat-icon class="icon"  [ngClass]="{'animate': isAnimating}" (click)="triggerAnimation()" matTooltip="Change Wallpaper" matTooltipPosition="above" matTooltipShowDelay="500">
