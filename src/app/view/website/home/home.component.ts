@@ -36,6 +36,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   description = 'Lofi Radio – 24/7 Chill Beats to Relax, Study & Work. Stream Lofi, Vaporwave, Chillwave, ambience, rain sounds and more to boost your focus and unwind.';
 
   randomImage: string = './assets/image/loadinglofi.gif';
+  imageQuery: string = '';
 
   player: any;
   isPlaying: boolean = false;
@@ -294,7 +295,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.setVolume(50); 
     }
     
-    this.loadRandomImage();
+    this.loadRandomImage(this.imageQuery);
     this.fetchConnectedUsersCount();
     this.emoji();
     
@@ -379,7 +380,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
   triggerAnimation() {
     this.isAnimating = true;
-    this.loadRandomImage();
+    this.loadRandomImage(this.imageQuery);
 
     setTimeout(() => {
       this.isAnimating = false;
@@ -404,15 +405,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.metaService.updateTag({ name: 'description', content: description });
   }
 
-  async loadRandomImage() {
-    const image = await this.pexelsService.fetchRandomImage();
+  async loadRandomImage(query?: string) {
+    const image = await this.pexelsService.fetchRandomImage(query);
     if (image) {
       this.randomImage = image;
     }
   }
 
+  applyImageQuery(): void {
+    void this.loadRandomImage(this.imageQuery);
+    this.triggerAnimation();
+  }
+
   changeBackground() {
-    this.loadRandomImage();
+    this.loadRandomImage(this.imageQuery);
     this.loadYouTubePlayer();
   }
 

@@ -74,8 +74,8 @@
           
         <div class="musicArea">
             <div class="top">
-                <div class="card">
-                    <img [src]="randomImage" alt="Random Card">
+               <div class="card">
+                   <img [src]="randomImage" alt="Random Card">
                     <img [src]="randomImage" alt="Imagem de fundo" fetchpriority="high" class="background" />
                     <img [src]="randomImage" alt="Imagem de fundo" fetchpriority="high" class="background2" />
 
@@ -241,6 +241,17 @@
               </div>       
               
             <div class="right">
+              <div class="image-query">
+                   <input
+                     type="text"
+                     [(ngModel)]="imageQuery"
+                     (keydown.enter)="applyImageQuery()"
+                     placeholder="Search for an image"
+                     aria-label="Search for an image"
+                     matTooltip="Search for an image"
+                     matTooltipShowDelay="500"
+                   />
+               </div>
                 <mat-icon class="icon"  [ngClass]="{'animate': isAnimating}" (click)="triggerAnimation()" matTooltip="Change Wallpaper" matTooltipPosition="above" matTooltipShowDelay="500">
                     autorenew
                 </mat-icon>

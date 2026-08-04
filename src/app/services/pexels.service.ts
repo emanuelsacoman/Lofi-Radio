@@ -9,27 +9,27 @@ export class PexelsService {
 
   constructor() {}
 
-  async fetchRandomImage(): Promise<string | null> {
+  async fetchRandomImage(query?: string): Promise<string | null> {
     const queries = [
-      'abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple', 
-      'vintage', 'pixel art', 'flowers', 'garden', 'ambient', 'sky', 'rain', 'clouds', 'fantasy', 
-      'retro', 'minimalist', 'cartoon', 'anime', 'forest', 'ocean', 'sea', 'waterfall', 'sunset', 
-      'sunrise', 'neon', 'urban', 'rural', 'village', 'autumn', 'winter', 'spring', 'summer', 
-      'tropical', 'island', 'rain', 'fire', 'storm', 'horizon', 'wildlife', 'birds', 'animals', 
-      'magic', 'spiritual', 'ethereal', 'path', 'bridge', 'skyline', 'city lights', 'rainforest', 
-      'meadow', 'field', 'flowers', 'roses', 'daisies', 'butterflies', 'moonlight', 'night', 
-      'day', 'dawn', 'dusk', 'street', 'marketplace', 'festival', 'cloudy', 'fog', 'mist', 
-      'rainbow', 'reflection', 'rivers', 'streams', 'waves', 'peaceful', 'serene', 'tranquil', 
-      'shadow', 'shade', 'texture', 'stone', 'architecture', 'modern', 'classic'
-    ];    
-    
-    const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+      'abstract', 'aesthetic', 'nature', 'cityscape', 'landscape', 'space', 'music', 'art', 'purple',
+      'vintage', 'pixel art', 'flowers', 'garden', 'ambient', 'sky', 'rain', 'clouds', 'fantasy',
+      'retro', 'minimalist', 'cartoon', 'anime', 'forest', 'ocean', 'sea', 'waterfall', 'sunset',
+      'sunrise', 'neon', 'urban', 'rural', 'village', 'autumn', 'winter', 'spring', 'summer',
+      'tropical', 'island', 'rain', 'fire', 'storm', 'horizon', 'wildlife', 'birds', 'animals',
+      'magic', 'spiritual', 'ethereal', 'path', 'bridge', 'skyline', 'city lights', 'rainforest',
+      'meadow', 'field', 'flowers', 'roses', 'daisies', 'butterflies', 'moonlight', 'night',
+      'day', 'dawn', 'dusk', 'street', 'marketplace', 'festival', 'cloudy', 'fog', 'mist',
+      'rainbow', 'reflection', 'rivers', 'streams', 'waves', 'peaceful', 'serene', 'tranquil',
+      'shadow', 'shade', 'texture', 'stone', 'architecture', 'modern', 'classic',
+    ];
+
+    const searchQuery = query?.trim() || queries[Math.floor(Math.random() * queries.length)];
     const maxPages = 50;
     const randomPage = Math.floor(Math.random() * maxPages) + 1;
 
     try {
       const response = await fetch(
-        `https://api.pexels.com/v1/search?query=${randomQuery}&orientation=landscape&per_page=1&page=${randomPage}`,
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&orientation=landscape&per_page=1&page=${randomPage}`,
         { headers: { Authorization: this.API_KEY } }
       );
 
