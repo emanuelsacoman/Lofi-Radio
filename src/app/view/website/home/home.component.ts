@@ -33,8 +33,8 @@ type FloatingEmoji = {
   styleUrls: ['./home.component.css'],
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  title = 'Lofi Radio - 24/7 Chill Beats to Relax, Study & Work';
-  description = 'Lofi Radio – 24/7 Chill Beats to Relax, Study & Work. Stream Lofi, Vaporwave, Chillwave, ambience, rain sounds and more to boost your focus and unwind.';
+  title = 'Lofi Radio | Your 24/7 Soundtrack for Focus';
+  description = 'Drift into handpicked lofi, chillwave and ambient stations for deep focus, quiet study and late-night unwinding.';
 
   randomImage: string = './assets/image/loadinglofi.gif';
   imageQuery: string = '';

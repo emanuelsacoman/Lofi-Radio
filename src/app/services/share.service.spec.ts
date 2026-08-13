@@ -26,7 +26,7 @@ describe('ShareService', () => {
 
     expect(nativeShare).toHaveBeenCalledOnceWith({
       title: 'Lofi Radio',
-      text: 'Listen to lofi beats 24/7 while you relax, study, or work.',
+      text: 'Your 24/7 soundtrack for focus, quiet study, and late-night unwinding.',
       url: canonicalUrl
     });
     expect(clipboard.copy).not.toHaveBeenCalled();

@@ -18,7 +18,7 @@ export class ShareService {
     const siteUrl = this.getSiteUrl();
     const shareData: ShareData = {
       title: 'Lofi Radio',
-      text: 'Listen to lofi beats 24/7 while you relax, study, or work.',
+      text: 'Your 24/7 soundtrack for focus, quiet study, and late-night unwinding.',
       url: siteUrl
     };
     const navigator = this.document.defaultView?.navigator;
