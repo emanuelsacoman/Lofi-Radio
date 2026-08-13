@@ -34,43 +34,62 @@
                 </mat-expansion-panel>
             </mat-accordion> 
         </div>
-        <div class="adm">
-            <div>
-                <mat-icon
-                  class="listicon fullscreen" 
-                  matTooltip="Full Screen"
-                  matTooltipShowDelay="500"
-                  matTooltipPosition="below"
-                  (click)="toggleFullScreen()"
-                >
-                  fullscreen
-                </mat-icon>
-              </div>
-              <div>
-                <div class="listIcons">
-                  <mat-icon
-                    matTooltip="Radio List"
-                    matTooltipShowDelay="500"
-                    matTooltipPosition="below"
-                    class="listicon"
-                    (click)="toggleList()"
-                  >
-                    list
-                  </mat-icon>
-              
-                  <mat-icon
-                    *ngIf="hasNewItems"
-                    class="newWarning"
-                    aria-label="New"
-                  >
-                    new_releases
-                  </mat-icon>
-                </div>
-              </div>              
-            <div *ngIf="getLogin()" matTooltip="Adm" matTooltipShowDelay="500" matTooltipPosition="below">
-                <mat-icon class="admicon" (click)="goAdm()" aria-label="Adm">assignment</mat-icon>
-            </div>
-        </div>
+        <nav class="adm" aria-label="Site controls">
+            <button
+              class="utility-button"
+              type="button"
+              mat-icon-button
+              (click)="toggleFullScreen()"
+              [matTooltip]="isFullScreen ? 'Exit Full Screen' : 'Full Screen'"
+              matTooltipShowDelay="500"
+              matTooltipPosition="below"
+              [attr.aria-label]="isFullScreen ? 'Exit full screen' : 'Enter full screen'"
+            >
+              <mat-icon aria-hidden="true">
+                {{ isFullScreen ? 'fullscreen_exit' : 'fullscreen' }}
+              </mat-icon>
+            </button>
+            <button
+              class="utility-button list-button"
+              type="button"
+              mat-icon-button
+              (click)="toggleList()"
+              matTooltip="Radio List"
+              matTooltipShowDelay="500"
+              matTooltipPosition="below"
+              [attr.aria-label]="hasNewItems ? 'Radio list, new stations available' : 'Radio list'"
+            >
+              <mat-icon aria-hidden="true">list</mat-icon>
+              <mat-icon *ngIf="hasNewItems" class="newWarning" aria-hidden="true">
+                new_releases
+              </mat-icon>
+            </button>
+            <button
+              class="utility-button share-button"
+              type="button"
+              mat-icon-button
+              (click)="shareSite()"
+              matTooltip="Share Lofi Radio"
+              matTooltipShowDelay="500"
+              matTooltipPosition="below"
+              aria-label="Share Lofi Radio"
+            >
+              <mat-icon aria-hidden="true">share</mat-icon>
+            </button>
+            <button
+              *ngIf="getLogin()"
+              class="utility-button"
+              type="button"
+              mat-icon-button
+              (click)="goAdm()"
+              matTooltip="Administration"
+              matTooltipShowDelay="500"
+              matTooltipPosition="below"
+              aria-label="Open administration"
+            >
+              <mat-icon aria-hidden="true">assignment</mat-icon>
+            </button>
+        </nav>
           
         <div class="musicArea">
             <div class="top">

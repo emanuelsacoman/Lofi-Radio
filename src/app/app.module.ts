@@ -25,6 +25,8 @@ import { AdmComponent } from './view/adm/adm/adm.component';
 import { HttpClientModule } from '@angular/common/http';
 import { MatListModule } from '@angular/material/list';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { ClipboardModule } from '@angular/cdk/clipboard';
+import { MatButtonModule } from '@angular/material/button';
 import { VhsComponent } from './view/effect/vhs/vhs.component';
 
 const client = createClient(environment.apikey);
@@ -57,7 +59,9 @@ const client = createClient(environment.apikey);
     provideAuth(() => getAuth()),
     HttpClientModule,
     MatListModule,
-    DragDropModule
+    DragDropModule,
+    ClipboardModule,
+    MatButtonModule
   ],
   providers: [Title,
     { provide: FIREBASE_OPTIONS, useValue: environment.firebase }],

@@ -67,38 +67,45 @@ body {
       align-items: center;
       justify-content: center;
       gap: var(--gap-normal);
+      z-index: 3;
 
-      .listIcons{
-        position: relative;
-
-        .newWarning{
-          position: absolute;
-          top: -3px;
-          left: -5px;
-          background-color: transparent;
-          color: var(--clr-accent);  
-          pointer-events: none;
-          transform: rotate(-30deg);
-          animation: pulses 2s infinite ease-in-out;
-          font-size: var(--sz-icons-footer);
-        }
+      .newWarning {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        width: 16px;
+        height: 16px;
+        background-color: transparent;
+        color: var(--clr-accent);
+        pointer-events: none;
+        transform: rotate(-30deg);
+        animation: pulses 2s infinite ease-in-out;
+        font-size: 16px;
+        line-height: 16px;
       }
 
-      .admicon,
-      .listicon {
+      .utility-button {
+        position: relative;
         transition: all 0.2s ease;
         cursor: pointer;
         font-size: var(--sz-icons-player);
-        width: 100%;
-        height: 100%;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        padding: 0;
+        color: var(--clr-text);
       }
 
-      .admicon:hover,
-      .listicon:hover {
-        transition: all 0.2s ease;
-        filter: brightness(1.2);
-        transform: scale(1.1);
-        filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
+      .utility-button mat-icon {
+        width: var(--sz-icons-player);
+        height: var(--sz-icons-player);
+        font-size: var(--sz-icons-player);
+        line-height: var(--sz-icons-player);
+      }
+
+      .utility-button:focus-visible {
+        outline: 2px solid var(--clr-text);
+        outline-offset: 2px;
       }
     }
 
@@ -885,6 +892,13 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
   }
 }
 
+@media (hover: hover) and (pointer: fine) {
+  body :is(main) .adm .utility-button:hover {
+    filter: brightness(1.2) drop-shadow(0 0 0.75rem var(--clr-accent));
+    transform: scale(1.1);
+  }
+}
+
 @media (min-width: 1025px) {
   body {
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -897,8 +911,7 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
 @media (max-width: 1024px) {
   body {
     :is(main) {
-      .admicon,
-      .listicon,
+      .utility-button,
       .colors,
       .theme-buttons .colors,
       .index,
@@ -930,8 +943,7 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
         transition: none !important;
       }
 
-      .admicon,
-      .listicon,
+      .utility-button,
       .colors,
       .theme-buttons .colors,
       .index,
@@ -957,6 +969,10 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
 @media (max-width: 600px) {
   body {
     :is(main) {
+      .adm {
+        gap: 0.25rem;
+      }
+
       .musicArea {
         gap: calc(var(--gap-normal) * 0.3) !important;
 
@@ -968,8 +984,7 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
 
       .musicArea .card .background,
       .musicArea .card .background2,
-      .admicon,
-      .listicon,
+      .utility-button,
       .colors,
       .theme-buttons .colors,
       .index,
@@ -978,6 +993,16 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
         animation: none !important;
         filter: none !important;
         transition: none !important;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    :is(main) {
+      .index {
+        top: 48px;
       }
     }
   }

@@ -6,6 +6,7 @@ import { EmojiService } from 'src/app/services/emoji.service';
 import { FirebaseService } from 'src/app/services/firebase.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { PexelsService } from 'src/app/services/pexels.service';
+import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
 import { YoutubeService } from 'src/app/services/youtube.service';
 import { environment } from 'src/environments/environment';
@@ -153,7 +154,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private auth: AuthService,
     private router: Router,
     private firebase: FirebaseService,
-    private youtubeService: YoutubeService
+    private youtubeService: YoutubeService,
+    private shareService: ShareService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -190,6 +192,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleList(): void {
     this.showList = !this.showList;
+  }
+
+  shareSite(): void {
+    void this.shareService.shareSite();
   }
 
   addChipnamesToVideoIds(): void {
