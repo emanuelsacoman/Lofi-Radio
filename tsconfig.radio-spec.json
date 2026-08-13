@@ -1,15 +1,15 @@
-/* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./out-tsc/spec",
+    "outDir": "./out-tsc/radio-spec",
     "types": [
       "jasmine",
       "youtube"
     ]
   },
   "include": [
-    "src/**/*.spec.ts",
+    "src/app/view/website/home/home.component.spec.ts",
+    "src/app/services/youtube.service.spec.ts",
     "src/**/*.d.ts"
   ]
 }

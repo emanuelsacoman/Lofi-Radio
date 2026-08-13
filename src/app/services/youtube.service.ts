@@ -88,27 +88,33 @@ export class YoutubeService {
   }
 
   getVideoDetailsBatch(videoIds: string[]): Observable<YouTubeVideoDetails[]> {
-    const uncached = videoIds.filter(id => !this.detailsCache.has(id));
-    if (uncached.length === 0) {
-      return of(videoIds.map(id => this.detailsCache.get(id)!));
+    const uniqueVideoIds = Array.from(new Set(videoIds.filter(Boolean)));
+    const uncached = uniqueVideoIds.filter(id => !this.detailsCache.has(id));
+
+    if (!uncached.length) {
+      return of(this.readCachedVideoDetails(videoIds));
     }
 
-    const url = `${this.apiUrl}?id=${uncached.join(',')}&key=${this.apiKey}&part=snippet`;
-    return this.http.get<any>(url).pipe(
-      map(res => {
-        for (const item of res.items || []) {
-          const id = item.id as string;
-          const d = { title: item.snippet.title, creator: item.snippet.channelTitle };
-          this.cacheVideoDetails(id, d);
-        }
-        return videoIds.map(id =>
-          this.detailsCache.get(id) || { title: 'Temporarily unavailable', creator: 'Unknown' }
-        );
-      }),
-      catchError(err => {
-        this.rememberQuotaStatus(err);
-        return of(videoIds.map(() => ({ title: 'Temporarily unavailable', creator: 'Unknown' })));
-      })
+    const requests = this.chunk(uncached, 50).map(chunk => {
+      const url = `${this.apiUrl}?id=${chunk.join(',')}&key=${this.apiKey}&part=snippet`;
+
+      return this.http.get<any>(url).pipe(
+        tap(res => {
+          for (const item of res.items || []) {
+            const id = item.id as string;
+            const details = { title: item.snippet.title, creator: item.snippet.channelTitle };
+            this.cacheVideoDetails(id, details);
+          }
+        }),
+        catchError(err => {
+          this.rememberQuotaStatus(err);
+          return of(null);
+        })
+      );
+    });
+
+    return forkJoin(requests).pipe(
+      map(() => this.readCachedVideoDetails(videoIds))
     );
   }
 
@@ -472,6 +478,12 @@ export class YoutubeService {
   private cacheVideoDetails(videoId: string, details: YouTubeVideoDetails): void {
     this.detailsCache.set(videoId, details);
     localStorage.setItem(`yt-details-${videoId}`, JSON.stringify(details));
+  }
+
+  private readCachedVideoDetails(videoIds: string[]): YouTubeVideoDetails[] {
+    return videoIds.map(id =>
+      this.detailsCache.get(id) || { title: 'Temporarily unavailable', creator: 'Unknown' }
+    );
   }
 
   private rememberQuotaStatus(err: any): void {

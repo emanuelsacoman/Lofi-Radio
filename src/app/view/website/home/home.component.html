@@ -3,7 +3,7 @@
   
     <main class="fadeIn">
         <p class="index">
-            {{ currentIndex + 1 }} / {{ totalVideos }}
+            {{ totalVideos ? currentIndex + 1 : 0 }} / {{ totalVideos }}
         </p>
           
         <div class="aside">
@@ -58,6 +58,8 @@
               matTooltipShowDelay="500"
               matTooltipPosition="below"
               [attr.aria-label]="hasNewItems ? 'Radio list, new stations available' : 'Radio list'"
+              [attr.aria-expanded]="showList"
+              aria-controls="radio-list-panel"
             >
               <mat-icon aria-hidden="true">list</mat-icon>
               <mat-icon *ngIf="hasNewItems" class="newWarning" aria-hidden="true">
@@ -104,40 +106,85 @@
                   </div>
                 <div class="title fadeIn">
                     <h2>
-                        <ng-container *ngIf="currentVideoTitle; else loading">
+                        <ng-container *ngIf="currentVideoTitle; else stationTitleLoading">
                           {{ currentVideoTitle }}
                         </ng-container>
-                        <ng-template #loading>
-                          <mat-spinner class="spinner" aria-label="Loading data" diameter="24"></mat-spinner>
+                        <ng-template #stationTitleLoading>
+                          <span class="title-skeleton" aria-hidden="true"></span>
+                          <span class="sr-only">Loading station details</span>
                         </ng-template>
-                    </h2>                      
+                    </h2>
                 </div>
+                <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                  {{ radioStatusMessage }}
+                </span>
             </div>
             <div class="down">
-                <div class="button shuffle" (click)="shuffle()" matTooltip="Shuffle Radio" matTooltipShowDelay="500" matTooltipPosition="below">
-                    <mat-icon>shuffle</mat-icon>
-                </div>
-                <div class="button back" (click)="previousVideo()" matTooltip="Previous Radio" matTooltipShowDelay="500" matTooltipPosition="below">
-                    <mat-icon>skip_previous</mat-icon>
-                </div>
-                <div class="button pause" (click)="togglePlayPause()" matTooltip="Play/Pause" matTooltipShowDelay="500" matTooltipPosition="below">
-                    <mat-icon>{{ isPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
-                </div>                  
-                <div class="button next" (click)="nextVideo()" matTooltip="Next Radio" matTooltipShowDelay="500" matTooltipPosition="below">
-                    <mat-icon>skip_next</mat-icon>
-                </div>
+                <button class="button shuffle" type="button" (click)="shuffle()" [disabled]="!canNavigateStations" matTooltip="Shuffle Radio" matTooltipShowDelay="500" matTooltipPosition="below" aria-label="Shuffle stations">
+                    <mat-icon aria-hidden="true">shuffle</mat-icon>
+                </button>
+                <button
+                  class="button back"
+                  type="button"
+                  (click)="previousVideo()"
+                  [disabled]="!canNavigateStations"
+                  [class.is-auto-advancing]="recoveryDirection === -1"
+                  [style.--auto-advance-duration]="autoAdvanceDelayMs + 'ms'"
+                  matTooltip="Previous Radio"
+                  matTooltipShowDelay="500"
+                  matTooltipPosition="below"
+                  aria-label="Previous station"
+                >
+                    <mat-icon aria-hidden="true">skip_previous</mat-icon>
+                </button>
+                <button
+                  class="button pause"
+                  type="button"
+                  (click)="togglePlayPause()"
+                  [class.is-loading]="showPlaySpinner"
+                  [class.is-unavailable]="isPlayerControlDisabled && !showPlaySpinner"
+                  [attr.aria-label]="playPauseLabel"
+                  [attr.aria-busy]="showPlaySpinner"
+                  [attr.aria-disabled]="isPlayerControlDisabled"
+                >
+                    <span
+                      *ngIf="showPlaySpinner; else playerControlIconTemplate"
+                      class="player-button-spinner"
+                      aria-hidden="true"
+                    ></span>
+                    <ng-template #playerControlIconTemplate>
+                      <mat-icon aria-hidden="true">{{ playerControlIcon }}</mat-icon>
+                    </ng-template>
+                </button>
+                <button
+                  class="button next"
+                  type="button"
+                  (click)="nextVideo()"
+                  [disabled]="!canNavigateStations"
+                  [class.is-auto-advancing]="recoveryDirection === 1"
+                  [style.--auto-advance-duration]="autoAdvanceDelayMs + 'ms'"
+                  matTooltip="Next Radio"
+                  matTooltipShowDelay="500"
+                  matTooltipPosition="below"
+                  aria-label="Next station"
+                >
+                    <mat-icon aria-hidden="true">skip_next</mat-icon>
+                </button>
                 
-                <div
+                <button
                     class="button heart"
+                    type="button"
                     matTooltip="Favorite Radio"
                     matTooltipShowDelay="500"
                     matTooltipPosition="below"
                     (click)="favorite(currentIndex, $event)"
+                    [disabled]="!canFavoriteCurrentStation"
+                    [attr.aria-label]="favorites[currentIndex] ? 'Remove station from favorites' : 'Add station to favorites'"
                     >
-                    <mat-icon>
+                    <mat-icon aria-hidden="true">
                         {{ favorites[currentIndex] ? 'favorite' : 'favorite_border' }}
                     </mat-icon>
-                </div>
+                </button>
 
             </div>
             <div class="volume">
@@ -153,38 +200,57 @@
                   [matTooltip]="'' + volume"
                   matTooltipShowDelay="500" 
                   matTooltipPosition="above"
-                  aria-label="Volume controll"
+                  aria-label="Volume control"
                 />
               </div>               
               
-              <div class="list" [class.show]="showList">
+              <div
+                id="radio-list-panel"
+                class="list"
+                [class.show]="showList"
+                [attr.aria-hidden]="!showList"
+                [attr.inert]="showList ? null : ''"
+              >
                 <mat-list class="video-list">
-                    <mat-list-item *ngFor="let title of videoTitles; let i = index"
-                    (mouseenter)="markAsSeen(i)">
+                    <mat-list-item *ngFor="let title of videoTitles; let i = index" (mouseenter)="markAsSeen(i)">
                     <!-- label NEW aparece só se não for primeira visita e newItems[i] true -->
                     <p *ngIf="!isFirstVisit && newItems[i]" class="new-label">NEW</p>
-                    <span class="clickable-title" (click)="selectVideo(i)">
-                      <div class="isPlaying">
-                          <mat-icon *ngIf="currentIndex === i" class="playing"></mat-icon>
-                      </div>
-                      <mat-icon class="favorite" (click)="favorite(i, $event)">
-                        {{ favorites[i] ? '♥' : '♡' }}
-                      </mat-icon>
-                        {{ i + 1 }}. {{ title }}
-                        </span>
+                    <div class="station-row">
+                      <button
+                        class="station-favorite"
+                        type="button"
+                        (click)="favorite(i, $event)"
+                        [attr.aria-pressed]="favorites[i]"
+                        [attr.aria-label]="favorites[i] ? 'Remove ' + title + ' from favorites' : 'Add ' + title + ' to favorites'"
+                      >{{ favorites[i] ? '♥' : '♡' }}</button>
+                      <button
+                        class="clickable-title"
+                        type="button"
+                        (click)="selectVideo(i)"
+                        (focus)="markAsSeen(i)"
+                        [attr.aria-current]="currentIndex === i ? 'true' : null"
+                      >
+                      <span class="station-title">{{ i + 1 }}. {{ title }}</span>
+                      </button>
+                    </div>
                     <div class="border"></div>
                 </mat-list-item>
                 </mat-list>
               </div>
         </div>
 
-        <youtube-player 
-            id="youtube-player" 
-            [ngStyle]="{'z-index': '-99', 'visibility': 'hidden', 'position': 'absolute', 'top': '-9999px'}"
-            [height]="250" 
-            [width]="500"
-            aria-label="YouTube Video Player">
-        </youtube-player>
+        <div *ngIf="showPlayer && playerMountContext as playerMount" class="youtube-player-host" aria-hidden="true" inert>
+          <youtube-player
+              [videoId]="playerMount.videoId"
+              [disableCookies]="true"
+              [playerVars]="playerVars"
+              [height]="250"
+              [width]="500"
+              (ready)="onPlayerReady($event, playerMount.attempt)"
+              (stateChange)="onPlayerStateChange($event, playerMount.attempt)"
+              (error)="onPlayerError($event, playerMount.attempt)">
+          </youtube-player>
+        </div>
 
         <div class="emoji-container">
             <div class="emojibutton" (click)="addEmoji('♥')">

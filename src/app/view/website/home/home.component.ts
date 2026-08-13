@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
@@ -8,8 +8,8 @@ import { Chip } from 'src/app/services/interfaces/chip';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
-import { YoutubeService } from 'src/app/services/youtube.service';
-import { environment } from 'src/environments/environment';
+import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
+import { Subscription } from 'rxjs';
 
 type Palette = {
   [key: string]: { [variable: string]: string };
@@ -27,6 +27,41 @@ type FloatingEmoji = {
   trailOpacity: number;
 };
 
+type RadioStatus =
+  | 'loading-stations'
+  | 'loading-player'
+  | 'ready'
+  | 'buffering'
+  | 'playing'
+  | 'paused'
+  | 'ended'
+  | 'recovering'
+  | 'exhausted'
+  | 'empty'
+  | 'error'
+  | 'offline';
+
+type RadioErrorScope = 'catalog' | 'player' | null;
+type NavigationDirection = -1 | 1;
+
+enum YouTubePlaybackState {
+  Unstarted = -1,
+  Ended = 0,
+  Playing = 1,
+  Paused = 2,
+  Buffering = 3,
+  Cued = 5
+}
+
+type YouTubePlayerWithMetadata = YT.Player & {
+  getVideoData?: () => {
+    author?: string;
+    title?: string;
+    video_id?: string;
+  };
+  getIframe?: () => HTMLIFrameElement;
+};
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -39,16 +74,31 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   randomImage: string = './assets/image/loadinglofi.gif';
   imageQuery: string = '';
 
-  player: any;
+  player: YouTubePlayerWithMetadata | null = null;
   isPlaying: boolean = false;
+  isPlayerReady: boolean = false;
+  showPlayer: boolean = true;
+  playerMountContext: { attempt: number; videoId: string } | null = null;
+  isOnline: boolean = typeof navigator === 'undefined' || navigator.onLine;
+  radioStatus: RadioStatus = this.isOnline ? 'loading-stations' : 'offline';
+  radioErrorMessage: string = '';
+  desiredPlayback: boolean = false;
+  recoveryDirection: NavigationDirection | null = null;
+
+  readonly autoAdvanceDelayMs = 1100;
+
+  readonly playerVars: YT.PlayerVars = {
+    modestbranding: 1,
+    playsinline: 1,
+    rel: 0
+  };
 
   connectedUsersCount: number = 0;
-
-  isFirstLoad: boolean = true;
 
   public chipArray: Chip[] = [];
   videoIds: string[] = [];
   videoTitles: string[] = [];
+  videoOwners: string[] = [];
   showList: boolean = false;
 
   public isFirstVisit: boolean = false; 
@@ -57,10 +107,33 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   currentIndex: number = 0;
   totalVideos: number = this.videoIds.length;
-  currentVideoId: string = this.videoIds[this.currentIndex];
+  currentVideoId: string = '';
   currentVideoTitle: string = '';
   currentVideoOwner: string = '';
   volume: number = 50;
+
+  private readonly playerTimeoutMs = 12000;
+  private readonly subscriptions = new Subscription();
+  private catalogSubscription?: Subscription;
+  private detailsSubscription?: Subscription;
+  private catalogWatchdog?: ReturnType<typeof setTimeout>;
+  private playerWatchdog?: ReturnType<typeof setTimeout>;
+  private playerResetTimer?: ReturnType<typeof setTimeout>;
+  private recoveryTimer?: ReturnType<typeof setTimeout>;
+  private metadataLoadVersion = 0;
+  private errorScope: RadioErrorScope = null;
+  private stationChangePending = false;
+  private isDestroyed = false;
+  private readonly retiredPlayers = new WeakSet<YT.Player>();
+  private readonly failedStationIds = new Set<string>();
+  private readonly maxAutomaticRecoveryAttempts = 5;
+  private readonly maxRecoveryDurationMs = 30000;
+  private activeStationAttempt = 0;
+  private handledFailureAttempt = -1;
+  private recoveryGeneration = 0;
+  private recoveryStartedAt: number | null = null;
+  private lastNavigationDirection: NavigationDirection = 1;
+  private refreshBackgroundOnRecoverySuccess = false;
 
   isAnimating = false;
   
@@ -79,7 +152,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     },
     blue: {
       '--clr-background': '#191831',
-      '--clr-primary': '#544cca',
+      '--clr-primary': '#6f68e8',
       '--clr-secondary': '#343670',
       '--clr-accent': '#605cb1',
       '--clr-accent-light': '#3d9970',
@@ -160,34 +233,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
 
-    this.firebase.obterTodosChip().subscribe((res) => {
-      this.chipArray = res.map((chip) => {
-        return {
-          id: chip.payload.doc.id,
-          ...(chip.payload.doc.data() as any),
-        } as Chip;
-      });
-    
-      this.addChipnamesToVideoIds();
-    
-      this.totalVideos = this.videoIds.length;
-    
-      const savedIndex = localStorage.getItem('currentIndex');
-      const savedVideoId = localStorage.getItem('currentVideoId');
-    
-      if (savedVideoId && this.videoIds.includes(savedVideoId)) {
-        this.currentIndex = this.videoIds.indexOf(savedVideoId);
-        this.currentVideoId = savedVideoId;
-      } else if (savedIndex) {
-        this.currentIndex = parseInt(savedIndex, 10);
-        this.currentVideoId = this.videoIds[this.currentIndex];
-      } else {
-        this.currentVideoId = this.videoIds[this.currentIndex];
-      }
-    
-      this.fetchVideoOwnerInfo(this.currentVideoId);
-      this.loadYouTubePlayer(); 
-    });
+    this.loadStations();
   }
 
   toggleList(): void {
@@ -198,54 +244,105 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     void this.shareService.shareSite();
   }
 
-  addChipnamesToVideoIds(): void {
-    this.videoIds = [];
-    this.videoTitles = [];
-  
-    this.chipArray.sort((a, b) => (a.order || 0) - (b.order || 0));
-  
-    const chipnames = this.chipArray
-      .filter(chip => chip.chipname && !this.videoIds.includes(chip.chipname))
-      .map(chip => chip.chipname!);
-  
-    this.videoIds = [...chipnames];
-  
-    const titlePromises = chipnames.map(chipname =>
-      this.youtubeService.getVideoTitle(chipname).toPromise()
-    );
-  
-    Promise.all(titlePromises).then(titles => {
-      this.videoTitles = titles.filter((title): title is string => title !== undefined);
-      this.totalVideos = this.videoIds.length;
-  
-      const storedFavorites = localStorage.getItem('favorites');
-      if (storedFavorites) {
-        this.favorites = JSON.parse(storedFavorites);
-        if (this.favorites.length !== this.videoTitles.length) {
-          this.favorites = this.videoTitles.map((_, i) => this.favorites[i] || false);
-        }
-      } else {
-        this.favorites = this.videoTitles.map(() => false);
+  private loadStations(): void {
+    if (!this.isOnline) {
+      this.radioStatus = 'offline';
+      return;
+    }
+
+    this.resetRecoverySession();
+    this.clearPlayerWatchdog();
+    this.radioStatus = 'loading-stations';
+    this.radioErrorMessage = '';
+    this.errorScope = null;
+    this.catalogSubscription?.unsubscribe();
+    this.startCatalogWatchdog();
+
+    this.catalogSubscription = this.firebase.obterTodosChip().subscribe({
+      next: res => {
+        this.clearCatalogWatchdog();
+        this.chipArray = res.map(chip => ({
+          id: chip.payload.doc.id,
+          ...(chip.payload.doc.data() as object)
+        } as Chip));
+
+        this.addChipnamesToVideoIds();
+      },
+      error: () => {
+        this.clearCatalogWatchdog();
+        this.setRadioError('We could not load the station list. Check your connection and try again.', 'catalog');
       }
-      
-      const savedIndex = localStorage.getItem('currentIndex');
-      const savedVideoId = localStorage.getItem('currentVideoId');
-  
-      if (savedVideoId && this.videoIds.includes(savedVideoId)) {
-        this.currentIndex = this.videoIds.indexOf(savedVideoId);
-        this.currentVideoId = savedVideoId;
-      } else if (savedIndex) {
-        this.currentIndex = parseInt(savedIndex, 10);
-        this.currentVideoId = this.videoIds[this.currentIndex];
-      } else {
-        this.currentVideoId = this.videoIds[this.currentIndex];
+    });
+  }
+
+  addChipnamesToVideoIds(): void {
+    this.clearCatalogWatchdog();
+    const previousVideoId = this.currentVideoId;
+    const shouldResume = this.desiredPlayback;
+    const seenVideoIds = new Set<string>();
+
+    this.resetRecoverySession();
+
+    this.chipArray.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    this.videoIds = this.chipArray.reduce<string[]>((ids, chip) => {
+      const videoId = chip.chipname?.trim();
+
+      if (videoId && !seenVideoIds.has(videoId)) {
+        seenVideoIds.add(videoId);
+        ids.push(videoId);
       }
 
-      this.initializeNewItems();
-  
-      this.fetchVideoOwnerInfo(this.currentVideoId);
-      this.loadYouTubePlayer();
-      this.cdRef.detectChanges();
+      return ids;
+    }, []);
+
+    this.totalVideos = this.videoIds.length;
+    this.detailsSubscription?.unsubscribe();
+    const loadVersion = ++this.metadataLoadVersion;
+
+    if (!this.videoIds.length) {
+      this.videoTitles = [];
+      this.videoOwners = [];
+      this.favorites = [];
+      this.currentIndex = 0;
+      this.currentVideoId = '';
+      this.currentVideoTitle = '';
+      this.currentVideoOwner = '';
+      this.player = null;
+      this.isPlayerReady = false;
+      this.isPlaying = false;
+      this.desiredPlayback = false;
+      this.clearPlayerWatchdog();
+      this.radioStatus = 'empty';
+      return;
+    }
+
+    const nextIndex = this.resolveStoredStationIndex();
+    this.videoTitles = this.videoIds.map(() => '');
+    this.videoOwners = this.videoIds.map(() => '');
+    this.restoreFavorites();
+    this.initializeNewItems();
+
+    if (previousVideoId !== this.videoIds[nextIndex] || !this.player) {
+      this.prepareStation(nextIndex, shouldResume, false);
+    } else {
+      this.currentIndex = nextIndex;
+      this.currentVideoId = this.videoIds[nextIndex];
+
+      if (this.radioStatus === 'loading-stations') {
+        this.radioStatus = this.isPlaying ? 'playing' : 'paused';
+      }
+    }
+
+    this.detailsSubscription = this.youtubeService.getVideoDetailsBatch(this.videoIds).subscribe({
+      next: details => {
+        if (this.isDestroyed || loadVersion !== this.metadataLoadVersion) {
+          return;
+        }
+
+        this.applyVideoDetails(details);
+        this.cdRef.detectChanges();
+      }
     });
   }
 
@@ -254,27 +351,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   selectVideo(index: number): void {
-    console.log('Selecionado índice:', index);
-    console.log('Título:', this.videoTitles[index]);
-    console.log('Video ID:', this.videoIds[index]);
-  
-    const radioStatic = new Audio('assets/sound/static.mp3');
-    radioStatic.loop = true;
-    radioStatic.volume = 0.1;
-    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
-  
-    setTimeout(() => {
-      radioStatic.pause();
-      radioStatic.currentTime = 0;
-    }, 200);
-  
-    this.currentIndex = index;
-    this.currentVideoId = this.videoIds[this.currentIndex];
-  
-    localStorage.setItem('currentVideoId', this.currentVideoId);
-    localStorage.setItem('currentIndex', this.currentIndex.toString());
-  
-    this.changeBackground();
+    if (!this.isValidStationIndex(index)) {
+      return;
+    }
+
+    if (index === this.currentIndex) {
+      if (['error', 'ended', 'recovering', 'exhausted'].includes(this.radioStatus)) {
+        this.resetRecoverySession();
+        this.recreatePlayer(this.desiredPlayback);
+      }
+      return;
+    }
+
+    this.resetRecoverySession();
+    this.lastNavigationDirection = 1;
+    this.noise();
+    this.prepareStation(index, this.desiredPlayback, true);
   }
   
   ngOnInit(): void {
@@ -288,13 +380,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const savedVolume = localStorage.getItem('volume');
-    const savedIndex = localStorage.getItem('currentIndex');
-    if (savedIndex) {
-      this.currentIndex = parseInt(savedIndex, 10);
-      this.currentVideoId = this.videoIds[this.currentIndex];
-    } else {
-      this.currentVideoId = this.videoIds[this.currentIndex];
-    }
     if (savedVolume) {
       this.setVolume(parseInt(savedVolume, 10));
     } else {
@@ -307,16 +392,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     
     const savedPalette = localStorage.getItem('selectedPalette') || 'purple';
     this.setTheme(savedPalette);
-    
-    const savedVideoId = localStorage.getItem('currentVideoId');
-    if (savedVideoId && this.videoIds.includes(savedVideoId)) {
-      this.currentIndex = this.videoIds.indexOf(savedVideoId);
-      this.currentVideoId = savedVideoId;
-    } else {
-      this.currentVideoId = this.videoIds[this.currentIndex];
-    }    
-    this.fetchVideoOwnerInfo(this.currentVideoId);
-    this.totalVideos = this.videoIds.length;
   }
 
   public markAsSeen(index: number): void {
@@ -343,7 +418,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   floatingEmojis: FloatingEmoji[] = [];
   
   emoji(): void {
-    this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
+    this.subscriptions.add(this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
       if (emojis.length > 0) {
         const emojiData = emojis[0];
         const drift = this.randomBetween(-18, 18);
@@ -367,7 +442,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           this.floatingEmojis = this.floatingEmojis.filter(emoji => emoji !== floatingEmoji);
         }, (floatingEmoji.duration + floatingEmoji.delay) * 1000 + 100);
       }
-    });
+    }));
   }
 
   addEmoji(emoji: string): void {
@@ -379,9 +454,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   fetchConnectedUsersCount() {
-    this.userService.getConnectedUsersCount().subscribe(count => {
+    this.subscriptions.add(this.userService.getConnectedUsersCount().subscribe(count => {
       this.connectedUsersCount = count;
-    });
+    }));
   }
   
   triggerAnimation() {
@@ -398,9 +473,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.player) {
-      this.player.destroy();
+    this.isDestroyed = true;
+    this.catalogSubscription?.unsubscribe();
+    this.detailsSubscription?.unsubscribe();
+    this.subscriptions.unsubscribe();
+    this.clearCatalogWatchdog();
+    this.clearPlayerWatchdog();
+    this.clearRecoveryTimer();
+
+    if (this.playerResetTimer) {
+      clearTimeout(this.playerResetTimer);
     }
+
+    this.player = null;
+    this.playerMountContext = null;
   }
 
   setDocTitle(title: string) {
@@ -424,202 +510,809 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   changeBackground() {
-    this.loadRandomImage(this.imageQuery);
-    this.loadYouTubePlayer();
+    void this.loadRandomImage(this.imageQuery);
   }
 
-  loadYouTubePlayer() {
-    const maxRetries   = 10;
-    let retryCount     = 0;
-    const retryInterval = 500;
-  
-    const initializePlayer = () => {
-      // 1) Espera a API do YT estar disponível
-      if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
-        if (retryCount++ < maxRetries) {
-          setTimeout(initializePlayer, retryInterval);
-        }
-        return;
-      }
-  
-      // 2) Se ainda não tiver vídeos, só retry
-      if (this.videoIds.length === 0) {
-        if (retryCount++ < maxRetries) {
-          console.warn('Nenhum vídeo disponível… retry');
-          setTimeout(initializePlayer, retryInterval);
-        } else {
-          console.error('Não carregou vídeos após várias tentativas.');
-        }
-        return;
-      }
-  
-      // 3) Se o player não existe, cria ele e sai
-      if (!this.player) {
-        this.player = new YT.Player('youtube-player', {
-          host: 'https://www.youtube-nocookie.com',
-          playerVars: {
-            enablejsapi: 1,
-            origin: window.location.origin,
-            modestbranding: 1,
-            rel: 0,
-          },
-          videoId: this.currentVideoId,
-          events: {
-            onReady:    e => this.onPlayerReady(e),
-            onStateChange: e => this.onPlayerStateChange(e),
-          }
-        });
-        
-      }
-  
-      // 4) Se o player já existe, tente carregar o vídeo: guard + retry
-      if (typeof this.player.loadVideoById === 'function') {
-        try {
-          this.player.loadVideoById(this.videoIds[this.currentIndex]);
-          this.updateVideoTitle();
-          this.fetchVideoOwnerInfo(this.videoIds[this.currentIndex]);
-        } catch (err) {
-          console.error('Erro inesperado carregando vídeo:', err);
-        }
-      } else if (retryCount++ < maxRetries) {
-        console.warn('Player ainda não pronto (sem loadVideoById). Retry…');
-        setTimeout(initializePlayer, retryInterval);
-      } else {
-        console.error('loadVideoById não disponível após várias tentativas.');
-      }
-    };
-  
-    initializePlayer();
-  }
-  
+  private resolveStoredStationIndex(): number {
+    const savedVideoId = localStorage.getItem('currentVideoId');
+    const preferredVideoId = savedVideoId && this.videoIds.includes(savedVideoId)
+      ? savedVideoId
+      : this.currentVideoId;
 
-  fetchVideoOwnerInfo(videoId: string) {
-    const API_KEY = environment.youtubeapikey; 
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${API_KEY}`;
+    if (preferredVideoId && this.videoIds.includes(preferredVideoId)) {
+      return this.videoIds.indexOf(preferredVideoId);
+    }
 
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (data.items && data.items.length > 0) {
-          const channelTitle = data.items[0].snippet.channelTitle;
-          this.updateVideoOwner(channelTitle);
-        }
-      })
-      .catch(error => console.error('Erro ao obter informações do vídeo:', error));
+    const savedIndex = Number.parseInt(localStorage.getItem('currentIndex') || '', 10);
+    return Number.isInteger(savedIndex) && this.isValidStationIndex(savedIndex) ? savedIndex : 0;
   }
 
-  updateVideoOwner(channelName: string) {
-    this.currentVideoOwner = channelName;
+  private restoreFavorites(): void {
+    try {
+      const storedFavorites = JSON.parse(localStorage.getItem('favorites') || '[]') as unknown;
+      const favoriteValues = Array.isArray(storedFavorites) ? storedFavorites : [];
+      this.favorites = this.videoIds.map((_, index) => Boolean(favoriteValues[index]));
+    } catch {
+      this.favorites = this.videoIds.map(() => false);
+    }
   }
 
-  onPlayerReady(event: any): void {
+  private applyVideoDetails(details: YouTubeVideoDetails[]): void {
+    this.videoTitles = this.videoIds.map((_, index) => {
+      const title = details[index]?.title;
+      return !title || title === 'Temporarily unavailable' ? `Lofi station ${index + 1}` : title;
+    });
+    this.videoOwners = this.videoIds.map((_, index) => {
+      const creator = details[index]?.creator;
+      return !creator || creator === 'Unknown' ? '' : creator;
+    });
+    this.applyCurrentMetadata();
+  }
+
+  private applyCurrentMetadata(): void {
+    if (!this.isValidStationIndex(this.currentIndex)) {
+      this.currentVideoTitle = '';
+      this.currentVideoOwner = '';
+      return;
+    }
+
+    this.currentVideoTitle = this.videoTitles[this.currentIndex] || '';
+    this.currentVideoOwner = this.videoOwners[this.currentIndex] || '';
+  }
+
+  private updateMetadataFromPlayer(): void {
+    const videoData = this.player?.getVideoData?.();
+
+    if (!videoData || (videoData.video_id && videoData.video_id !== this.currentVideoId)) {
+      return;
+    }
+
+    if (videoData.title) {
+      this.currentVideoTitle = videoData.title;
+      this.videoTitles[this.currentIndex] = videoData.title;
+    }
+
+    if (videoData.author) {
+      this.currentVideoOwner = videoData.author;
+      this.videoOwners[this.currentIndex] = videoData.author;
+    }
+  }
+
+  private prepareStation(index: number, shouldResume: boolean, refreshBackground: boolean): void {
+    if (!this.isValidStationIndex(index)) {
+      return;
+    }
+
+    this.clearPlayerWatchdog();
+    this.clearRecoveryTimer();
+    const attempt = ++this.activeStationAttempt;
+    this.handledFailureAttempt = -1;
+    this.currentIndex = index;
+    this.currentVideoId = this.videoIds[index];
+    this.applyCurrentMetadata();
     this.isPlaying = false;
-    this.loadYouTubePlayer();
-    
-    if (this.player) {
-      this.player.setVolume(this.volume);
+    this.isPlayerReady = false;
+    this.desiredPlayback = shouldResume;
+    this.stationChangePending = true;
+    this.radioErrorMessage = '';
+    this.errorScope = null;
+    this.recoveryDirection = null;
+
+    if (refreshBackground) {
+      this.refreshBackgroundOnRecoverySuccess = false;
+      this.changeBackground();
     }
 
-    const playerIframe = document.getElementById('youtube-player');
-    if (playerIframe) {
-      playerIframe.style.visibility = 'hidden';
-      playerIframe.style.height = '0';
-      playerIframe.style.width = '0';
-    }
-  }
-
-  updateVideoTitle() {
-    if (this.player) {
-      const videoData = this.player.getVideoData();
-      if (videoData && videoData.title) {
-        this.currentVideoTitle = videoData.title;
-        this.cdRef.detectChanges();
-      } else {
-        this.waitForPlayer();
-      }
+    if (this.isOnline) {
+      this.radioStatus = 'loading-player';
+      this.mountFreshPlayer(attempt);
     } else {
-      this.waitForPlayer();
+      this.radioStatus = 'offline';
     }
   }
 
-  waitForPlayer() {
-    const interval = setInterval(() => {
-      if (this.player && this.player.getVideoData()) {
-        this.updateVideoTitle();
-        clearInterval(interval);
+  onPlayerReady(event: YT.PlayerEvent, attempt: number = this.activeStationAttempt): void {
+    if (attempt !== this.activeStationAttempt || !this.isCurrentPlayerEvent(event.target)) {
+      return;
+    }
+
+    this.player = event.target;
+    this.isPlayerReady = true;
+    this.isPlaying = false;
+    this.radioErrorMessage = '';
+    this.errorScope = null;
+
+    try {
+      this.player.setVolume(this.volume);
+      const playerIframe = this.player.getIframe?.();
+      playerIframe?.setAttribute('aria-hidden', 'true');
+
+      if (playerIframe) {
+        playerIframe.tabIndex = -1;
       }
-    }, 100);
+    } catch {
+      this.setRadioError('The audio player could not be configured. Please try again.', 'player');
+      return;
+    }
+
+    this.stationChangePending = false;
+    this.clearPlayerWatchdog();
+
+    if (!this.isOnline) {
+      this.radioStatus = 'offline';
+      return;
+    }
+
+    this.radioStatus = 'ready';
+
+    if (this.desiredPlayback) {
+      this.startPlayback();
+    } else {
+      this.confirmStationSuccess();
+    }
   }
 
-  onPlayerStateChange(event: any): void {
-    if (event.data === YT.PlayerState.PLAYING) {
-      this.isPlaying = true;
-      localStorage.setItem('currentVideoId', this.videoIds[this.currentIndex]);
-  
-      this.updateVideoTitle();
-      
-      if (this.isFirstLoad) {
-        setTimeout(() => {
-          this.player.pauseVideo(); 
-          this.isFirstLoad = false; 
-        }, 0);
-      }
-    } else if (event.data === YT.PlayerState.PAUSED) {
-      this.isPlaying = false;
+  onPlayerStateChange(event: YT.OnStateChangeEvent, attempt: number = this.activeStationAttempt): void {
+    if (attempt !== this.activeStationAttempt) {
+      return;
     }
-  }   
+
+    if (!this.isOnline) {
+      this.radioStatus = 'offline';
+      return;
+    }
+
+    if (!this.isCurrentPlayerEvent(event.target)) {
+      return;
+    }
+
+    switch (event.data as number) {
+      case YouTubePlaybackState.Playing:
+        this.stationChangePending = false;
+        this.desiredPlayback = true;
+        this.isPlaying = true;
+        this.radioStatus = 'playing';
+        this.updateMetadataFromPlayer();
+        this.clearPlayerWatchdog();
+        this.confirmStationSuccess();
+        break;
+      case YouTubePlaybackState.Paused:
+        if (!this.stationChangePending) {
+          this.isPlaying = false;
+          this.radioStatus = 'paused';
+          this.clearPlayerWatchdog();
+        }
+        break;
+      case YouTubePlaybackState.Buffering:
+        this.stationChangePending = false;
+        this.isPlaying = false;
+        this.radioStatus = 'buffering';
+        this.startPlayerWatchdog();
+        break;
+      case YouTubePlaybackState.Cued:
+        this.stationChangePending = false;
+        this.isPlaying = false;
+        this.radioStatus = 'ready';
+        this.updateMetadataFromPlayer();
+        this.clearPlayerWatchdog();
+
+        if (this.desiredPlayback) {
+          this.startPlayback();
+        } else {
+          this.confirmStationSuccess();
+        }
+        break;
+      case YouTubePlaybackState.Ended:
+        if (!this.stationChangePending) {
+          this.isPlaying = false;
+          this.radioStatus = 'ended';
+          this.clearPlayerWatchdog();
+          this.handleStationFailure('The broadcast ended.');
+        }
+        break;
+      case YouTubePlaybackState.Unstarted:
+        if (this.stationChangePending) {
+          this.radioStatus = 'loading-player';
+          this.startPlayerWatchdog();
+        }
+        break;
+    }
+  }
+
+  onPlayerError(event: YT.OnErrorEvent, attempt: number = this.activeStationAttempt): void {
+    if (attempt !== this.activeStationAttempt || !this.isCurrentPlayerEvent(event.target)) {
+      return;
+    }
+
+    this.stationChangePending = false;
+    this.isPlaying = false;
+    this.handleStationFailure(this.getPlayerErrorMessage(event.data));
+  }
 
   togglePlayPause(): void {
+    if (this.radioStatus === 'error' && this.errorScope === 'catalog') {
+      this.retryRadio();
+      return;
+    }
+
+    if (this.radioStatus === 'exhausted' && this.currentVideoId) {
+      this.desiredPlayback = true;
+      this.resetRecoverySession();
+      this.recreatePlayer(true);
+      return;
+    }
+
+    if (!this.canControlPlayback || !this.player) {
+      return;
+    }
+
+    try {
+      if (this.isPlaying) {
+        this.desiredPlayback = false;
+        this.player.pauseVideo();
+        this.isPlaying = false;
+        this.radioStatus = 'paused';
+        this.clearPlayerWatchdog();
+      } else {
+        this.desiredPlayback = true;
+        this.startPlayback();
+      }
+    } catch {
+      this.handleStationFailure('The radio did not respond.');
+    }
+  }
+
+  retryRadio(resumePlayback: boolean = this.desiredPlayback): void {
+    if (!this.isOnline) {
+      this.radioStatus = 'offline';
+      return;
+    }
+
+    if (this.errorScope === 'catalog' || !this.videoIds.length) {
+      this.loadStations();
+      return;
+    }
+
+    this.resetRecoverySession();
+    this.recreatePlayer(resumePlayback);
+  }
+
+  @HostListener('window:offline')
+  handleOffline(): void {
+    this.isOnline = false;
+    this.isPlaying = false;
+    this.clearCatalogWatchdog();
+    this.clearPlayerWatchdog();
+    this.clearRecoveryTimer();
+    this.recoveryDirection = null;
+    this.recoveryGeneration++;
+
+    try {
+      this.player?.pauseVideo();
+    } catch {
+      // The status below is enough feedback if the player is already unreachable.
+    }
+
+    this.radioStatus = 'offline';
+  }
+
+  @HostListener('window:online')
+  handleOnline(): void {
+    this.isOnline = true;
+
+    if (!this.videoIds.length || this.errorScope === 'catalog') {
+      this.loadStations();
+      return;
+    }
+
+    this.resetRecoverySession();
+    this.recreatePlayer(this.desiredPlayback);
+  }
+
+  get radioStatusMessage(): string {
+    switch (this.radioStatus) {
+      case 'loading-stations':
+        return 'Loading stations';
+      case 'loading-player':
+        return 'Connecting to the station';
+      case 'buffering':
+        return 'Buffering audio';
+      case 'ready':
+        return 'Station ready';
+      case 'playing':
+        return 'Playing';
+      case 'paused':
+        return 'Paused';
+      case 'ended':
+        return 'Station ended';
+      case 'recovering':
+        return this.recoveryDirection === -1
+          ? 'Station unavailable. Returning to the previous station.'
+          : 'Station unavailable. Moving to the next station.';
+      case 'exhausted':
+        return 'No playable station was found';
+      case 'empty':
+        return 'No stations available';
+      case 'offline':
+        return 'Offline';
+      case 'error':
+        return this.radioErrorMessage || 'Radio unavailable';
+    }
+  }
+
+  get radioStatusIcon(): string {
+    switch (this.radioStatus) {
+      case 'playing':
+        return 'graphic_eq';
+      case 'paused':
+        return 'pause_circle';
+      case 'ready':
+        return 'check_circle';
+      case 'ended':
+        return 'stop_circle';
+      case 'recovering':
+        return this.recoveryDirection === -1 ? 'skip_previous' : 'skip_next';
+      case 'exhausted':
+        return 'play_disabled';
+      case 'empty':
+        return 'radio';
+      case 'offline':
+        return 'wifi_off';
+      case 'error':
+        return 'error_outline';
+      default:
+        return 'radio';
+    }
+  }
+
+  get isRadioBusy(): boolean {
+    return ['loading-stations', 'loading-player', 'buffering'].includes(this.radioStatus);
+  }
+
+  get showPlaySpinner(): boolean {
+    return this.isRadioBusy;
+  }
+
+  get playerControlIcon(): string {
     if (this.isPlaying) {
-      this.player.pauseVideo();
-    } else {
+      return 'pause';
+    }
+
+    switch (this.radioStatus) {
+      case 'offline':
+        return 'wifi_off';
+      case 'empty':
+        return 'radio';
+      case 'error':
+        return 'sync_problem';
+      case 'recovering':
+      case 'exhausted':
+        return 'play_disabled';
+      default:
+        return 'play_arrow';
+    }
+  }
+
+  get hasRadioError(): boolean {
+    return this.radioStatus === 'error' || this.radioStatus === 'exhausted';
+  }
+
+  get canRetryRadio(): boolean {
+    return this.isOnline && ['error', 'ended', 'exhausted'].includes(this.radioStatus);
+  }
+
+  get showNextRecoveryAction(): boolean {
+    return this.recoveryDirection === 1;
+  }
+
+  get canControlPlayback(): boolean {
+    return this.isOnline
+      && this.isPlayerReady
+      && ['ready', 'paused', 'playing'].includes(this.radioStatus);
+  }
+
+  get isPlayerControlDisabled(): boolean {
+    return this.showPlaySpinner
+      || ['recovering', 'offline', 'empty'].includes(this.radioStatus);
+  }
+
+  get canNavigateStations(): boolean {
+    return this.isOnline
+      && this.videoIds.length > 1
+      && !['loading-stations', 'offline', 'empty'].includes(this.radioStatus);
+  }
+
+  get canFavoriteCurrentStation(): boolean {
+    return this.isValidStationIndex(this.currentIndex);
+  }
+
+  get playPauseLabel(): string {
+    if (this.showPlaySpinner) {
+      return 'Loading station';
+    }
+
+    switch (this.radioStatus) {
+      case 'recovering':
+        return 'Skipping unavailable station';
+      case 'exhausted':
+        return 'Retry station';
+      case 'offline':
+        return 'Radio offline';
+      case 'empty':
+        return 'No stations available';
+      case 'error':
+        return 'Reload stations';
+      default:
+        return this.isPlaying ? 'Pause radio' : 'Play radio';
+    }
+  }
+
+  private startPlayback(): void {
+    if (!this.player || !this.isPlayerReady || !this.isOnline) {
+      return;
+    }
+
+    try {
+      this.desiredPlayback = true;
+      this.radioStatus = 'buffering';
       this.player.playVideo();
+      this.startPlayerWatchdog();
+    } catch {
+      this.handleStationFailure('The radio did not respond.');
+    }
+  }
+
+  private recreatePlayer(resumePlayback: boolean): void {
+    if (!this.currentVideoId) {
+      this.loadStations();
+      return;
+    }
+
+    const currentIndex = this.videoIds.indexOf(this.currentVideoId);
+    this.prepareStation(currentIndex >= 0 ? currentIndex : this.currentIndex, resumePlayback, false);
+  }
+
+  private mountFreshPlayer(attempt: number): void {
+    if (this.playerResetTimer) {
+      clearTimeout(this.playerResetTimer);
+      this.playerResetTimer = undefined;
+    }
+
+    if (this.player) {
+      this.retiredPlayers.add(this.player);
+    }
+
+    this.player = null;
+    this.isPlayerReady = false;
+    this.showPlayer = false;
+    this.playerMountContext = null;
+
+    this.playerResetTimer = setTimeout(() => {
+      this.playerResetTimer = undefined;
+
+      if (this.isDestroyed || !this.isOnline || attempt !== this.activeStationAttempt) {
+        return;
+      }
+
+      this.playerMountContext = { attempt, videoId: this.currentVideoId };
+      this.showPlayer = true;
+      this.cdRef.detectChanges();
+      this.reloadYouTubeApiIfUnavailable();
+      this.startPlayerWatchdog(attempt);
+    }, 0);
+  }
+
+  private reloadYouTubeApiIfUnavailable(): void {
+    if (typeof YT !== 'undefined' && typeof YT.Player !== 'undefined') {
+      return;
+    }
+
+    document.querySelector<HTMLScriptElement>('script[src*="youtube.com/iframe_api"]')?.remove();
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    document.head.appendChild(script);
+  }
+
+  private startPlayerWatchdog(attempt: number = this.activeStationAttempt): void {
+    this.clearPlayerWatchdog();
+
+    if (!this.isOnline || this.isDestroyed) {
+      return;
+    }
+
+    const videoId = this.currentVideoId;
+    this.playerWatchdog = setTimeout(() => {
+      if (
+        attempt === this.activeStationAttempt
+        && videoId === this.currentVideoId
+        && (this.radioStatus === 'loading-player' || this.radioStatus === 'buffering')
+      ) {
+        const message = this.radioStatus === 'buffering'
+          ? 'The audio took too long to start.'
+          : 'The station took too long to respond.';
+        this.handleStationFailure(message);
+      }
+    }, this.playerTimeoutMs);
+  }
+
+  private startCatalogWatchdog(): void {
+    this.clearCatalogWatchdog();
+
+    if (!this.isOnline || this.isDestroyed) {
+      return;
+    }
+
+    this.catalogWatchdog = setTimeout(() => {
+      if (this.radioStatus === 'loading-stations') {
+        this.setRadioError('The station list is taking too long to load. Please try again.', 'catalog');
+      }
+    }, this.playerTimeoutMs);
+  }
+
+  private clearCatalogWatchdog(): void {
+    if (this.catalogWatchdog) {
+      clearTimeout(this.catalogWatchdog);
+      this.catalogWatchdog = undefined;
+    }
+  }
+
+  private clearPlayerWatchdog(): void {
+    if (this.playerWatchdog) {
+      clearTimeout(this.playerWatchdog);
+      this.playerWatchdog = undefined;
+    }
+  }
+
+  private setRadioError(message: string, scope: Exclude<RadioErrorScope, null>): void {
+    if (scope === 'player') {
+      this.handleStationFailure(message);
+      return;
+    }
+
+    this.clearCatalogWatchdog();
+    this.clearPlayerWatchdog();
+    this.resetRecoverySession();
+    this.isPlaying = false;
+    this.stationChangePending = false;
+    this.radioErrorMessage = message;
+    this.errorScope = scope;
+    this.radioStatus = this.isOnline ? 'error' : 'offline';
+  }
+
+  private handleStationFailure(message: string): void {
+    if (!this.isOnline) {
+      this.radioStatus = 'offline';
+      return;
+    }
+
+    if (!this.currentVideoId || this.handledFailureAttempt === this.activeStationAttempt) {
+      return;
+    }
+
+    this.handledFailureAttempt = this.activeStationAttempt;
+    this.clearPlayerWatchdog();
+    this.clearRecoveryTimer();
+    this.isPlaying = false;
+    this.isPlayerReady = false;
+    this.stationChangePending = false;
+    this.radioErrorMessage = message;
+    this.errorScope = 'player';
+
+    if (this.player) {
+      const failedPlayer = this.player;
+      this.retiredPlayers.add(failedPlayer);
+
+      try {
+        failedPlayer.pauseVideo();
+      } catch {
+        // A failed player may already be detached. Retiring it is sufficient.
+      }
+
+      this.player = null;
+    }
+
+    if (this.recoveryStartedAt === null) {
+      this.recoveryStartedAt = Date.now();
+    }
+
+    this.failedStationIds.add(this.currentVideoId);
+    const maxFailures = Math.min(this.videoIds.length, this.maxAutomaticRecoveryAttempts);
+    const recoveryExpired = Date.now() - this.recoveryStartedAt >= this.maxRecoveryDurationMs;
+    const nextIndex = this.findRecoveryCandidate(this.lastNavigationDirection);
+
+    if (
+      this.videoIds.length < 2
+      || this.failedStationIds.size >= maxFailures
+      || recoveryExpired
+      || nextIndex === null
+    ) {
+      this.finishExhaustedRecovery();
+      return;
+    }
+
+    this.radioStatus = 'recovering';
+    this.recoveryDirection = this.lastNavigationDirection;
+    const attempt = this.activeStationAttempt;
+    const videoId = this.currentVideoId;
+    const direction = this.lastNavigationDirection;
+    const generation = ++this.recoveryGeneration;
+
+    this.recoveryTimer = setTimeout(() => {
+      this.recoveryTimer = undefined;
+
+      if (
+        this.isDestroyed
+        || !this.isOnline
+        || this.radioStatus !== 'recovering'
+        || generation !== this.recoveryGeneration
+        || attempt !== this.activeStationAttempt
+        || videoId !== this.currentVideoId
+        || direction !== this.recoveryDirection
+      ) {
+        return;
+      }
+
+      const candidateIndex = this.findRecoveryCandidate(direction);
+      const timedOut = this.recoveryStartedAt !== null
+        && Date.now() - this.recoveryStartedAt >= this.maxRecoveryDurationMs;
+
+      if (candidateIndex === null || timedOut) {
+        this.finishExhaustedRecovery();
+        return;
+      }
+
+      this.recoveryDirection = null;
+      this.refreshBackgroundOnRecoverySuccess = true;
+      this.prepareStation(candidateIndex, this.desiredPlayback, false);
+    }, this.recoveryAnimationDelayMs);
+  }
+
+  private findRecoveryCandidate(direction: NavigationDirection): number | null {
+    const stationCount = this.videoIds.length;
+
+    for (let offset = 1; offset < stationCount; offset++) {
+      const index = (this.currentIndex + direction * offset + stationCount) % stationCount;
+
+      if (!this.failedStationIds.has(this.videoIds[index])) {
+        return index;
+      }
+    }
+
+    return null;
+  }
+
+  private finishExhaustedRecovery(): void {
+    this.clearRecoveryTimer();
+    this.recoveryGeneration++;
+    this.recoveryDirection = null;
+    this.radioStatus = this.isOnline ? 'exhausted' : 'offline';
+  }
+
+  private resetRecoverySession(): void {
+    this.clearRecoveryTimer();
+    this.recoveryGeneration++;
+    this.recoveryDirection = null;
+    this.failedStationIds.clear();
+    this.recoveryStartedAt = null;
+    this.handledFailureAttempt = -1;
+  }
+
+  private completeRecoverySession(): void {
+    this.resetRecoverySession();
+  }
+
+  private confirmStationSuccess(): void {
+    const shouldRefreshBackground = this.refreshBackgroundOnRecoverySuccess;
+    this.refreshBackgroundOnRecoverySuccess = false;
+    this.completeRecoverySession();
+    this.persistCurrentStation();
+
+    if (shouldRefreshBackground) {
+      this.changeBackground();
+    }
+  }
+
+  private persistCurrentStation(): void {
+    localStorage.setItem('currentVideoId', this.currentVideoId);
+    localStorage.setItem('currentIndex', this.currentIndex.toString());
+  }
+
+  private clearRecoveryTimer(): void {
+    if (this.recoveryTimer) {
+      clearTimeout(this.recoveryTimer);
+      this.recoveryTimer = undefined;
+    }
+  }
+
+  private get recoveryAnimationDelayMs(): number {
+    const reduceMotion = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return reduceMotion ? 250 : this.autoAdvanceDelayMs;
+  }
+
+  private getPlayerErrorMessage(errorCode: number): string {
+    switch (errorCode) {
+      case 2:
+        return 'This station has an invalid address.';
+      case 5:
+        return 'This station cannot play in your browser right now.';
+      case 100:
+        return 'This station is no longer available.';
+      case 101:
+      case 150:
+        return 'This station does not allow playback here.';
+      default:
+        return 'We could not start this station. Please try again.';
+    }
+  }
+
+  private isValidStationIndex(index: number): boolean {
+    return Number.isInteger(index) && index >= 0 && index < this.videoIds.length;
+  }
+
+  private isCurrentPlayerEvent(player?: YT.Player): boolean {
+    if (!player) {
+      return true;
+    }
+
+    if (this.retiredPlayers.has(player) || (this.player && player !== this.player)) {
+      return false;
+    }
+
+    const eventPlayer = player as YouTubePlayerWithMetadata;
+
+    try {
+      const eventVideoId = eventPlayer.getVideoData?.().video_id;
+      return !eventVideoId || eventVideoId === this.currentVideoId;
+    } catch {
+      return false;
     }
   }
 
   nextVideo(): void {
-    this.noise();
-  
-    if (this.currentIndex < this.videoIds.length - 1) {
-      this.currentIndex++;
-    } else {
-      this.currentIndex = 0;
-    }
-    this.currentVideoId = this.videoIds[this.currentIndex];
-    localStorage.setItem('currentVideoId', this.currentVideoId);
-    localStorage.setItem('currentIndex', this.currentIndex.toString());
-    this.changeBackground();
+    this.navigateManually(1);
   }
   
   previousVideo(): void {
-    this.noise();
-  
-    if (this.currentIndex > 0) {
-      this.currentIndex--;
-    } else {
-      this.currentIndex = this.videoIds.length - 1;
-    }
-    this.currentVideoId = this.videoIds[this.currentIndex];
-    localStorage.setItem('currentVideoId', this.currentVideoId);
-    localStorage.setItem('currentIndex', this.currentIndex.toString());
-    this.changeBackground();
+    this.navigateManually(-1);
   }  
   
-  shuffle(){
-    let randomIndex;
-    do {
-      randomIndex = Math.floor(Math.random() * this.videoIds.length);
-    } while (randomIndex === this.currentIndex && this.videoIds.length > 1);
+  shuffle(): void {
+    if (this.videoIds.length < 2 || !this.isOnline) {
+      return;
+    }
 
-    this.currentIndex = randomIndex;
-    this.currentVideoId = this.videoIds[this.currentIndex];
-    localStorage.setItem('currentVideoId', this.currentVideoId);
-    localStorage.setItem('currentIndex', this.currentIndex.toString());
-    this.changeBackground();
+    this.resetRecoverySession();
+    this.lastNavigationDirection = 1;
+    const candidates = this.videoIds
+      .map((_, index) => index)
+      .filter(index => index !== this.currentIndex);
+    const randomIndex = candidates[Math.floor(Math.random() * candidates.length)];
     this.noise();
+    this.prepareStation(randomIndex, this.desiredPlayback, true);
   }
 
-  noise(){
+  private navigateManually(direction: NavigationDirection): void {
+    if (this.videoIds.length < 2 || !this.isOnline) {
+      return;
+    }
+
+    this.resetRecoverySession();
+    this.lastNavigationDirection = direction;
+    const nextIndex = (
+      this.currentIndex + direction + this.videoIds.length
+    ) % this.videoIds.length;
+    this.noise();
+    this.prepareStation(nextIndex, this.desiredPlayback, true);
+  }
+
+  noise(): void {
+    if (typeof Audio === 'undefined') {
+      return;
+    }
+
     const radioStatic = new Audio('assets/sound/static.mp3');
     radioStatic.loop = true;
     radioStatic.volume = 0.1;
@@ -632,10 +1325,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setVolume(value: number | string): void {
-    const volumeValue = typeof value === 'string' ? parseInt(value, 10) : value;
+    const parsedValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
+    const volumeValue = Number.isFinite(parsedValue) ? Math.min(100, Math.max(0, parsedValue)) : 50;
     this.volume = volumeValue;
     if (this.player) {
-      this.player.setVolume(volumeValue);
+      try {
+        this.player.setVolume(volumeValue);
+      } catch {
+        // The selected volume is retained and applied when the player is ready.
+      }
     }
     localStorage.setItem('volume', volumeValue.toString());
   }  
@@ -663,6 +1361,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   favorite(index: number, event?: MouseEvent) {
+    if (!this.isValidStationIndex(index)) {
+      return;
+    }
+
     if (event) {
       this.addEmoji('♥');
       event.stopPropagation(); 
