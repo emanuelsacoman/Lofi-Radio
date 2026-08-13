@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/adm-spec",
+    "types": [
+      "jasmine",
+      "youtube"
+    ]
+  },
+  "include": [
+    "src/app/view/adm/adm/adm.component.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

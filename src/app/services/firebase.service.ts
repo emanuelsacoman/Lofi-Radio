@@ -102,12 +102,18 @@ export class FirebaseService {
     return this.firestore.collection(this.PATH).doc(id).update(data);
   }
 
+  atualizarOrdemChips(ids: string[]): Promise<void> {
+    return this.atualizarOrdem(this.PATH, ids);
+  }
+
   obterTodosYoutubers() {
     return this.firestore.collection(this.YOUTUBERS_PATH).snapshotChanges();
   }
 
   cadastrarYoutuber(youtuber: Omit<Youtuber, 'id'>): Promise<{ created: boolean; id: string }> {
-    return this.firestore.collection(this.YOUTUBERS_PATH).ref
+    const collection = this.firestore.collection(this.YOUTUBERS_PATH);
+
+    return collection.ref
       .where('channelId', '==', youtuber.channelId)
       .limit(1)
       .get()
@@ -119,21 +125,41 @@ export class FirebaseService {
           };
         }
 
-        return this.firestore.collection(this.YOUTUBERS_PATH).add({
-          channelId: youtuber.channelId,
-          title: youtuber.title,
-          handle: youtuber.handle || '',
-          thumbnailUrl: youtuber.thumbnailUrl || '',
-          createdAt: youtuber.createdAt || new Date().toISOString()
-        }).then(ref => ({
-          created: true,
-          id: ref.id
-        }));
+        const ref = collection.doc(youtuber.channelId).ref;
+
+        return this.firestore.firestore.runTransaction(transaction =>
+          transaction.get(ref).then(existingDocument => {
+            if (existingDocument.exists) {
+              return {
+                created: false,
+                id: existingDocument.id
+              };
+            }
+
+            transaction.set(ref, {
+              channelId: youtuber.channelId,
+              title: youtuber.title,
+              order: youtuber.order || 1,
+              handle: youtuber.handle || '',
+              thumbnailUrl: youtuber.thumbnailUrl || '',
+              createdAt: youtuber.createdAt || new Date().toISOString()
+            });
+
+            return {
+              created: true,
+              id: ref.id
+            };
+          })
+        );
       });
   }
 
   excluirYoutuber(id: string): Promise<void> {
     return this.firestore.collection(this.YOUTUBERS_PATH).doc(id).delete();
+  }
+
+  atualizarOrdemYoutubers(ids: string[]): Promise<void> {
+    return this.atualizarOrdem(this.YOUTUBERS_PATH, ids);
   }
 
   cadastrarChipsEmLote(videoIds: string[]): Promise<number> {
@@ -175,5 +201,20 @@ export class FirebaseService {
 
       return batch.commit().then(() => newVideoIds.length);
     });
+  }
+
+  private atualizarOrdem(path: string, ids: string[]): Promise<void> {
+    if (!ids.length) {
+      return Promise.resolve();
+    }
+
+    const batch = this.firestore.firestore.batch();
+
+    ids.forEach((id, index) => {
+      const ref = this.firestore.collection(path).doc(id).ref;
+      batch.update(ref, { order: index + 1 });
+    });
+
+    return batch.commit();
   }
 }

@@ -75,7 +75,7 @@
             <label for="chipname">URL ou ID do video</label>
             <div class="field-row">
               <input type="text" id="chipname" placeholder="youtube.com/watch?v=..." formControlName="chipname" required>
-              <button class="button button--primary" type="submit" [disabled]="isAddingChip">
+              <button class="button button--primary" type="submit" [disabled]="isAddingChip || isSavingChipOrder">
                 <mat-icon>{{ isAddingChip ? 'hourglass_empty' : 'add' }}</mat-icon>
                 <span>Adicionar</span>
               </button>
@@ -96,7 +96,7 @@
             <label for="youtuber">Canal</label>
             <div class="field-row">
               <input type="text" id="youtuber" placeholder="@canal ou link" formControlName="youtuber" required>
-              <button class="button button--primary" type="submit" [disabled]="isAddingYoutuber">
+              <button class="button button--primary" type="submit" [disabled]="isAddingYoutuber || isSavingYoutuberOrder">
                 <mat-icon>{{ isAddingYoutuber ? 'hourglass_empty' : 'person_add' }}</mat-icon>
                 <span>Salvar</span>
               </button>
@@ -107,14 +107,52 @@
             class="button button--success button--full"
             type="button"
             (click)="syncCurrentLives()"
-            [disabled]="isSyncingLives || youtuberArray.length === 0"
+            [disabled]="isSyncingLives || isSavingChipOrder || isSavingYoutuberOrder || youtuberArray.length === 0"
           >
             <mat-icon>{{ isSyncingLives ? 'hourglass_empty' : 'radio' }}</mat-icon>
             <span>{{ isSyncingLives ? 'Buscando' : 'Adicionar lives' }}</span>
           </button>
 
-          <div class="channel-list" *ngIf="youtuberArray.length; else emptyYoutubers">
-            <article class="channel-row" *ngFor="let youtuber of youtuberArray; trackBy: trackByYoutuberId">
+          <div class="channel-toolbar" *ngIf="youtuberArray.length">
+            <span>{{ youtuberArray.length }} {{ youtuberArray.length === 1 ? 'canal' : 'canais' }}</span>
+            <button
+              class="button button--ghost button--compact"
+              type="button"
+              (click)="sortYoutubersAlphabetically()"
+              [disabled]="isSavingYoutuberOrder"
+              matTooltip="Organizar youtubers por nome"
+            >
+              <mat-icon>{{ isSavingYoutuberOrder ? 'hourglass_empty' : 'sort_by_alpha' }}</mat-icon>
+              <span>{{ isSavingYoutuberOrder ? 'Salvando' : 'Ordenar A-Z' }}</span>
+            </button>
+          </div>
+
+          <div
+            class="channel-list"
+            *ngIf="youtuberArray.length; else emptyYoutubers"
+            cdkDropList
+            [cdkDropListData]="youtuberArray"
+            (cdkDropListDropped)="onYoutuberDrop($event)"
+          >
+            <article
+              class="channel-row"
+              *ngFor="let youtuber of youtuberArray; let index = index; trackBy: trackByYoutuberId"
+              cdkDrag
+              [cdkDragData]="youtuber"
+              [cdkDragDisabled]="isSavingYoutuberOrder"
+            >
+              <button
+                class="drag-handle"
+                type="button"
+                cdkDragHandle
+                [disabled]="isSavingYoutuberOrder"
+                (keydown)="onYoutuberHandleKeydown($event, index)"
+                matTooltip="Mover"
+                [attr.aria-label]="'Mover ' + youtuber.title + '. Use as setas, Home ou End.'"
+              >
+                <mat-icon>drag_indicator</mat-icon>
+              </button>
+
               <img *ngIf="youtuber.thumbnailUrl" [src]="youtuber.thumbnailUrl || ''" [alt]="youtuber.title">
               <span class="avatar-fallback" *ngIf="!youtuber.thumbnailUrl">
                 <mat-icon>account_circle</mat-icon>
@@ -125,7 +163,7 @@
                 <span>{{ youtuber.handle || youtuber.channelId }}</span>
               </div>
 
-              <button class="row-action row-action--danger" type="button" (click)="deleteYoutuber(youtuber.id)" matTooltip="Remover">
+              <button class="row-action row-action--danger" type="button" (click)="deleteYoutuber(youtuber.id)" [disabled]="isSavingYoutuberOrder" matTooltip="Remover" [attr.aria-label]="'Remover ' + youtuber.title">
                 <mat-icon>delete</mat-icon>
               </button>
             </article>
@@ -148,10 +186,20 @@
           </div>
           <div class="list-panel__actions">
             <button
+              class="button button--ghost button--compact"
+              type="button"
+              (click)="sortChipsAlphabetically()"
+              [disabled]="isChipSortDisabled"
+              matTooltip="Organizar radios por titulo"
+            >
+              <mat-icon>{{ isSavingChipOrder ? 'hourglass_empty' : 'sort_by_alpha' }}</mat-icon>
+              <span>{{ isSavingChipOrder ? 'Salvando' : 'Ordenar A-Z' }}</span>
+            </button>
+            <button
               class="button button--danger button--compact"
               type="button"
               (click)="cleanNonWorkingLives()"
-              [disabled]="isCleaningLives || chipArray.length === 0"
+              [disabled]="isCleaningLives || isSavingChipOrder || chipArray.length === 0"
             >
               <mat-icon>{{ isCleaningLives ? 'hourglass_empty' : 'delete_sweep' }}</mat-icon>
               <span>{{ isCleaningLives ? 'Verificando' : 'Limpar inativas' }}</span>
@@ -167,8 +215,16 @@
           [cdkDropListData]="chipArray"
           (cdkDropListDropped)="onDrop($event)"
         >
-          <article class="radio-row" *ngFor="let chip of chipArray; trackBy: trackByChipId" cdkDrag [cdkDragData]="chip">
-            <button class="drag-handle" type="button" cdkDragHandle matTooltip="Mover">
+          <article class="radio-row" *ngFor="let chip of chipArray; let index = index; trackBy: trackByChipId" cdkDrag [cdkDragData]="chip" [cdkDragDisabled]="isSavingChipOrder">
+            <button
+              class="drag-handle"
+              type="button"
+              cdkDragHandle
+              [disabled]="isSavingChipOrder"
+              (keydown)="onChipHandleKeydown($event, index)"
+              matTooltip="Mover"
+              [attr.aria-label]="'Mover ' + (chip.title || chip.chipname) + '. Use as setas, Home ou End.'"
+            >
               <mat-icon>drag_indicator</mat-icon>
             </button>
 
@@ -180,7 +236,7 @@
               <code>{{ chip.chipname }}</code>
             </div>
 
-            <button class="row-action row-action--danger" type="button" (click)="deleteChip(chip.id)" matTooltip="Remover">
+            <button class="row-action row-action--danger" type="button" (click)="deleteChip(chip.id)" [disabled]="isSavingChipOrder" matTooltip="Remover" [attr.aria-label]="'Remover ' + (chip.title || chip.chipname)">
               <mat-icon>delete</mat-icon>
             </button>
           </article>

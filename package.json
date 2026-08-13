@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:adm": "ng test --watch=false --include=src/app/view/adm/adm/adm.component.spec.ts --ts-config=tsconfig.adm-spec.json --karma-config=karma.adm.conf.js"
   },
   "private": true,
   "dependencies": {
