@@ -1,5 +1,6 @@
 import { NEVER, Subject, of } from 'rxjs';
 
+import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { HomeComponent } from './home.component';
 
@@ -40,7 +41,8 @@ describe('HomeComponent non-verbal radio feedback', () => {
       router,
       firebase as any,
       youtube as any,
-      share
+      share,
+      new RadioFavoritesService()
     );
 
     component.isOnline = true;
@@ -111,6 +113,99 @@ describe('HomeComponent non-verbal radio feedback', () => {
     expect(component.radioStatus).toBe('loading-player');
     expect(component.showPlaySpinner).toBeTrue();
     expect(component.canControlPlayback).toBeFalse();
+  });
+
+  it('ignores malformed catalog documents without blocking valid stations', () => {
+    component.chipArray = [
+      { id: 'broken-document', order: 1 } as Chip,
+      new Chip('valid-document', ' valid-station ', 2)
+    ];
+    youtube.getVideoDetailsBatch.and.returnValue(of([
+      { title: 'Valid station', creator: 'Test Radio' }
+    ]));
+
+    expect(() => component.addChipnamesToVideoIds()).not.toThrow();
+    expect(component.videoIds).toEqual(['valid-station']);
+    expect(component.currentVideoId).toBe('valid-station');
+  });
+
+  describe('favorites by station identity', () => {
+    it('keeps a favorite attached to its video id when the catalog is reordered', () => {
+      loadCatalog(['station-a', 'station-b', 'station-c']);
+
+      component.favorite(1);
+      loadCatalog(['station-c', 'station-a', 'station-b']);
+
+      expect(component.videoIds).toEqual(['station-c', 'station-a', 'station-b']);
+      expect(component.favorites).toEqual([false, false, true]);
+      expect(readStoredFavoriteIds()).toEqual(['station-b']);
+    });
+
+    it('does not transfer a favorite when stations are removed or inserted', () => {
+      loadCatalog(['station-a', 'station-b', 'station-c']);
+
+      component.favorite(2);
+      loadCatalog(['station-b', 'station-c', 'station-new']);
+
+      expect(component.videoIds).toEqual(['station-b', 'station-c', 'station-new']);
+      expect(component.favorites).toEqual([false, true, false]);
+      expect(readStoredFavoriteIds()).toEqual(['station-c']);
+    });
+
+    it('persists toggles as video ids instead of positional booleans', () => {
+      loadCatalog(['station-a', 'station-b', 'station-c']);
+
+      component.favorite(1);
+      expect(readStoredFavoriteIds()).toEqual(['station-b']);
+
+      component.favorite(0);
+      expect(readStoredFavoriteIds().sort()).toEqual(['station-a', 'station-b']);
+
+      component.favorite(1);
+      expect(readStoredFavoriteIds()).toEqual(['station-a']);
+      expect(localStorage.getItem('favorites')).toBeNull();
+    });
+
+    it('migrates the legacy boolean array to video ids once the catalog is known', () => {
+      localStorage.setItem('favorites', JSON.stringify([false, true, false]));
+
+      loadCatalog(['station-a', 'station-b', 'station-c']);
+
+      expect(component.favorites).toEqual([false, true, false]);
+      expect(readStoredFavoriteIds()).toEqual(['station-b']);
+      expect(localStorage.getItem('favorites')).toBeNull();
+    });
+
+    it('prefers and sanitizes id-based favorites when legacy data also exists', () => {
+      localStorage.setItem(
+        'favoriteVideoIds',
+        JSON.stringify([' station-b ', 'station-b', '', 42, 'missing-station'])
+      );
+      localStorage.setItem('favorites', JSON.stringify([true, false, true]));
+
+      loadCatalog(['station-a', 'station-b', 'station-c']);
+
+      expect(component.favorites).toEqual([false, true, false]);
+      expect(readStoredFavoriteIds()).toEqual(['station-b', 'missing-station']);
+    });
+
+    it('contains the favorite click without selecting another station', () => {
+      loadCatalog(['station-a', 'station-b']);
+      const selectVideo = spyOn(component, 'selectVideo');
+      const event = jasmine.createSpyObj<MouseEvent>('MouseEvent', [
+        'stopPropagation',
+        'preventDefault'
+      ]);
+
+      component.favorite(1, event);
+
+      expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+      expect(selectVideo).not.toHaveBeenCalled();
+      expect(component.currentIndex).toBe(0);
+      expect(component.favorites).toEqual([false, true]);
+      expect(readStoredFavoriteIds()).toEqual(['station-b']);
+    });
   });
 
   it('keeps catalog failures separate from automatic station recovery', () => {
@@ -618,6 +713,17 @@ describe('HomeComponent non-verbal radio feedback', () => {
     }
 
     return player;
+  }
+
+  function loadCatalog(videoIds: string[]): void {
+    component.chipArray = videoIds.map(
+      (videoId, index) => new Chip(`document-${videoId}`, videoId, index + 1)
+    );
+    component.addChipnamesToVideoIds();
+  }
+
+  function readStoredFavoriteIds(): string[] {
+    return JSON.parse(localStorage.getItem('favoriteVideoIds') || '[]') as string[];
   }
 
   function emitError(player?: ReturnType<typeof createPlayer>, errorCode = 100): void {

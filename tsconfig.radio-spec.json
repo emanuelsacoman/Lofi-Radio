@@ -9,6 +9,7 @@
   },
   "include": [
     "src/app/view/website/home/home.component.spec.ts",
+    "src/app/services/radio-favorites.service.spec.ts",
     "src/app/services/youtube.service.spec.ts",
     "src/**/*.d.ts"
   ]

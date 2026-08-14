@@ -29,6 +29,10 @@ export interface YouTubeVideoHealth {
   isWorking: boolean;
 }
 
+type StoredYouTubeVideoDetails = YouTubeVideoDetails & {
+  cachedAt: number;
+};
+
 @Injectable({ providedIn: 'root' })
 export class YoutubeService {
   private apiKey = environment.youtubeapikey;
@@ -36,24 +40,24 @@ export class YoutubeService {
   private channelsApiUrl = 'https://www.googleapis.com/youtube/v3/channels';
   private searchApiUrl = 'https://www.googleapis.com/youtube/v3/search';
   private quotaKey = 'yt-api-quota-status';
-  private detailsCache = new Map<string, YouTubeVideoDetails>();
+  private readonly detailsCacheTtlMs = 24 * 60 * 60 * 1000;
+  private detailsCache = new Map<string, StoredYouTubeVideoDetails>();
   private inFlightRequests = new Map<string, Observable<YouTubeVideoDetails>>();
   private channelCache = new Map<string, YouTubeChannelDetails>();
 
   constructor(private http: HttpClient) {}
 
   getVideoDetails(videoId: string): Observable<YouTubeVideoDetails> {
-    const mem = this.detailsCache.get(videoId);
+    const mem = this.readMemoryVideoDetails(videoId);
     if (mem) return of(mem);
 
     const ongoing = this.inFlightRequests.get(videoId);
     if (ongoing) return ongoing;
 
-    const stored = localStorage.getItem(`yt-details-${videoId}`);
+    const stored = this.readStoredVideoDetails(videoId);
     if (stored) {
-      const parsed = JSON.parse(stored) as YouTubeVideoDetails;
-      this.detailsCache.set(videoId, parsed);
-      return of(parsed);
+      this.detailsCache.set(videoId, stored);
+      return of({ title: stored.title, creator: stored.creator });
     }
 
     const request$ = this.http
@@ -89,7 +93,18 @@ export class YoutubeService {
 
   getVideoDetailsBatch(videoIds: string[]): Observable<YouTubeVideoDetails[]> {
     const uniqueVideoIds = Array.from(new Set(videoIds.filter(Boolean)));
-    const uncached = uniqueVideoIds.filter(id => !this.detailsCache.has(id));
+
+    uniqueVideoIds.forEach(videoId => {
+      if (!this.readMemoryVideoDetails(videoId)) {
+        const stored = this.readStoredVideoDetails(videoId);
+
+        if (stored) {
+          this.detailsCache.set(videoId, stored);
+        }
+      }
+    });
+
+    const uncached = uniqueVideoIds.filter(id => !this.readMemoryVideoDetails(id));
 
     if (!uncached.length) {
       return of(this.readCachedVideoDetails(videoIds));
@@ -476,25 +491,119 @@ export class YoutubeService {
   }
 
   private cacheVideoDetails(videoId: string, details: YouTubeVideoDetails): void {
-    this.detailsCache.set(videoId, details);
-    localStorage.setItem(`yt-details-${videoId}`, JSON.stringify(details));
+    if (!this.isCacheableVideoDetails(details)) {
+      this.detailsCache.delete(videoId);
+      this.removeStoredVideoDetails(videoId);
+      return;
+    }
+
+    const storedDetails: StoredYouTubeVideoDetails = {
+      ...details,
+      cachedAt: Date.now()
+    };
+    this.detailsCache.set(videoId, storedDetails);
+
+    try {
+      localStorage.setItem(`yt-details-${videoId}`, JSON.stringify(storedDetails));
+    } catch {
+      // The in-memory cache remains available when browser storage is blocked.
+    }
+  }
+
+  private readStoredVideoDetails(videoId: string): StoredYouTubeVideoDetails | null {
+    try {
+      const stored = localStorage.getItem(`yt-details-${videoId}`);
+
+      if (!stored) {
+        return null;
+      }
+
+      const parsed = JSON.parse(stored) as Partial<StoredYouTubeVideoDetails>;
+      const isFresh = this.isFreshCacheTimestamp(parsed?.cachedAt);
+      const details = {
+        title: parsed?.title,
+        creator: parsed?.creator
+      } as Partial<YouTubeVideoDetails>;
+
+      if (
+        isFresh
+        && typeof details.title === 'string'
+        && typeof details.creator === 'string'
+        && this.isCacheableVideoDetails(details as YouTubeVideoDetails)
+      ) {
+        return {
+          title: details.title,
+          creator: details.creator,
+          cachedAt: parsed.cachedAt as number
+        };
+      }
+
+      this.removeStoredVideoDetails(videoId);
+    } catch {
+      this.removeStoredVideoDetails(videoId);
+    }
+
+    return null;
   }
 
   private readCachedVideoDetails(videoIds: string[]): YouTubeVideoDetails[] {
     return videoIds.map(id =>
-      this.detailsCache.get(id) || { title: 'Temporarily unavailable', creator: 'Unknown' }
+      this.readMemoryVideoDetails(id) || { title: 'Temporarily unavailable', creator: 'Unknown' }
     );
   }
 
+  private readMemoryVideoDetails(videoId: string): YouTubeVideoDetails | null {
+    const cached = this.detailsCache.get(videoId);
+
+    if (!cached || !this.isFreshCacheTimestamp(cached.cachedAt)) {
+      this.detailsCache.delete(videoId);
+      return null;
+    }
+
+    return { title: cached.title, creator: cached.creator };
+  }
+
+  private isFreshCacheTimestamp(cachedAt: unknown): cachedAt is number {
+    return typeof cachedAt === 'number'
+      && Number.isFinite(cachedAt)
+      && Date.now() - cachedAt <= this.detailsCacheTtlMs;
+  }
+
+  private isCacheableVideoDetails(details: YouTubeVideoDetails): boolean {
+    return Boolean(
+      details.title?.trim()
+      && details.creator?.trim()
+      && details.title !== 'Temporarily unavailable'
+      && details.creator !== 'Unknown'
+    );
+  }
+
+  private removeStoredVideoDetails(videoId: string): void {
+    try {
+      localStorage.removeItem(`yt-details-${videoId}`);
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+    }
+  }
+
   private rememberQuotaStatus(err: any): void {
-    const reason = err?.error?.errors?.[0]?.reason;
+    const errorPayload = err?.error?.error || err?.error;
+    const reason = errorPayload?.errors?.[0]?.reason;
     if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') {
-      localStorage.setItem(this.quotaKey, 'Quota exceeded, try again later.');
+      try {
+        localStorage.setItem(this.quotaKey, 'Quota exceeded, try again later.');
+      } catch {
+        // Quota feedback remains best-effort when browser storage is blocked.
+      }
     }
   }
 
   getQuotaStatus(): Observable<string> {
-    const status = localStorage.getItem(this.quotaKey);
-    return of(status ?? 'Quota status not available');
+    try {
+      const status = localStorage.getItem(this.quotaKey);
+      return of(status ?? 'Quota status not available');
+    } catch {
+      return of('Quota status not available');
+    }
   }
 }

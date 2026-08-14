@@ -6,6 +6,7 @@ import { EmojiService } from 'src/app/services/emoji.service';
 import { FirebaseService } from 'src/app/services/firebase.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { PexelsService } from 'src/app/services/pexels.service';
+import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
 import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
@@ -228,7 +229,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private firebase: FirebaseService,
     private youtubeService: YoutubeService,
-    private shareService: ShareService
+    private shareService: ShareService,
+    private radioFavorites: RadioFavoritesService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -283,10 +285,23 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.resetRecoverySession();
 
-    this.chipArray.sort((a, b) => (a.order || 0) - (b.order || 0));
+    this.chipArray = this.chipArray
+      .filter(chip => typeof chip?.chipname === 'string' && chip.chipname.trim().length > 0)
+      .sort((a, b) => {
+        const aOrder = Number.isFinite(a.order) && a.order > 0
+          ? a.order
+          : Number.MAX_SAFE_INTEGER;
+        const bOrder = Number.isFinite(b.order) && b.order > 0
+          ? b.order
+          : Number.MAX_SAFE_INTEGER;
+
+        return aOrder - bOrder
+          || a.chipname.trim().localeCompare(b.chipname.trim())
+          || String(a.id || '').localeCompare(String(b.id || ''));
+      });
 
     this.videoIds = this.chipArray.reduce<string[]>((ids, chip) => {
-      const videoId = chip.chipname?.trim();
+      const videoId = chip.chipname.trim();
 
       if (videoId && !seenVideoIds.has(videoId)) {
         seenVideoIds.add(videoId);
@@ -349,7 +364,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   get hasNewItems(): boolean {
     return this.newItems.some(item => item);
   }
-  
+
   selectVideo(index: number): void {
     if (!this.isValidStationIndex(index)) {
       return;
@@ -528,13 +543,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private restoreFavorites(): void {
-    try {
-      const storedFavorites = JSON.parse(localStorage.getItem('favorites') || '[]') as unknown;
-      const favoriteValues = Array.isArray(storedFavorites) ? storedFavorites : [];
-      this.favorites = this.videoIds.map((_, index) => Boolean(favoriteValues[index]));
-    } catch {
-      this.favorites = this.videoIds.map(() => false);
-    }
+    this.radioFavorites.load(this.videoIds);
+    this.syncFavoriteView();
   }
 
   private applyVideoDetails(details: YouTubeVideoDetails[]): void {
@@ -1370,8 +1380,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       event.stopPropagation(); 
       event.preventDefault();
     }
-    this.favorites[index] = !this.favorites[index];
-    localStorage.setItem('favorites', JSON.stringify(this.favorites));
+    this.radioFavorites.toggle(this.videoIds[index]);
+    this.syncFavoriteView();
+  }
+
+  private syncFavoriteView(): void {
+    this.favorites = this.videoIds.map(videoId => this.radioFavorites.isFavorite(videoId));
   }
 
   toggleFullScreen() {
