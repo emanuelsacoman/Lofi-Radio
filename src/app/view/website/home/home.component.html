@@ -50,6 +50,7 @@
               </mat-icon>
             </button>
             <button
+              #radioListToggle
               class="utility-button list-button"
               type="button"
               mat-icon-button
@@ -205,6 +206,7 @@
               </div>               
               
               <div
+                #radioListPanel
                 id="radio-list-panel"
                 class="list"
                 [class.show]="showList"

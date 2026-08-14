@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
@@ -101,6 +101,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   videoTitles: string[] = [];
   videoOwners: string[] = [];
   showList: boolean = false;
+
+  @ViewChild('radioListToggle')
+  private radioListToggle?: ElementRef<HTMLButtonElement>;
+
+  @ViewChild('radioListPanel')
+  private radioListPanel?: ElementRef<HTMLElement>;
 
   public isFirstVisit: boolean = false; 
 
@@ -240,6 +246,25 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleList(): void {
     this.showList = !this.showList;
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  onDocumentPointerDown(event: Event): void {
+    if (!this.showList) {
+      return;
+    }
+
+    const target = event.target;
+    const toggle = this.radioListToggle?.nativeElement;
+    const panel = this.radioListPanel?.nativeElement;
+
+    if (!(target instanceof Node) || !toggle || !panel) {
+      return;
+    }
+
+    if (!toggle.contains(target) && !panel.contains(target)) {
+      this.showList = false;
+    }
   }
 
   shareSite(): void {

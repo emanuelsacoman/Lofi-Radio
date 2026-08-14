@@ -687,6 +687,56 @@ describe('HomeComponent non-verbal radio feedback', () => {
     expect(component.radioStatus).toBe('buffering');
   });
 
+  describe('radio list dismissal', () => {
+    let toggle: HTMLButtonElement;
+    let panel: HTMLDivElement;
+
+    beforeEach(() => {
+      toggle = document.createElement('button');
+      panel = document.createElement('div');
+      (component as any).radioListToggle = { nativeElement: toggle };
+      (component as any).radioListPanel = { nativeElement: panel };
+    });
+
+    it('closes an open list when pointer input starts outside it', () => {
+      component.showList = true;
+
+      component.onDocumentPointerDown(pointerEventFor(document.createElement('main')));
+
+      expect(component.showList).toBeFalse();
+    });
+
+    it('keeps the list open for input inside the panel', () => {
+      const stationButton = document.createElement('button');
+      panel.appendChild(stationButton);
+      component.showList = true;
+
+      component.onDocumentPointerDown(pointerEventFor(stationButton));
+
+      expect(component.showList).toBeTrue();
+    });
+
+    it('lets the list toggle close the panel without an outside-click conflict', () => {
+      const icon = document.createElement('span');
+      toggle.appendChild(icon);
+      component.showList = true;
+
+      component.onDocumentPointerDown(pointerEventFor(icon));
+      expect(component.showList).toBeTrue();
+
+      component.toggleList();
+      expect(component.showList).toBeFalse();
+    });
+
+    it('ignores outside input while the list is already closed', () => {
+      component.showList = false;
+
+      component.onDocumentPointerDown(pointerEventFor(document.createElement('main')));
+
+      expect(component.showList).toBeFalse();
+    });
+  });
+
   function configureStations(
     videoIds: string[],
     currentIndex: number,
@@ -735,6 +785,12 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
   function emitState(player: ReturnType<typeof createPlayer>, state: number): void {
     component.onPlayerStateChange({ target: player, data: state } as unknown as YT.OnStateChangeEvent);
+  }
+
+  function pointerEventFor(target: Node): Event {
+    const event = new Event('pointerdown');
+    Object.defineProperty(event, 'target', { value: target });
+    return event;
   }
 });
 
