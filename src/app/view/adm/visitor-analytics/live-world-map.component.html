@@ -1,0 +1,91 @@
+<div class="world-map" *ngIf="markers.length; else emptyMap">
+  <svg
+    class="world-map__svg"
+    [attr.viewBox]="'0 0 ' + viewBoxWidth + ' ' + viewBoxHeight"
+    role="img"
+    [attr.aria-label]="mapAriaLabel"
+  >
+    <rect class="world-map__ocean" x="0" y="0" width="960" height="480" rx="18"></rect>
+
+    <g class="world-map__grid" aria-hidden="true">
+      <line x1="240" x2="240" y1="0" y2="480"></line>
+      <line x1="480" x2="480" y1="0" y2="480"></line>
+      <line x1="720" x2="720" y1="0" y2="480"></line>
+      <line x1="0" x2="960" y1="120" y2="120"></line>
+      <line x1="0" x2="960" y1="240" y2="240"></line>
+      <line x1="0" x2="960" y1="360" y2="360"></line>
+    </g>
+
+    <g class="world-map__land" aria-hidden="true">
+      <path d="M50 92 L83 66 L122 58 L151 40 L207 45 L235 63 L270 73 L302 105 L285 130 L252 137 L232 161 L207 174 L193 207 L169 211 L150 184 L119 170 L100 148 L70 137 L52 116 Z"></path>
+      <path d="M168 208 L191 204 L218 221 L229 240 L214 249 L195 236 L179 230 Z"></path>
+      <path d="M220 246 L251 238 L286 250 L318 280 L329 314 L316 351 L298 379 L279 421 L258 406 L249 372 L235 340 L229 303 L211 276 Z"></path>
+      <path d="M322 48 L354 29 L389 35 L407 57 L391 82 L361 95 L329 84 L313 64 Z"></path>
+      <path d="M457 125 L478 108 L513 107 L537 123 L528 143 L507 147 L495 162 L467 157 L447 142 Z"></path>
+      <path d="M477 166 L518 156 L551 177 L572 210 L564 253 L547 288 L526 337 L499 330 L484 299 L471 263 L450 232 L454 195 Z"></path>
+      <path d="M524 119 L557 90 L603 73 L658 67 L704 77 L748 69 L802 83 L845 108 L833 133 L798 143 L773 165 L741 159 L714 178 L684 173 L659 153 L628 165 L605 151 L579 157 L556 143 Z"></path>
+      <path d="M568 174 L599 169 L627 184 L648 211 L672 225 L661 246 L636 241 L618 223 L591 218 L577 195 Z"></path>
+      <path d="M682 185 L713 183 L741 201 L753 224 L738 238 L718 222 L696 215 Z"></path>
+      <path d="M777 306 L814 288 L857 297 L889 320 L881 354 L855 373 L815 367 L783 347 L766 328 Z"></path>
+      <path d="M899 364 L915 358 L925 374 L912 389 L897 380 Z"></path>
+      <path d="M17 447 L116 438 L218 443 L324 434 L430 442 L539 435 L648 443 L761 436 L873 444 L943 437 L955 469 L8 469 Z"></path>
+    </g>
+
+    <g class="world-map__markers">
+      <g
+        class="world-map__marker"
+        *ngFor="let marker of markers; trackBy: trackByMarkerId"
+        role="img"
+        tabindex="0"
+        [attr.aria-label]="marker.label"
+      >
+        <title>{{ marker.label }}</title>
+        <circle
+          class="world-map__marker-pulse"
+          [attr.cx]="marker.x"
+          [attr.cy]="marker.y"
+          [attr.r]="marker.radius + 5"
+        ></circle>
+        <circle
+          class="world-map__marker-dot"
+          [attr.cx]="marker.x"
+          [attr.cy]="marker.y"
+          [attr.r]="marker.radius"
+        ></circle>
+        <text
+          *ngIf="marker.count > 1"
+          [attr.x]="marker.x"
+          [attr.y]="marker.y"
+          dy="0.35em"
+          aria-hidden="true"
+        >{{ marker.count > 99 ? '99+' : marker.count }}</text>
+      </g>
+    </g>
+  </svg>
+
+  <div class="world-map__footer" aria-live="polite">
+    <span class="world-map__online">
+      <span aria-hidden="true"></span>
+      {{ mappedVisitorsCount }} {{ mappedVisitorsCount === 1 ? 'visitante localizado' : 'visitantes localizados' }}
+    </span>
+    <span *ngIf="unlocatedVisitorsCount">
+      + {{ unlocatedVisitorsCount }} sem localização disponível
+    </span>
+  </div>
+
+  <ul class="visually-hidden">
+    <li *ngFor="let marker of markers; trackBy: trackByMarkerId">{{ marker.label }}</li>
+  </ul>
+</div>
+
+<ng-template #emptyMap>
+  <div class="world-map-empty" role="status">
+    <mat-icon aria-hidden="true">public_off</mat-icon>
+    <strong>{{ visitors.length ? 'Localização ainda indisponível' : 'Ninguém online neste momento' }}</strong>
+    <span>
+      {{ visitors.length
+        ? 'Há visitantes ativos, mas sem uma região aproximada para mostrar.'
+        : 'Os próximos visitantes aparecerão no mapa em tempo real.' }}
+    </span>
+  </div>
+</ng-template>

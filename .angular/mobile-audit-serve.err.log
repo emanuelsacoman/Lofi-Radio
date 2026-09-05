@@ -1,0 +1,50 @@
+- Generating browser application bundles (phase: setup)...
+√ Browser application bundle generation complete.
+
+Warning: C:\Users\KWaut\Desktop\Pessoal\Códigos\Lofi-Radio\src\app\app.module.ts depends on 'pexels'. CommonJS or AMD dependencies can cause optimization bailouts.
+For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
+
+
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+
+Error: src/app/view/website/login/login.component.ts:12:16 - error NG2008: Could not find template file './login.component.html'.
+
+12   templateUrl: './login.component.html',
+                  ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+√ Browser application bundle generation complete.
+
+Error: src/app/view/website/login/login.component.ts:12:16 - error NG2008: Could not find template file './login.component.html'.
+
+12   templateUrl: './login.component.html',
+                  ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+√ Browser application bundle generation complete.
+
+Error: src/app/view/website/login/login.component.ts:12:16 - error NG2008: Could not find template file './login.component.html'.
+
+12   templateUrl: './login.component.html',
+                  ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.

@@ -20,6 +20,7 @@ import { LoginComponent } from './view/website/login/login.component';
 import { NgToastModule } from 'ng-angular-popup';
 import { provideAuth, getAuth } from '@angular/fire/auth';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { getFunctions, provideFunctions } from '@angular/fire/functions';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { AdmComponent } from './view/adm/adm/adm.component';
 import { HttpClientModule } from '@angular/common/http';
@@ -28,6 +29,9 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatButtonModule } from '@angular/material/button';
 import { VhsComponent } from './view/effect/vhs/vhs.component';
+import { VisitorAnalyticsComponent } from './view/adm/visitor-analytics/visitor-analytics.component';
+import { VisitsTrendChartComponent } from './view/adm/visitor-analytics/visits-trend-chart.component';
+import { LiveWorldMapComponent } from './view/adm/visitor-analytics/live-world-map.component';
 
 const client = createClient(environment.apikey);
 
@@ -38,7 +42,10 @@ const client = createClient(environment.apikey);
     HomeComponent,
     LoginComponent,
     AdmComponent,
-    VhsComponent
+    VhsComponent,
+    VisitorAnalyticsComponent,
+    VisitsTrendChartComponent,
+    LiveWorldMapComponent
   ],
   imports: [
     BrowserModule,
@@ -56,6 +63,7 @@ const client = createClient(environment.apikey);
     ReactiveFormsModule,
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideFirestore(() => getFirestore()),
+    provideFunctions(() => getFunctions(undefined, 'us-central1')),
     provideAuth(() => getAuth()),
     HttpClientModule,
     MatListModule,

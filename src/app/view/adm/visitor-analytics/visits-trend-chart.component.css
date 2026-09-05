@@ -1,0 +1,140 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.trend-chart {
+  min-width: 0;
+  margin: 0;
+}
+
+.trend-chart__svg {
+  width: 100%;
+  height: auto;
+  min-height: 250px;
+  display: block;
+  overflow: visible;
+}
+
+.trend-chart__grid line {
+  stroke: #e8edf3;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.trend-chart__grid text,
+.trend-chart__x-axis text {
+  fill: #64748b;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+}
+
+.trend-chart__grid text {
+  text-anchor: end;
+}
+
+.trend-chart__x-axis text {
+  text-anchor: middle;
+}
+
+.trend-chart__baseline {
+  stroke: #cbd5e1;
+  stroke-width: 1;
+}
+
+.trend-chart__area {
+  fill: rgba(37, 99, 235, 0.11);
+}
+
+.trend-chart__line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-chart__points circle {
+  fill: #ffffff;
+  stroke: #2563eb;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-chart__caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px 2px 0;
+  border-top: 1px solid #eef2f7;
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.trend-chart__caption strong {
+  color: #334155;
+}
+
+.trend-chart__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.trend-chart__legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.trend-chart-empty {
+  min-height: 292px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.trend-chart-empty mat-icon {
+  margin-bottom: 3px;
+  color: #94a3b8;
+}
+
+.trend-chart-empty strong {
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.trend-chart-empty span {
+  font-size: 0.8rem;
+}
+
+@media screen and (max-width: 700px) {
+  .trend-chart__svg {
+    min-height: 210px;
+  }
+
+  .trend-chart__caption {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .trend-chart-empty {
+    min-height: 240px;
+  }
+}

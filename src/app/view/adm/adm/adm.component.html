@@ -20,16 +20,6 @@
   <main class="admin-content">
     <section class="metrics-grid" aria-label="Resumo">
       <article class="metric-card">
-        <div class="metric-card__icon metric-card__icon--green">
-          <mat-icon>person</mat-icon>
-        </div>
-        <div>
-          <span>Ouvintes</span>
-          <strong>{{ connectedUsersCount }}</strong>
-        </div>
-      </article>
-
-      <article class="metric-card">
         <div class="metric-card__icon metric-card__icon--blue">
           <mat-icon>queue_music</mat-icon>
         </div>
@@ -59,6 +49,8 @@
         </div>
       </article>
     </section>
+
+    <app-visitor-analytics></app-visitor-analytics>
 
     <section class="workspace">
       <aside class="tools-column">

@@ -1,0 +1,68 @@
+<figure class="trend-chart" *ngIf="chartPoints.length && totalVisits > 0; else emptyChart">
+  <svg
+    class="trend-chart__svg"
+    [attr.viewBox]="'0 0 ' + viewBoxWidth + ' ' + viewBoxHeight"
+    role="img"
+    [attr.aria-label]="chartAriaLabel"
+  >
+    <g class="trend-chart__grid" aria-hidden="true">
+      <g *ngFor="let tick of yTicks; trackBy: trackByTickValue">
+        <line
+          [attr.x1]="plotLeft"
+          [attr.x2]="viewBoxWidth - plotRight"
+          [attr.y1]="tick.y"
+          [attr.y2]="tick.y"
+        ></line>
+        <text [attr.x]="plotLeft - 10" [attr.y]="(tick.y || 0) + 4">{{ tick.label }}</text>
+      </g>
+    </g>
+
+    <line
+      class="trend-chart__baseline"
+      [attr.x1]="plotLeft"
+      [attr.x2]="viewBoxWidth - plotRight"
+      [attr.y1]="baselineY"
+      [attr.y2]="baselineY"
+      aria-hidden="true"
+    ></line>
+
+    <path class="trend-chart__area" [attr.d]="areaPath" aria-hidden="true"></path>
+    <path class="trend-chart__line" [attr.d]="linePath" aria-hidden="true"></path>
+
+    <g class="trend-chart__points">
+      <circle
+        *ngFor="let point of chartPoints; trackBy: trackByPointDate"
+        [attr.cx]="point.x"
+        [attr.cy]="point.y"
+        r="4"
+      >
+        <title>{{ point.label }}: {{ point.visits }} {{ point.visits === 1 ? 'visita' : 'visitas' }}</title>
+      </circle>
+    </g>
+
+    <g class="trend-chart__x-axis" aria-hidden="true">
+      <text
+        *ngFor="let tick of xTicks; trackBy: trackByTickValue"
+        [attr.x]="tick.x"
+        [attr.y]="viewBoxHeight - 13"
+      >{{ tick.label }}</text>
+    </g>
+  </svg>
+
+  <figcaption class="trend-chart__caption">
+    <span class="trend-chart__legend">
+      <span class="trend-chart__legend-dot" aria-hidden="true"></span>
+      Visitas diárias
+    </span>
+    <span><strong>{{ totalVisits | number:'1.0-0' }}</strong> no período</span>
+    <span *ngIf="peakLabel">Pico: <strong>{{ peakVisits | number:'1.0-0' }}</strong> em {{ peakLabel }}</span>
+  </figcaption>
+</figure>
+
+<ng-template #emptyChart>
+  <div class="trend-chart-empty" role="status">
+    <mat-icon aria-hidden="true">query_stats</mat-icon>
+    <strong>O gráfico ainda está vazio</strong>
+    <span>Os acessos dos próximos dias aparecerão aqui.</span>
+  </div>
+</ng-template>

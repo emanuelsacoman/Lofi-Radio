@@ -9,6 +9,7 @@ import { PexelsService } from 'src/app/services/pexels.service';
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
 import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
+import { VisitorTrackingService } from 'src/app/services/analytics/visitor-tracking.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { Subscription } from 'rxjs';
 
@@ -230,6 +231,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private cdRef: ChangeDetectorRef,
     private pexelsService: PexelsService,
     private userService: UserService,
+    private visitorTracking: VisitorTrackingService,
     private emojiService: EmojiService,
     private auth: AuthService,
     private router: Router,
@@ -410,6 +412,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   ngOnInit(): void {
+    this.visitorTracking.start();
+
     const visited = localStorage.getItem('hasVisited');
 
     if (visited === null) {
@@ -514,6 +518,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.isDestroyed = true;
+    this.visitorTracking.stop();
     this.catalogSubscription?.unsubscribe();
     this.detailsSubscription?.unsubscribe();
     this.subscriptions.unsubscribe();

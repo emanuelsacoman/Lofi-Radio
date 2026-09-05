@@ -32,7 +32,6 @@ describe('AdmComponent ordering', () => {
       new FormBuilder(),
       toastService as any,
       {} as any,
-      {} as any,
       {} as any
     );
   });

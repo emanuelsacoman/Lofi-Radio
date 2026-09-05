@@ -1,0 +1,176 @@
+<section class="visitor-analytics" aria-labelledby="visitor-analytics-title">
+  <header class="analytics-heading">
+    <div>
+      <span class="analytics-heading__eyebrow">Monitoramento</span>
+      <h2 id="visitor-analytics-title">Visitas ao site</h2>
+      <p>Acompanhe a audiência em tempo real com localização aproximada, sem armazenar endereços IP.</p>
+    </div>
+  </header>
+
+  <ng-container *ngIf="dashboard$ | async as state; else loadingState">
+    <ng-container *ngIf="!state.loading; else loadingState">
+      <section class="analytics-error" *ngIf="state.error; else dashboardContent" role="alert">
+        <span class="analytics-error__icon" aria-hidden="true">
+          <mat-icon>cloud_off</mat-icon>
+        </span>
+        <div>
+          <h3>Não foi possível carregar as visitas</h3>
+          <p>{{ state.error }}</p>
+          <span>Confira a conexão e recarregue esta página.</span>
+        </div>
+      </section>
+
+      <ng-template #dashboardContent>
+        <div class="analytics-status" aria-live="polite">
+          <span class="analytics-status__pulse" aria-hidden="true"></span>
+          <span>Dados em tempo real</span>
+          <time *ngIf="state.data.updatedAt" [dateTime]="(state.data.updatedAt | date:'yyyy-MM-ddTHH:mm:ss') || ''">
+            Atualizado às {{ state.data.updatedAt | date:'HH:mm:ss' }}
+          </time>
+        </div>
+
+        <section class="analytics-metrics" aria-label="Resumo das visitas">
+          <article class="analytics-metric">
+            <span class="analytics-metric__icon analytics-metric__icon--green" aria-hidden="true">
+              <mat-icon>sensors</mat-icon>
+            </span>
+            <div>
+              <span>Online agora</span>
+              <strong>{{ state.data.onlineNow | number:'1.0-0' }}</strong>
+              <small>sessões ativas</small>
+            </div>
+          </article>
+
+          <article class="analytics-metric">
+            <span class="analytics-metric__icon analytics-metric__icon--blue" aria-hidden="true">
+              <mat-icon>today</mat-icon>
+            </span>
+            <div>
+              <span>Hoje</span>
+              <strong>{{ state.data.visitsToday | number:'1.0-0' }}</strong>
+              <small>visitas registradas</small>
+            </div>
+          </article>
+
+          <article class="analytics-metric">
+            <span class="analytics-metric__icon analytics-metric__icon--violet" aria-hidden="true">
+              <mat-icon>calendar_month</mat-icon>
+            </span>
+            <div>
+              <span>Últimos 30 dias</span>
+              <strong>{{ state.data.visitsLast30Days | number:'1.0-0' }}</strong>
+              <small>visitas no período</small>
+            </div>
+          </article>
+
+          <article class="analytics-metric">
+            <span class="analytics-metric__icon analytics-metric__icon--amber" aria-hidden="true">
+              <mat-icon>public</mat-icon>
+            </span>
+            <div>
+              <span>Países</span>
+              <strong>{{ state.data.countriesLast30Days | number:'1.0-0' }}</strong>
+              <small>nos últimos 30 dias</small>
+            </div>
+          </article>
+        </section>
+
+        <section class="analytics-visuals" aria-label="Visualizações de visitas">
+          <article class="analytics-panel analytics-panel--chart">
+            <header class="analytics-panel__heading">
+              <div>
+                <span>Histórico</span>
+                <h3>Visitas nos últimos 30 dias</h3>
+              </div>
+              <mat-icon aria-hidden="true">show_chart</mat-icon>
+            </header>
+
+            <app-visits-trend-chart [points]="state.data.dailyVisits"></app-visits-trend-chart>
+          </article>
+
+          <article class="analytics-panel analytics-panel--map">
+            <header class="analytics-panel__heading">
+              <div>
+                <span>Tempo real</span>
+                <h3>Visitantes online pelo mundo</h3>
+              </div>
+              <mat-icon aria-hidden="true">travel_explore</mat-icon>
+            </header>
+
+            <app-live-world-map [visitors]="state.data.activeVisitors"></app-live-world-map>
+          </article>
+        </section>
+
+        <section class="analytics-panel analytics-panel--recent" aria-labelledby="recent-visits-title">
+          <header class="analytics-panel__heading analytics-panel__heading--bordered">
+            <div>
+              <span>Atividade</span>
+              <h3 id="recent-visits-title">Acessos recentes</h3>
+            </div>
+            <span class="recent-count">{{ state.data.recentVisits.length }}</span>
+          </header>
+
+          <div class="recent-table-wrap" *ngIf="state.data.recentVisits.length; else emptyRecentVisits">
+            <table class="recent-table">
+              <caption class="visually-hidden">Lista dos acessos mais recentes ao site</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Quando</th>
+                  <th scope="col">Localização aproximada</th>
+                  <th scope="col">Página</th>
+                  <th scope="col">Origem</th>
+                  <th scope="col">Dispositivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let visit of state.data.recentVisits; trackBy: trackByVisitId">
+                  <td data-label="Quando">
+                    <time [dateTime]="(visit.visitedAt | date:'yyyy-MM-ddTHH:mm:ss') || ''">
+                      {{ visit.visitedAt | date:'dd/MM/yyyy, HH:mm' }}
+                    </time>
+                  </td>
+                  <td data-label="Localização">
+                    <span class="location-cell">
+                      <span class="location-cell__flag" *ngIf="visit.geo.flag" aria-hidden="true">{{ visit.geo.flag }}</span>
+                      <span>{{ formatLocation(visit) }}</span>
+                    </span>
+                  </td>
+                  <td data-label="Página"><code>{{ visit.path || '/' }}</code></td>
+                  <td data-label="Origem">{{ formatReferrer(visit.referrerHost) }}</td>
+                  <td data-label="Dispositivo">
+                    <span class="device-cell">
+                      <mat-icon aria-hidden="true">{{ deviceIcon(visit.deviceCategory) }}</mat-icon>
+                      {{ formatDevice(visit.deviceCategory) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <ng-template #emptyRecentVisits>
+            <div class="analytics-empty" role="status">
+              <mat-icon aria-hidden="true">manage_search</mat-icon>
+              <strong>Nenhum acesso registrado ainda</strong>
+              <span>As próximas visitas aparecerão aqui.</span>
+            </div>
+          </ng-template>
+        </section>
+      </ng-template>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #loadingState>
+    <div class="analytics-loading" aria-busy="true" aria-live="polite">
+      <span class="visually-hidden">Carregando dados de visitas</span>
+      <div class="analytics-loading__metrics" aria-hidden="true">
+        <span class="skeleton-card" *ngFor="let item of [1, 2, 3, 4]"></span>
+      </div>
+      <div class="analytics-loading__visuals" aria-hidden="true">
+        <span class="skeleton-panel"></span>
+        <span class="skeleton-panel"></span>
+      </div>
+      <span class="skeleton-table" aria-hidden="true"></span>
+    </div>
+  </ng-template>
+</section>

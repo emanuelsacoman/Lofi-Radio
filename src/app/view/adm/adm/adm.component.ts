@@ -8,7 +8,6 @@ import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/services/auth.service';
 import { FirebaseService } from 'src/app/services/firebase.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { Youtuber } from 'src/app/services/interfaces/youtuber';
@@ -25,7 +24,6 @@ export class AdmComponent implements OnInit, OnDestroy {
   public chipArray: Chip[] = [];
   public youtuberArray: Youtuber[] = [];
 
-  connectedUsersCount = 0;
   quotaStatus = '';
   isAddingChip = false;
   isAddingYoutuber = false;
@@ -46,7 +44,6 @@ export class AdmComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private toastService: ToastService,
     private auth: AuthService,
-    private userService: UserService,
     private youtubeService: YoutubeService
   ) {}
 
@@ -54,7 +51,6 @@ export class AdmComponent implements OnInit, OnDestroy {
     this.initForms();
     this.loadChips();
     this.loadYoutubers();
-    this.fetchConnectedUsersCount();
     this.ytStatus();
   }
 
@@ -612,13 +608,6 @@ export class AdmComponent implements OnInit, OnDestroy {
   private ytStatus() {
     const subscription = this.youtubeService.getQuotaStatus()
       .subscribe(status => this.quotaStatus = status);
-
-    this.subscriptions.add(subscription);
-  }
-
-  private fetchConnectedUsersCount() {
-    const subscription = this.userService.getConnectedUsersCount()
-      .subscribe(count => this.connectedUsersCount = count);
 
     this.subscriptions.add(subscription);
   }

@@ -21,6 +21,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
     changeDetector = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
     const pexels = jasmine.createSpyObj('PexelsService', ['fetchRandomImage']);
     const users = jasmine.createSpyObj('UserService', ['getConnectedUsersCount']);
+    const visitorTracking = jasmine.createSpyObj('VisitorTrackingService', ['start', 'stop']);
     const emojis = jasmine.createSpyObj('EmojiService', ['getLastEmoji', 'sendEmoji']);
     const router = jasmine.createSpyObj('Router', ['navigate']);
     firebase = jasmine.createSpyObj('FirebaseService', ['obterTodosChip']);
@@ -36,6 +37,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
       changeDetector as any,
       pexels,
       users,
+      visitorTracking,
       emojis,
       { isLoggedIn: false } as any,
       router,

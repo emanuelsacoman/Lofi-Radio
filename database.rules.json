@@ -1,0 +1,76 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "analyticsPublic": {
+      "onlineCount": {
+        ".read": true,
+        ".write": false,
+        ".validate": "newData.isNumber() && newData.val() >= 0"
+      }
+    },
+    "visitorAnalytics": {
+      "live": {
+        ".read": "auth != null",
+        ".indexOn": ["lastSeenAt"],
+        "$connectionId": {
+          ".write": "!newData.exists()",
+          ".validate": "newData.hasChildren(['sessionId', 'connectedAt', 'lastSeenAt', 'path', 'referrerHost', 'language', 'deviceCategory', 'geo'])",
+          "sessionId": {
+            ".validate": "newData.isString() && newData.val().length <= 80"
+          },
+          "connectedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "lastSeenAt": {
+            ".write": "data.parent().exists() && newData.isNumber() && newData.val() <= now + 5000 && newData.val() >= now - 60000",
+            ".validate": "newData.isNumber()"
+          },
+          "path": {
+            ".validate": "newData.isString() && newData.val().length <= 160"
+          },
+          "referrerHost": {
+            ".validate": "newData.isString() && newData.val().length <= 120"
+          },
+          "language": {
+            ".validate": "newData.isString() && newData.val().length <= 16"
+          },
+          "deviceCategory": {
+            ".validate": "newData.isString() && (newData.val() === 'desktop' || newData.val() === 'mobile' || newData.val() === 'tablet' || newData.val() === 'unknown')"
+          },
+          "geo": {
+            ".validate": "newData.hasChildren(['city', 'region', 'country', 'countryCode', 'timezone', 'flag'])",
+            "city": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "region": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "country": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "countryCode": { ".validate": "newData.isString() && newData.val().length <= 2" },
+            "latitude": { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+            "longitude": { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+            "timezone": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "flag": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "$other": { ".validate": false }
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+    "emojis": {
+      ".read": true,
+      "$emojiId": {
+        ".write": "(!data.exists() && newData.exists()) || !newData.exists()",
+        ".validate": "newData.hasChildren(['emoji'])",
+        "emoji": {
+          ".validate": "newData.isString() && newData.val().length <= 16"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+    "connectedUsers": {
+      ".read": true,
+      "$connectionId": {
+        ".write": "(!data.exists() && newData.val() === true) || !newData.exists()",
+        ".validate": "newData.isBoolean() && newData.val() === true"
+      }
+    }
+  }
+}
