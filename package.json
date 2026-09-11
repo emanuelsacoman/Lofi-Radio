@@ -9,6 +9,7 @@
     "test": "ng test",
     "test:adm": "ng test --watch=false --include=src/app/view/adm/adm/adm.component.spec.ts --ts-config=tsconfig.adm-spec.json --karma-config=karma.adm.conf.js",
     "test:share": "ng test --watch=false --include=src/app/services/share.service.spec.ts --ts-config=tsconfig.share-spec.json --karma-config=karma.adm.conf.js",
+    "test:visits": "ng test --watch=false --include=src/app/services/profile-visits.service.spec.ts --include=src/app/view/adm/profile-visits-chart/profile-visits-chart.component.spec.ts --ts-config=tsconfig.visits-spec.json --karma-config=karma.adm.conf.js",
     "test:radio": "ng test --watch=false --include=src/app/view/website/home/home.component.spec.ts --include=src/app/services/radio-favorites.service.spec.ts --include=src/app/services/youtube.service.spec.ts --ts-config=tsconfig.radio-spec.json --karma-config=karma.adm.conf.js"
   },
   "private": true,

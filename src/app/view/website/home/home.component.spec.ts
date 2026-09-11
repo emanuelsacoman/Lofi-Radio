@@ -42,7 +42,8 @@ describe('HomeComponent non-verbal radio feedback', () => {
       firebase as any,
       youtube as any,
       share,
-      new RadioFavoritesService()
+      new RadioFavoritesService(),
+      jasmine.createSpyObj('ProfileVisitsService', { registerVisit: Promise.resolve() })
     );
 
     component.isOnline = true;

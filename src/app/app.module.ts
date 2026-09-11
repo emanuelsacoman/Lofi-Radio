@@ -15,6 +15,7 @@ import { createClient } from 'pexels';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { environment } from 'src/environments/environment';
 import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
+import { AngularFireFunctionsModule } from '@angular/fire/compat/functions';
 import {MatExpansionModule} from '@angular/material/expansion';
 import { LoginComponent } from './view/website/login/login.component';
 import { NgToastModule } from 'ng-angular-popup';
@@ -28,6 +29,11 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatButtonModule } from '@angular/material/button';
 import { VhsComponent } from './view/effect/vhs/vhs.component';
+import { ProfileVisitsChartComponent } from './view/adm/profile-visits-chart/profile-visits-chart.component';
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
+
+registerLocaleData(localePt, 'pt-BR');
 
 const client = createClient(environment.apikey);
 
@@ -41,6 +47,7 @@ const client = createClient(environment.apikey);
     VhsComponent
   ],
   imports: [
+    ProfileVisitsChartComponent,
     BrowserModule,
     AppRoutingModule,
     BrowserAnimationsModule,
@@ -51,6 +58,7 @@ const client = createClient(environment.apikey);
     MatProgressSpinnerModule,
     FormsModule,
     AngularFireDatabaseModule,
+    AngularFireFunctionsModule,
     MatExpansionModule,
     NgToastModule,
     ReactiveFormsModule,

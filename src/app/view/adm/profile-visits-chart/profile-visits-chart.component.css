@@ -1,0 +1,760 @@
+/* ==========================================================================
+   AUDIENCE PANEL
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Design Tokens
+   -------------------------------------------------------------------------- */
+
+:host {
+  --color-text: #172033;
+  --color-heading: #101827;
+
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #eff6ff;
+
+  --color-muted: #64748b;
+  --color-secondary: #475569;
+
+  --color-border: #dbe2ea;
+  --color-border-light: #e2e8f0;
+  --color-border-subtle: #edf1f5;
+
+  --color-background: #ffffff;
+  --color-background-soft: #f8fafc;
+  --color-background-footer: #fbfcfe;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+
+  --panel-padding: 24px;
+
+  display: block;
+  min-width: 0;
+  margin-bottom: 18px;
+  color: var(--color-text);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+
+/* ==========================================================================
+   PANEL
+   ========================================================================== */
+
+.audience-panel {
+  overflow: hidden;
+
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 24px;
+  padding: var(--panel-padding);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.heading-icon {
+  display: grid;
+  place-items: center;
+
+  width: 44px;
+  height: 44px;
+
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+
+  border-radius: var(--radius-lg);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+
+  color: var(--color-muted);
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+h2 {
+  margin: 0;
+
+  color: var(--color-heading);
+
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 5px 0 0;
+
+  color: var(--color-muted);
+
+  font-size: 0.8rem;
+}
+
+
+/* ==========================================================================
+   PERIOD PICKER
+   ========================================================================== */
+
+.period-picker {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+
+  padding: 4px;
+
+  background: var(--color-background-soft);
+
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.period-picker button {
+  min-height: 36px;
+  padding: 7px 14px;
+
+  color: var(--color-secondary);
+  background: transparent;
+
+  border: 0;
+  border-radius: 5px;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.period-picker button:hover {
+  background: var(--color-border-light);
+}
+
+.period-picker button.is-active {
+  color: var(--color-primary-dark);
+  background: var(--color-background);
+
+  box-shadow:
+    0 1px 4px rgba(15, 23, 42, 0.1);
+}
+
+
+/* ==========================================================================
+   SUMMARY
+   ========================================================================== */
+
+.chart-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+
+  margin: 0 var(--panel-padding) 24px;
+  padding: 20px 0;
+
+  border-block: 1px solid var(--color-border-subtle);
+}
+
+.summary-item {
+  padding-left: 22px;
+
+  border-left: 1px solid var(--color-border-light);
+}
+
+.summary-item:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.summary-item > span {
+  display: block;
+
+  color: var(--color-secondary);
+
+  font-size: 0.78rem;
+}
+
+.summary-item strong {
+  display: block;
+
+  margin: 9px 0 6px;
+
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-variant-numeric: tabular-nums;
+
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+
+  overflow-wrap: anywhere;
+}
+
+.summary-item--primary strong {
+  color: var(--color-primary);
+}
+
+.summary-item small {
+  color: var(--color-muted);
+
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+
+/* ==========================================================================
+   CHART HEADER / LEGEND
+   ========================================================================== */
+
+.chart-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin: 0 var(--panel-padding) 14px;
+
+  color: var(--color-muted);
+
+  font-size: 0.75rem;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  color: var(--color-secondary);
+}
+
+.legend i {
+  width: 8px;
+  height: 8px;
+
+  background: var(--color-primary);
+
+  border-radius: 50%;
+}
+
+
+/* ==========================================================================
+   CHART
+   ========================================================================== */
+
+.visit-chart {
+  display: flex;
+
+  margin: 0 36px 0 var(--panel-padding);
+}
+
+
+/* --------------------------------------------------------------------------
+   Y Axis
+   -------------------------------------------------------------------------- */
+
+.y-axis {
+  position: relative;
+  flex: 0 0 48px;
+
+  color: var(--color-muted);
+
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.y-axis span {
+  position: absolute;
+  right: 16px;
+
+  transform: translateY(-50%);
+}
+
+
+/* --------------------------------------------------------------------------
+   Plot
+   -------------------------------------------------------------------------- */
+
+.plot {
+  position: relative;
+
+  flex: 1;
+  min-width: 0;
+}
+
+.plot svg {
+  display: block;
+
+  width: 100%;
+  height: 220px;
+
+  overflow: visible;
+}
+
+.grid-line {
+  stroke: #e8edf4;
+  stroke-dasharray: 4 5;
+
+  vector-effect: non-scaling-stroke;
+}
+
+.area-fill {
+  fill: var(--color-primary);
+  fill-opacity: 0.07;
+}
+
+.data-line {
+  fill: none;
+
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  vector-effect: non-scaling-stroke;
+}
+
+.selection-line {
+  stroke: #94a3b8;
+  stroke-dasharray: 3 4;
+
+  vector-effect: non-scaling-stroke;
+}
+
+
+/* --------------------------------------------------------------------------
+   Chart Points
+   -------------------------------------------------------------------------- */
+
+.chart-point {
+  position: absolute;
+
+  display: grid;
+  place-items: center;
+
+  width: 24px;
+  height: 28px;
+  padding: 0;
+
+  background: transparent;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  transform: translate(-50%, -50%);
+}
+
+.chart-point span {
+  width: 6px;
+  height: 6px;
+
+  background: var(--color-background);
+
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+
+  transition:
+    width 0.15s ease,
+    height 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.chart-point:hover span,
+.chart-point.is-selected span {
+  width: 10px;
+  height: 10px;
+
+  background: var(--color-primary);
+
+  border-color: var(--color-background);
+
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 0 0 6px rgba(37, 99, 235, 0.08);
+}
+
+
+/* --------------------------------------------------------------------------
+   X Axis
+   -------------------------------------------------------------------------- */
+
+.x-axis {
+  position: relative;
+
+  height: 16px;
+
+  color: var(--color-muted);
+
+  font-size: 0.7rem;
+}
+
+.x-axis span {
+  position: absolute;
+
+  transform: translateX(-50%);
+}
+
+.x-axis span:first-child {
+  transform: none;
+}
+
+.x-axis span:last-child {
+  transform: translateX(-100%);
+}
+
+
+/* ==========================================================================
+   SELECTED POINT DETAIL
+   ========================================================================== */
+
+.point-detail {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin: 20px var(--panel-padding) 0;
+  padding: 12px 14px;
+
+  color: var(--color-secondary);
+  background: var(--color-background-soft);
+
+  border-radius: var(--radius-sm);
+
+  font-size: 0.78rem;
+}
+
+.point-detail strong {
+  color: var(--color-primary-dark);
+}
+
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+
+.panel-footer {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 8px;
+  padding: 16px var(--panel-padding);
+
+  color: var(--color-muted);
+  background: var(--color-background-footer);
+
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.panel-footer mat-icon {
+  flex-shrink: 0;
+
+  width: 16px;
+  height: 16px;
+
+  font-size: 16px;
+}
+
+.panel-footer p {
+  margin: 0;
+
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+
+/* ==========================================================================
+   STATES
+   ========================================================================== */
+
+.panel-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 300px;
+  padding: 32px 20px;
+
+  gap: 12px;
+
+  text-align: center;
+}
+
+.panel-state > mat-icon {
+  color: var(--color-muted);
+}
+
+.panel-state strong {
+  font-size: 0.95rem;
+}
+
+.panel-state p {
+  margin: 0;
+
+  color: var(--color-muted);
+
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+
+/* --------------------------------------------------------------------------
+   Empty State
+   -------------------------------------------------------------------------- */
+
+.empty-state {
+  min-height: 250px;
+}
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+
+  width: 56px;
+  height: 56px;
+
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+
+  border-radius: var(--radius-xl);
+}
+
+
+/* --------------------------------------------------------------------------
+   Retry
+   -------------------------------------------------------------------------- */
+
+.retry-button {
+  padding: 10px 16px;
+
+  color: var(--color-primary-dark);
+  background: var(--color-background);
+
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+
+  font-size: 0.8rem;
+}
+
+
+/* ==========================================================================
+   DATA TABLE
+   ========================================================================== */
+
+.data-table {
+  margin: 16px var(--panel-padding) 20px;
+
+  font-size: 0.75rem;
+}
+
+.data-table summary {
+  width: fit-content;
+  padding: 6px 0;
+
+  color: var(--color-secondary);
+
+  cursor: pointer;
+}
+
+.table-scroll {
+  max-height: 240px;
+  margin-top: 10px;
+
+  overflow: auto;
+}
+
+.data-table table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  text-align: left;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px;
+
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+
+  background: var(--color-background-soft);
+}
+
+.data-table tbody th {
+  font-weight: 400;
+}
+
+.data-table td,
+.data-table th:last-child {
+  text-align: right;
+}
+
+
+/* ==========================================================================
+   ACCESSIBILITY
+   ========================================================================== */
+
+.sr-only {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+
+  border: 0;
+
+  clip: rect(0, 0, 0, 0);
+}
+
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  :host {
+    --panel-padding: 16px;
+  }
+
+  /* Header */
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 18px;
+    padding: 20px var(--panel-padding);
+  }
+
+
+  /* Period picker */
+
+  .period-picker {
+    width: 100%;
+  }
+
+  .period-picker button {
+    flex: 1;
+
+    min-height: 40px;
+  }
+
+
+  /* Summary */
+
+  .chart-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 22px 12px;
+
+    margin-bottom: 20px;
+  }
+
+  .summary-item {
+    padding-left: 12px;
+  }
+
+  .summary-item:nth-child(3) {
+    padding-left: 0;
+
+    border-left: 0;
+  }
+
+
+  /* Chart */
+
+  .chart-caption {
+    margin-inline: var(--panel-padding);
+  }
+
+  .visit-chart {
+    margin-inline: 12px 24px;
+  }
+
+  .y-axis {
+    flex-basis: 44px;
+  }
+
+
+  /* Details */
+
+  .point-detail,
+  .data-table {
+    margin-inline: var(--panel-padding);
+  }
+
+
+  /* Footer */
+
+  .panel-footer {
+    padding-inline: var(--panel-padding);
+  }
+}
+
+
+/* ==========================================================================
+   REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-point span {
+    transition: none;
+  }
+}

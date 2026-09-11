@@ -1,0 +1,114 @@
+<article class="audience-panel" aria-label="Audiência do site" [attr.aria-busy]="loading">
+  <header class="panel-header">
+    <div class="panel-heading">
+      <span class="heading-icon"><mat-icon aria-hidden="true">insights</mat-icon></span>
+      <div>
+        <p class="eyebrow">Audiência</p>
+        <h2>Visitas ao site</h2>
+        <p class="subtitle">Acompanhe quem chega para ouvir.</p>
+      </div>
+    </div>
+    <div class="period-picker" role="group" aria-label="Período do gráfico">
+      <button *ngFor="let period of periods" type="button"
+        [class.is-active]="selectedPeriod === period" [attr.aria-pressed]="selectedPeriod === period"
+        [disabled]="loading || error" (click)="selectPeriod(period)">{{ period }} dias</button>
+    </div>
+  </header>
+
+  <div class="panel-state" *ngIf="loading" role="status">
+    <mat-icon class="loading-icon" aria-hidden="true">hourglass_empty</mat-icon>
+    <strong>Carregando sua audiência</strong>
+    <p>Buscando os registros de visitas…</p>
+  </div>
+
+  <div class="panel-state" *ngIf="error" role="alert">
+    <mat-icon aria-hidden="true">cloud_off</mat-icon>
+    <strong>Não foi possível carregar as visitas</strong>
+    <p>{{ errorMessage }}</p>
+    <button class="retry-button" type="button" (click)="loadVisits()">Tentar novamente</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+    <div class="chart-summary">
+      <div class="summary-item summary-item--primary">
+        <span>Visitas hoje</span>
+        <strong>{{ todayProfileVisitors | number:'1.0-0':'pt-BR' }}</strong>
+        <small>Acessos registrados</small>
+      </div>
+      <div class="summary-item">
+        <span>No período</span>
+        <strong>{{ totalProfileVisitors | number:'1.0-0':'pt-BR' }}</strong>
+        <small>Soma dos últimos {{ selectedPeriod }} dias</small>
+      </div>
+      <div class="summary-item">
+        <span>Média diária</span>
+        <strong>{{ dailyAverage | number:'1.0-1':'pt-BR' }}</strong>
+        <small>Visitas por dia</small>
+      </div>
+      <div class="summary-item">
+        <span>Pico diário</span>
+        <strong>{{ peakVisitors | number:'1.0-0':'pt-BR' }}</strong>
+        <small>Maior audiência do período</small>
+      </div>
+    </div>
+
+    <ng-container *ngIf="totalProfileVisitors > 0; else emptyVisits">
+      <div class="chart-caption">
+        <span class="legend"><i aria-hidden="true"></i> Visitas por dia</span>
+        <span>{{ periodLabel }} · UTC</span>
+      </div>
+      <div class="visit-chart">
+        <div class="y-axis" aria-hidden="true">
+          <span *ngFor="let tick of ticks" [style.top.px]="tick.y">{{ tick.value | number:'1.0-0':'pt-BR' }}</span>
+        </div>
+        <div class="plot">
+          <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <line *ngFor="let tick of ticks" x1="0" x2="1000" [attr.y1]="tick.y" [attr.y2]="tick.y" class="grid-line" />
+            <path [attr.d]="areaPath" class="area-fill" />
+            <path [attr.d]="linePath" class="data-line" />
+            <line *ngIf="selectedPoint" [attr.x1]="selectedPoint.x" [attr.x2]="selectedPoint.x" y1="12" y2="200" class="selection-line" />
+          </svg>
+          <button *ngFor="let point of points; trackBy: trackDate" type="button" class="chart-point"
+            [class.is-selected]="point.date === selectedPoint?.date"
+            [style.left.%]="point.x / 10" [style.top.px]="point.y"
+            [attr.aria-label]="point.fullLabel + ': ' + point.visits + ' visitas'"
+            [attr.aria-pressed]="point.date === selectedPoint?.date"
+            (mouseenter)="selectedPoint = point" (focus)="selectedPoint = point" (click)="selectedPoint = point">
+            <span></span>
+          </button>
+          <div class="x-axis" aria-hidden="true">
+            <span *ngFor="let point of axisLabels" [style.left.%]="point.x / 10">{{ point.label }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="point-detail" aria-live="polite" aria-atomic="true">
+        <ng-container *ngIf="selectedPoint">
+          <span>{{ selectedPoint.fullLabel }}</span>
+          <strong>{{ selectedPoint.visits | number:'1.0-0':'pt-BR' }} {{ selectedPoint.visits === 1 ? 'visita' : 'visitas' }}</strong>
+        </ng-container>
+      </div>
+      <details class="data-table">
+        <summary>Ver dados por dia</summary>
+        <div class="table-scroll">
+          <table>
+            <caption class="sr-only">Visitas em cada um dos últimos {{ selectedPeriod }} dias</caption>
+            <thead><tr><th scope="col">Data (UTC)</th><th scope="col">Visitas</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let point of points; trackBy: trackDate">
+                <th scope="row">{{ point.fullLabel }}</th>
+                <td>{{ point.visits | number:'1.0-0':'pt-BR' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </ng-container>
+    <ng-template #emptyVisits>
+      <div class="panel-state empty-state">
+        <span class="empty-icon"><mat-icon aria-hidden="true">show_chart</mat-icon></span>
+        <strong>Sua audiência começa por aqui</strong>
+        <p>Ainda não há visitas registradas neste período.<br>Os dados aparecem quando alguém acessa a home.</p>
+      </div>
+    </ng-template>
+  </ng-container>
+</article>

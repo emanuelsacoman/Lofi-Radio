@@ -7,6 +7,7 @@ import { FirebaseService } from 'src/app/services/firebase.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { PexelsService } from 'src/app/services/pexels.service';
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
+import { ProfileVisitsService } from 'src/app/services/profile-visits.service';
 import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
@@ -236,7 +237,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private firebase: FirebaseService,
     private youtubeService: YoutubeService,
     private shareService: ShareService,
-    private radioFavorites: RadioFavoritesService
+    private radioFavorites: RadioFavoritesService,
+    private profileVisits: ProfileVisitsService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -410,6 +412,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   ngOnInit(): void {
+    void this.profileVisits.registerVisit().catch((error: unknown) => {
+      // Keep playback available, but retain a useful diagnostic for failures.
+      const code = (error as { code?: string } | null)?.code || 'unknown';
+      console.warn('[Visitas] Não foi possível registrar o acesso:', code);
+    });
     const visited = localStorage.getItem('hasVisited');
 
     if (visited === null) {
