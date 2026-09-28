@@ -1,15 +1,14 @@
-/* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./out-tsc/spec",
+    "outDir": "./out-tsc/adm-spec",
     "types": [
       "jasmine",
       "youtube"
     ]
   },
   "include": [
-    "src/**/*.spec.ts",
+    "src/app/view/adm/adm/adm.component.spec.ts",
     "src/**/*.d.ts"
   ]
 }

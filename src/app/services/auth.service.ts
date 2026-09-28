@@ -1,52 +1,39 @@
-import { Injectable, NgZone } from '@angular/core';
-import { Auth } from '@angular/fire/auth';
+import { Injectable } from '@angular/core';
+import { Auth, authState, signInWithEmailAndPassword, signOut, User as FirebaseUser } from '@angular/fire/auth';
 import { User } from './interfaces/user';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { Router } from '@angular/router';
+import { Observable, shareReplay } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-
-  userData: any;
+  readonly user$: Observable<FirebaseUser | null>;
+  private currentUser: FirebaseUser | null;
 
   constructor(
     private auth: Auth,
-    public afAuth: AngularFireAuth,
-    public router: Router,
-    public ngZone: NgZone,
+    public router: Router
   ) {
-    this.afAuth.authState.subscribe((user) => {
-      if (user) {
-        this.userData = user;
-        localStorage.setItem('user', JSON.stringify(this.userData));
-        JSON.parse(localStorage.getItem('user')!);
-      } else {
-        localStorage.setItem('user', 'null');
-        JSON.parse(localStorage.getItem('user')!);
-      }
-    });
+    this.currentUser = this.auth.currentUser;
+    this.user$ = authState(this.auth).pipe(
+      shareReplay({ bufferSize: 1, refCount: true })
+    );
+    this.user$.subscribe(user => this.currentUser = user);
   }
 
   get isLoggedIn(): boolean {
-    const user = JSON.parse(localStorage.getItem('user')!);
-    if (user == null) {
-      return false;
-    } else {
-      return true;
-    }
+    return this.currentUser !== null;
   }
 
-  login({email, senha}: User){
+  login({email, senha}: User) {
     return signInWithEmailAndPassword(this.auth, email, senha);
   }
 
-  public deslogar(){
-    return this.auth.signOut().then(()=>{
-      localStorage.removeItem('user');
-      this.router.navigate(['']);
-    })
-   }
+  public deslogar(): Promise<void> {
+    return signOut(this.auth).then(() => {
+      this.currentUser = null;
+      return this.router.navigate(['']).then(() => undefined);
+    });
+  }
 }

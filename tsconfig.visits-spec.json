@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/visits-spec",
+    "types": ["jasmine"]
+  },
+  "include": [
+    "src/app/services/profile-visits.service.spec.ts",
+    "src/app/view/adm/profile-visits-chart/profile-visits-chart.component.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

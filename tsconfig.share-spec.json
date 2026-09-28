@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/share-spec",
+    "types": [
+      "jasmine"
+    ]
+  },
+  "include": [
+    "src/app/services/share.service.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

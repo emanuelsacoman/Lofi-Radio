@@ -1,64 +1,86 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { AngularFireDatabase } from '@angular/fire/compat/database';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService implements OnDestroy {
-  private connectedUsersCountSubject: BehaviorSubject<number> = new BehaviorSubject<number>(0);
-  private userId: string | null = null;
-  private connectedUsersCountSubscription: Subscription | null = null;
+  private readonly connectedUsersCountSubject = new BehaviorSubject<number>(0);
+  private readonly subscriptions = new Subscription();
+  private readonly userId: string;
+  private readonly connectionId: string;
+  private readonly presencePath: string;
 
   constructor(
-    private db: AngularFireDatabase,
+    private db: AngularFireDatabase
   ) {
-    this.userId = localStorage.getItem('visitorId');
-    if (!this.userId) {
-      this.userId = this.generateVisitorId();
-      localStorage.setItem('visitorId', this.userId);
-    }
-    
-    this.setConnectionState(this.userId);
+    this.userId = this.getOrCreateVisitorId();
+    this.connectionId = `connection_${this.generateRandomId()}`;
+    // Keep the existing top-level boolean schema while giving each live
+    // connection its own key, so an old onDisconnect cannot remove a new one.
+    this.presencePath = `connectedUsers/${this.userId}_${this.connectionId}`;
 
-    this.connectedUsersCountSubscription = this.db.object('connectedUsers').valueChanges().subscribe((users: any) => {
-      const userCount = users ? Object.keys(users).length : 0;
-      this.connectedUsersCountSubject.next(userCount);
-    });
+    this.subscriptions.add(
+      this.db.object<boolean>('.info/connected').valueChanges().subscribe(isConnected => {
+        if (isConnected) {
+          void this.registerPresence();
+        }
+      })
+    );
+
+    this.subscriptions.add(
+      this.db.object<Record<string, unknown>>('connectedUsers').valueChanges().subscribe(users => {
+        this.connectedUsersCountSubject.next(users ? Object.keys(users).length : 0);
+      })
+    );
   }
 
   private generateVisitorId(): string {
-    return 'visitor_' + Math.random().toString(36).substr(2, 9);
+    return `visitor_${this.generateRandomId()}`;
   }
 
-  private setConnectionState(userId: string | null) {
-    if (userId) {
-      this.addUserToConnectedList(userId);
-    } else {
-      this.removeUserFromConnectedList();
+  private generateRandomId(): string {
+    const randomId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 11)}`;
+    return randomId;
+  }
+
+  private getOrCreateVisitorId(): string {
+    try {
+      const storedId = sessionStorage.getItem('visitorId');
+
+      if (storedId) {
+        return storedId;
+      }
+
+      const visitorId = this.generateVisitorId();
+      sessionStorage.setItem('visitorId', visitorId);
+      return visitorId;
+    } catch {
+      return this.generateVisitorId();
     }
   }
 
-  private addUserToConnectedList(userId: string) {
-    const userRef = this.db.object(`connectedUsers/${userId}`);
-    userRef.set(true);
-    const userRefNative = this.db.database.ref(`connectedUsers/${userId}`);
-    userRefNative.onDisconnect().remove();
-  }
+  private async registerPresence(): Promise<void> {
+    const userRef = this.db.database.ref(this.presencePath);
 
-  private removeUserFromConnectedList() {
-    if (this.userId) {
-      this.db.object(`connectedUsers/${this.userId}`).remove();
+    try {
+      await userRef.onDisconnect().remove();
+      await userRef.set(true);
+    } catch {
+      // Presence is best-effort and retries on the next connection event.
     }
   }
 
-  getConnectedUsersCount() {
+  getConnectedUsersCount(): Observable<number> {
     return this.connectedUsersCountSubject.asObservable();
   }
 
-  ngOnDestroy() {
-    if (this.connectedUsersCountSubscription) {
-      this.connectedUsersCountSubscription.unsubscribe();
-    }
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+    this.connectedUsersCountSubject.complete();
+    void this.db.object(this.presencePath).remove().catch(() => undefined);
   }
 }

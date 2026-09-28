@@ -48,10 +48,19 @@ export class AdmComponent implements OnInit, OnDestroy {
   isAddingYoutuber = false;
   isSyncingLives = false;
   isCleaningLives = false;
+<<<<<<< HEAD
   isSavingTheme = false;
   themeSaveError = '';
+=======
+  isSavingChipOrder = false;
+  isSavingYoutuberOrder = false;
+>>>>>>> c160ed48e0127613588062c9cbb287fde9ca24ce
 
   private subscriptions = new Subscription();
+  private readonly titleCollator = new Intl.Collator('pt-BR', {
+    sensitivity: 'base',
+    numeric: true
+  });
 
   constructor(
     private router: Router,
@@ -84,6 +93,12 @@ export class AdmComponent implements OnInit, OnDestroy {
     return this.quotaStatus;
   }
 
+  get isChipSortDisabled(): boolean {
+    return this.isSavingChipOrder ||
+      !this.chipArray.length ||
+      this.chipArray.some(chip => !chip.title);
+  }
+
   trackByChipId(_: number, chip: Chip): string {
     return chip.id;
   }
@@ -92,6 +107,7 @@ export class AdmComponent implements OnInit, OnDestroy {
     return youtuber.id;
   }
 
+<<<<<<< HEAD
   trackByThemeId(_: number, theme: SiteTheme): string {
     return theme.id;
   }
@@ -111,14 +127,87 @@ export class AdmComponent implements OnInit, OnDestroy {
 
   onDrop(event: CdkDragDrop<Chip[]>) {
     if (event.previousIndex === event.currentIndex) {
+=======
+  async onDrop(event: CdkDragDrop<Chip[]>) {
+    if (event.previousIndex === event.currentIndex || this.isSavingChipOrder) {
+>>>>>>> c160ed48e0127613588062c9cbb287fde9ca24ce
       return;
     }
 
+    const previousOrder = this.chipArray.map(chip => chip.id);
     moveItemInArray(this.chipArray, event.previousIndex, event.currentIndex);
-    this.updateChipOrder();
+    await this.saveChipOrder(previousOrder);
+  }
+
+  async onYoutuberDrop(event: CdkDragDrop<Youtuber[]>) {
+    if (event.previousIndex === event.currentIndex || this.isSavingYoutuberOrder) {
+      return;
+    }
+
+    const previousOrder = this.youtuberArray.map(youtuber => youtuber.id);
+    moveItemInArray(this.youtuberArray, event.previousIndex, event.currentIndex);
+    await this.saveYoutuberOrder(previousOrder);
+  }
+
+  async onChipHandleKeydown(event: KeyboardEvent, index: number) {
+    const targetIndex = this.getKeyboardMoveIndex(event.key, index, this.chipArray.length);
+
+    if (targetIndex === index || this.isSavingChipOrder) {
+      return;
+    }
+
+    event.preventDefault();
+    const previousOrder = this.chipArray.map(chip => chip.id);
+    moveItemInArray(this.chipArray, index, targetIndex);
+    await this.saveChipOrder(previousOrder);
+  }
+
+  async onYoutuberHandleKeydown(event: KeyboardEvent, index: number) {
+    const targetIndex = this.getKeyboardMoveIndex(event.key, index, this.youtuberArray.length);
+
+    if (targetIndex === index || this.isSavingYoutuberOrder) {
+      return;
+    }
+
+    event.preventDefault();
+    const previousOrder = this.youtuberArray.map(youtuber => youtuber.id);
+    moveItemInArray(this.youtuberArray, index, targetIndex);
+    await this.saveYoutuberOrder(previousOrder);
+  }
+
+  async sortChipsAlphabetically() {
+    if (this.isChipSortDisabled) {
+      return;
+    }
+
+    const previousOrder = this.chipArray.map(chip => chip.id);
+    this.chipArray = [...this.chipArray].sort((a, b) =>
+      this.compareLabels(this.getChipSortLabel(a), this.getChipSortLabel(b)) ||
+      this.compareLabels(a.chipname, b.chipname)
+    );
+
+    await this.saveChipOrder(previousOrder, 'Radios organizadas de A a Z.');
+  }
+
+  async sortYoutubersAlphabetically() {
+    if (!this.youtuberArray.length || this.isSavingYoutuberOrder) {
+      return;
+    }
+
+    const previousOrder = this.youtuberArray.map(youtuber => youtuber.id);
+    this.youtuberArray = [...this.youtuberArray].sort((a, b) =>
+      this.compareLabels(a.title, b.title) ||
+      this.compareLabels(a.channelId, b.channelId)
+    );
+
+    await this.saveYoutuberOrder(previousOrder, 'Youtubers organizados de A a Z.');
   }
 
   chipCreateForm() {
+    if (this.isSavingChipOrder) {
+      return;
+    }
+
     const chipValue = this.chipCreate.value.chipname?.trim();
 
     if (!chipValue) {
@@ -152,6 +241,10 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   youtuberCreateForm() {
+    if (this.isSavingYoutuberOrder) {
+      return;
+    }
+
     const youtuberValue = this.youtuberCreate.value.youtuber?.trim();
 
     if (!youtuberValue) {
@@ -166,6 +259,7 @@ export class AdmComponent implements OnInit, OnDestroy {
         this.firebase.cadastrarYoutuber({
           channelId: channel.channelId,
           title: channel.title,
+          order: this.getNextYoutuberOrder(),
           handle: channel.handle,
           thumbnailUrl: channel.thumbnailUrl,
           createdAt: new Date().toISOString()
@@ -261,7 +355,7 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   syncCurrentLives() {
-    if (this.isSyncingLives) {
+    if (this.isSyncingLives || this.isSavingChipOrder || this.isSavingYoutuberOrder) {
       return;
     }
 
@@ -301,7 +395,7 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   cleanNonWorkingLives() {
-    if (this.isCleaningLives) {
+    if (this.isCleaningLives || this.isSavingChipOrder) {
       return;
     }
 
@@ -327,6 +421,10 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   deleteYoutuber(id: string) {
+    if (this.isSavingYoutuberOrder) {
+      return;
+    }
+
     Swal.fire({
       title: 'Excluir youtuber?',
       icon: 'warning',
@@ -344,6 +442,10 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   deleteChip(id: string) {
+    if (this.isSavingChipOrder) {
+      return;
+    }
+
     Swal.fire({
       title: 'Excluir radio?',
       icon: 'warning',
@@ -410,12 +512,15 @@ export class AdmComponent implements OnInit, OnDestroy {
 
   private loadChips() {
     const subscription = this.firebase.obterTodosChip().subscribe(res => {
-      this.chipArray = res
-        .map(c => ({
+      const chips = res.map(c => ({
           id: c.payload.doc.id,
           ...(c.payload.doc.data() as any)
-        } as Chip))
-        .sort((a, b) => a.order - b.order);
+        } as Chip));
+
+      this.chipArray = this.sortByStoredOrder(
+        chips,
+        chip => chip.chipname
+      );
 
       this.chipArray.forEach(chip => this.populateVideoDetails(chip));
     });
@@ -425,12 +530,15 @@ export class AdmComponent implements OnInit, OnDestroy {
 
   private loadYoutubers() {
     const subscription = this.firebase.obterTodosYoutubers().subscribe(res => {
-      this.youtuberArray = res
-        .map(c => ({
+      const youtubers = res.map(c => ({
           id: c.payload.doc.id,
           ...(c.payload.doc.data() as Omit<Youtuber, 'id'>)
-        }))
-        .sort((a, b) => a.title.localeCompare(b.title));
+        }));
+
+      this.youtuberArray = this.sortByStoredOrder(
+        youtubers,
+        youtuber => youtuber.title || youtuber.channelId
+      );
     });
 
     this.subscriptions.add(subscription);
@@ -551,11 +659,123 @@ export class AdmComponent implements OnInit, OnDestroy {
     });
   }
 
-  private updateChipOrder() {
-    this.chipArray.forEach((chip, idx) => {
-      chip.order = idx + 1;
-      this.firebase.atualizarChip(chip.id, { order: chip.order });
-    });
+  private async saveChipOrder(previousOrder: string[], successMessage?: string) {
+    this.isSavingChipOrder = true;
+    this.applySequentialOrder(this.chipArray);
+
+    try {
+      await this.firebase.atualizarOrdemChips(this.chipArray.map(chip => chip.id));
+      if (successMessage) {
+        this.toastService.success('Sucesso!', successMessage, 5000);
+      }
+    } catch {
+      this.chipArray = this.restoreOrder(this.chipArray, previousOrder);
+      this.applySequentialOrder(this.chipArray);
+      this.toastService.error('Erro!', 'Nao foi possivel salvar a ordem das radios.', 5000);
+    } finally {
+      this.isSavingChipOrder = false;
+    }
+  }
+
+  private async saveYoutuberOrder(previousOrder: string[], successMessage?: string) {
+    this.isSavingYoutuberOrder = true;
+    this.applySequentialOrder(this.youtuberArray);
+
+    try {
+      await this.firebase.atualizarOrdemYoutubers(this.youtuberArray.map(youtuber => youtuber.id));
+      if (successMessage) {
+        this.toastService.success('Sucesso!', successMessage, 5000);
+      }
+    } catch {
+      this.youtuberArray = this.restoreOrder(this.youtuberArray, previousOrder);
+      this.applySequentialOrder(this.youtuberArray);
+      this.toastService.error('Erro!', 'Nao foi possivel salvar a ordem dos youtubers.', 5000);
+    } finally {
+      this.isSavingYoutuberOrder = false;
+    }
+  }
+
+  private sortByStoredOrder<T extends { order?: number }>(items: T[], getLabel: (item: T) => string): T[] {
+    const compareByLabel = (a: T, b: T) => this.compareLabels(getLabel(a), getLabel(b));
+    const hasValidOrder = (item: T) => Number.isFinite(item.order) && (item.order || 0) > 0;
+    const orderedItems = items.filter(hasValidOrder);
+
+    if (!orderedItems.length) {
+      return [...items].sort(compareByLabel);
+    }
+
+    if (orderedItems.length === items.length) {
+      return [...items].sort((a, b) =>
+        (a.order || 0) - (b.order || 0) || compareByLabel(a, b)
+      );
+    }
+
+    const result: Array<T | undefined> = new Array(items.length);
+
+    [...orderedItems]
+      .sort((a, b) => (a.order || 0) - (b.order || 0) || compareByLabel(a, b))
+      .forEach(item => {
+        let index = Math.min(Math.max(Math.trunc(item.order || 1) - 1, 0), items.length - 1);
+
+        while (index < result.length && result[index]) {
+          index++;
+        }
+
+        if (index === result.length) {
+          index = result.findIndex(entry => !entry);
+        }
+
+        result[index] = item;
+      });
+
+    const unorderedItems = items.filter(item => !hasValidOrder(item)).sort(compareByLabel);
+    let unorderedIndex = 0;
+
+    return Array.from(result, item => item || unorderedItems[unorderedIndex++]);
+  }
+
+  private applySequentialOrder<T extends { order?: number }>(items: T[]) {
+    items.forEach((item, index) => item.order = index + 1);
+  }
+
+  private restoreOrder<T extends { id: string }>(items: T[], ids: string[]): T[] {
+    const positions = new Map(ids.map((id, index) => [id, index]));
+
+    return [...items].sort((a, b) =>
+      (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+      (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
+
+  private getChipSortLabel(chip: Chip): string {
+    const title = chip.title?.trim();
+    return title && title !== 'Temporarily unavailable' ? title : chip.chipname;
+  }
+
+  private compareLabels(a: string, b: string): number {
+    return this.titleCollator.compare(a || '', b || '');
+  }
+
+  private getNextYoutuberOrder(): number {
+    return Math.max(
+      this.youtuberArray.length,
+      ...this.youtuberArray.map(youtuber => youtuber.order || 0)
+    ) + 1;
+  }
+
+  private getKeyboardMoveIndex(key: string, currentIndex: number, itemCount: number): number {
+    switch (key) {
+      case 'ArrowUp':
+        return Math.max(0, currentIndex - 1);
+      case 'ArrowDown':
+        return Math.min(itemCount - 1, currentIndex + 1);
+      case 'Home':
+        return 0;
+      case 'End':
+        return itemCount - 1;
+      default:
+        return currentIndex;
+    }
   }
 
   private ytStatus() {
