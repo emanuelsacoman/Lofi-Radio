@@ -9,10 +9,8 @@ import { PexelsService } from 'src/app/services/pexels.service';
 import { UserService } from 'src/app/services/user.service';
 import { YoutubeService } from 'src/app/services/youtube.service';
 import { environment } from 'src/environments/environment';
-
-type Palette = {
-  [key: string]: { [variable: string]: string };
-};
+import { FALLBACK_SITE_THEME, SiteTheme, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
+import { Subscription } from 'rxjs';
 
 type FloatingEmoji = {
   emoji: string;
@@ -66,81 +64,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   favorites: boolean[] = [];
   
-  palettes: Palette = {
-    purple: {
-      '--clr-background': '#1f1e30',
-      '--clr-primary': '#aea4d3',
-      '--clr-secondary': '#4b3470',
-      '--clr-accent': '#805cb1',
-      '--clr-accent-light': '#707cb5',
-      '--clr-text': '#eff1e4',
-    },
-    blue: {
-      '--clr-background': '#191831',
-      '--clr-primary': '#544cca',
-      '--clr-secondary': '#343670',
-      '--clr-accent': '#605cb1',
-      '--clr-accent-light': '#3d9970',
-      '--clr-text': '#e4e7f1',
-    },
-    green: {
-      '--clr-background': '#081c15',
-      '--clr-primary': '#4cca4e',
-      '--clr-secondary': '#34703c',
-      '--clr-accent': '#5cb167',
-      '--clr-accent-light': '#70b580',
-      '--clr-text': '#e4f1e5',
-    },
-    cafe: {
-      '--clr-background': '#312818',
-      '--clr-primary': '#caa04c',
-      '--clr-secondary': '#704e34',
-      '--clr-accent': '#b1855c',
-      '--clr-accent-light': '#b59c70',
-      '--clr-text': '#f1ece4',
-    },
-    gray: {
-      '--clr-background': '#322f2a',
-      '--clr-primary': '#d3c8b2',
-      '--clr-secondary': '#787163',
-      '--clr-accent': '#b9b09f',
-      '--clr-accent-light': '#b9b09f',
-      '--clr-text': '#d6d3cd',
-    },
-    whine: {
-      '--clr-background': '#1c0808',
-      '--clr-primary': '#ca4c4c',
-      '--clr-secondary': '#703434',
-      '--clr-accent': '#b15c5c',
-      '--clr-accent-light': '#b47878',
-      '--clr-text': '#f1e4e4',
-    },
-    pink: {
-      '--clr-background': '#1c081a',
-      '--clr-primary': '#ca4cbb',
-      '--clr-secondary': '#70346a',
-      '--clr-accent': '#b478b0',
-      '--clr-accent-light': '#b792b4',
-      '--clr-text': '#f1e4ef',
-    },
-    orange: {
-      '--clr-background': '#241200',       
-      '--clr-primary': '#e89a36',           
-      '--clr-secondary': '#a86400',         
-      '--clr-accent': '#e67836',            
-      '--clr-accent-light': '#e6a760',      
-      '--clr-text': '#fcebd9',              
-    },
-    dark: {
-      '--clr-background': '#0a0a0a',
-      '--clr-primary': '#8a8a8a',
-      '--clr-secondary': '#545454',
-      '--clr-accent': '#555555',
-      '--clr-accent-light': '#777777',
-      '--clr-text': '#ffffff',
-    },   
-    
-  };
+  themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
+  selectedPalette = 'purple';
+  private themeSubscription?: Subscription;
   
   constructor(
     private titleService: Title,
@@ -298,8 +224,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fetchConnectedUsersCount();
     this.emoji();
     
-    const savedPalette = localStorage.getItem('selectedPalette') || 'purple';
-    this.setTheme(savedPalette);
+    this.setTheme(FALLBACK_SITE_THEME.id);
+    this.loadThemes();
     
     const savedVideoId = localStorage.getItem('currentVideoId');
     if (savedVideoId && this.videoIds.includes(savedVideoId)) {
@@ -391,6 +317,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.themeSubscription?.unsubscribe();
+
     if (this.player) {
       this.player.destroy();
     }
@@ -629,13 +557,45 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }  
 
   setTheme(paletteKey: string) {
-    const palette = this.palettes[paletteKey as keyof typeof this.palettes];
-    if (palette) {
-      Object.entries(palette).forEach(([key, value]) => {
+    const theme = this.themeOptions.find(option => option.id === paletteKey);
+    if (theme) {
+      Object.entries(siteThemeToCssVariables(theme.colors)).forEach(([key, value]) => {
         document.documentElement.style.setProperty(key, value);
       });
+      this.selectedPalette = paletteKey;
       localStorage.setItem('selectedPalette', paletteKey);
     }
+  }
+
+  getThemeSwatch(theme: SiteTheme): string {
+    return theme.swatch || theme.colors.primary;
+  }
+
+  private loadThemes(): void {
+    this.themeSubscription = this.firebase.obterTodosTemas().subscribe({
+      next: res => {
+        const firestoreThemes = res
+          .map(item => ({
+            id: item.payload.doc.id,
+            ...(item.payload.doc.data() as Omit<SiteTheme, 'id'>)
+          }))
+          .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+            || a.name.localeCompare(b.name));
+
+        this.themeOptions = firestoreThemes.length ? firestoreThemes : [FALLBACK_SITE_THEME];
+
+        const savedPalette = localStorage.getItem('selectedPalette');
+        const nextPalette = savedPalette && this.themeOptions.some(theme => theme.id === savedPalette)
+          ? savedPalette
+          : (this.themeOptions.find(theme => theme.id === FALLBACK_SITE_THEME.id)?.id || this.themeOptions[0].id);
+
+        this.setTheme(nextPalette);
+      },
+      error: () => {
+        this.themeOptions = [FALLBACK_SITE_THEME];
+        this.setTheme(FALLBACK_SITE_THEME.id);
+      }
+    });
   }
 
   getLogin(){

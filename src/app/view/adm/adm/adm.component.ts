@@ -12,6 +12,12 @@ import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { Youtuber } from 'src/app/services/interfaces/youtuber';
+import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors } from 'src/app/services/interfaces/site-theme';
+
+type ThemeColorField = {
+  key: keyof SiteThemeColors;
+  label: string;
+};
 
 @Component({
   selector: 'app-adm',
@@ -21,9 +27,20 @@ import { Youtuber } from 'src/app/services/interfaces/youtuber';
 export class AdmComponent implements OnInit, OnDestroy {
   chipCreate!: FormGroup;
   youtuberCreate!: FormGroup;
+  themeCreate!: FormGroup;
 
   public chipArray: Chip[] = [];
   public youtuberArray: Youtuber[] = [];
+  public themeArray: SiteTheme[] = [];
+
+  readonly themeColorFields: ThemeColorField[] = [
+    { key: 'background', label: 'Fundo' },
+    { key: 'primary', label: 'Principal' },
+    { key: 'secondary', label: 'Secundaria' },
+    { key: 'accent', label: 'Destaque' },
+    { key: 'accentLight', label: 'Destaque claro' },
+    { key: 'text', label: 'Texto' }
+  ];
 
   connectedUsersCount = 0;
   quotaStatus = '';
@@ -31,6 +48,8 @@ export class AdmComponent implements OnInit, OnDestroy {
   isAddingYoutuber = false;
   isSyncingLives = false;
   isCleaningLives = false;
+  isSavingTheme = false;
+  themeSaveError = '';
 
   private subscriptions = new Subscription();
 
@@ -48,6 +67,7 @@ export class AdmComponent implements OnInit, OnDestroy {
     this.initForms();
     this.loadChips();
     this.loadYoutubers();
+    this.loadThemes();
     this.fetchConnectedUsersCount();
     this.ytStatus();
   }
@@ -70,6 +90,23 @@ export class AdmComponent implements OnInit, OnDestroy {
 
   trackByYoutuberId(_: number, youtuber: Youtuber): string {
     return youtuber.id;
+  }
+
+  trackByThemeId(_: number, theme: SiteTheme): string {
+    return theme.id;
+  }
+
+  get themePreviewStyles(): Record<string, string> {
+    const defaultColors = FALLBACK_SITE_THEME.colors;
+
+    return {
+      '--preview-background': this.themeCreate?.get('background')?.value || defaultColors.background,
+      '--preview-primary': this.themeCreate?.get('primary')?.value || defaultColors.primary,
+      '--preview-secondary': this.themeCreate?.get('secondary')?.value || defaultColors.secondary,
+      '--preview-accent': this.themeCreate?.get('accent')?.value || defaultColors.accent,
+      '--preview-accent-light': this.themeCreate?.get('accentLight')?.value || defaultColors.accentLight,
+      '--preview-text': this.themeCreate?.get('text')?.value || defaultColors.text
+    };
   }
 
   onDrop(event: CdkDragDrop<Chip[]>) {
@@ -148,6 +185,77 @@ export class AdmComponent implements OnInit, OnDestroy {
       error: () => {
         this.isAddingYoutuber = false;
         this.toastService.error('Erro!', 'Canal nao encontrado.', 5000);
+      }
+    });
+  }
+
+  themeCreateForm() {
+    if (this.themeCreate.invalid) {
+      this.themeCreate.markAllAsTouched();
+      this.toastService.warning('Atencao!', 'Preencha o nome e todas as cores.', 5000);
+      return;
+    }
+
+    const name = this.themeCreate.value.name.trim();
+
+    if (!name) {
+      this.toastService.warning('Atencao!', 'Informe um nome para o tema.', 5000);
+      return;
+    }
+
+    const normalizedName = name.toLocaleLowerCase();
+    const themeAlreadyExists = this.themeArray
+      .some(theme => theme.name.toLocaleLowerCase() === normalizedName);
+
+    if (themeAlreadyExists) {
+      this.toastService.info('Tema', 'Ja existe um tema com esse nome.', 5000);
+      return;
+    }
+
+    this.isSavingTheme = true;
+    this.themeSaveError = '';
+
+    this.firebase.cadastrarTema({
+      name,
+      colors: {
+        background: this.themeCreate.value.background,
+        primary: this.themeCreate.value.primary,
+        secondary: this.themeCreate.value.secondary,
+        accent: this.themeCreate.value.accent,
+        accentLight: this.themeCreate.value.accentLight,
+        text: this.themeCreate.value.text
+      },
+      order: Math.max(0, ...this.themeArray.map(theme => theme.order || 0)) + 1,
+      swatch: this.themeCreate.value.primary,
+      createdAt: new Date().toISOString()
+    })
+      .then(() => {
+        this.resetThemeForm();
+        this.toastService.success('Sucesso!', 'Tema salvo no Firebase.', 5000);
+      })
+      .catch((error: unknown) => {
+        console.error('Erro ao salvar tema no Firestore:', error);
+        this.themeSaveError = this.getThemeSaveErrorMessage(error);
+        this.toastService.error('Erro!', this.themeSaveError, 7000);
+      })
+      .finally(() => this.isSavingTheme = false);
+  }
+
+  deleteTheme(theme: SiteTheme) {
+    Swal.fire({
+      title: `Excluir o tema ${theme.name}?`,
+      text: 'Ele deixara de aparecer no seletor de cores do site.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Excluir',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.firebase.excluirTema(theme.id)
+          .then(() => this.toastService.success('Sucesso!', 'Tema excluido.', 5000))
+          .catch(() => this.toastService.error('Erro!', 'Nao foi possivel excluir o tema.', 5000));
       }
     });
   }
@@ -285,6 +393,19 @@ export class AdmComponent implements OnInit, OnDestroy {
     this.youtuberCreate = this.formBuilder.group({
       youtuber: ['', Validators.required]
     });
+
+    const defaultColors = FALLBACK_SITE_THEME.colors;
+    const colorValidators = [Validators.required, Validators.pattern(/^#[0-9a-fA-F]{6}$/)];
+
+    this.themeCreate = this.formBuilder.group({
+      name: ['', [Validators.required, Validators.maxLength(40)]],
+      background: [defaultColors.background, colorValidators],
+      primary: [defaultColors.primary, colorValidators],
+      secondary: [defaultColors.secondary, colorValidators],
+      accent: [defaultColors.accent, colorValidators],
+      accentLight: [defaultColors.accentLight, colorValidators],
+      text: [defaultColors.text, colorValidators]
+    });
   }
 
   private loadChips() {
@@ -313,6 +434,46 @@ export class AdmComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(subscription);
+  }
+
+  private loadThemes() {
+    const subscription = this.firebase.obterTodosTemas().subscribe(res => {
+      this.themeArray = res
+        .map(item => ({
+          id: item.payload.doc.id,
+          ...(item.payload.doc.data() as Omit<SiteTheme, 'id'>)
+        }))
+        .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+          || a.name.localeCompare(b.name));
+    });
+
+    this.subscriptions.add(subscription);
+  }
+
+  private resetThemeForm() {
+    const defaultColors = FALLBACK_SITE_THEME.colors;
+    this.themeCreate.reset({
+      name: '',
+      ...defaultColors
+    });
+  }
+
+  private getThemeSaveErrorMessage(error: unknown): string {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code)
+      : '';
+
+    if (code.includes('permission-denied')) {
+      return 'O usuario atual nao tem permissao para gravar na colecao siteThemes.';
+    }
+
+    if (code.includes('unavailable')) {
+      return 'O Firestore esta indisponivel. Verifique a conexao e bloqueadores do navegador.';
+    }
+
+    return code
+      ? `Nao foi possivel salvar o tema (${code}).`
+      : 'Nao foi possivel salvar o tema no Firebase.';
   }
 
   private populateVideoDetails(chip: Chip) {

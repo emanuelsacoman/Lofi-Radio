@@ -194,5 +194,105 @@
         </ng-template>
       </section>
     </section>
+
+    <section class="tool-panel theme-panel theme-panel--bottom">
+      <div class="panel-heading">
+        <div>
+          <span>Aparencia</span>
+          <h2>Adicionar tema de cores</h2>
+        </div>
+        <mat-icon>palette</mat-icon>
+      </div>
+
+      <p class="panel-description">
+        Todas as paletas sao carregadas do Firebase. O roxo existe no codigo apenas como fallback.
+      </p>
+
+      <form class="control-form theme-form" (ngSubmit)="themeCreateForm()" [formGroup]="themeCreate">
+        <div class="theme-editor-grid">
+          <div class="theme-fields">
+            <label for="theme-name">Nome do tema</label>
+            <input
+              type="text"
+              id="theme-name"
+              placeholder="Ex.: Noite neon"
+              formControlName="name"
+              maxlength="40"
+              required
+            >
+
+            <div class="color-field-grid">
+              <label
+                class="color-field"
+                *ngFor="let field of themeColorFields"
+                [attr.for]="'theme-' + field.key"
+              >
+                <span>{{ field.label }}</span>
+                <span class="color-control">
+                  <input
+                    type="color"
+                    [id]="'theme-' + field.key"
+                    [formControlName]="field.key"
+                    [attr.aria-label]="'Cor ' + field.label"
+                  >
+                  <code>{{ themeCreate.get(field.key)?.value }}</code>
+                </span>
+              </label>
+            </div>
+
+            <button class="button button--primary button--full" type="submit" [disabled]="isSavingTheme">
+              <mat-icon>{{ isSavingTheme ? 'hourglass_empty' : 'save' }}</mat-icon>
+              <span>{{ isSavingTheme ? 'Salvando' : 'Salvar tema' }}</span>
+            </button>
+            <p class="form-error" *ngIf="themeSaveError" role="alert">{{ themeSaveError }}</p>
+          </div>
+
+          <div class="theme-preview-column">
+            <span class="theme-preview-label">Mini preview</span>
+            <div class="theme-preview" [ngStyle]="themePreviewStyles" aria-label="Mini preview do tema">
+              <div class="theme-preview__topbar">
+                <span class="theme-preview__brand">LOFI</span>
+                <span class="theme-preview__dot"></span>
+              </div>
+              <div class="theme-preview__content">
+                <div class="theme-preview__cover">
+                  <mat-icon>headphones</mat-icon>
+                </div>
+                <div class="theme-preview__copy">
+                  <strong>{{ themeCreate.get('name')?.value || 'Seu novo tema' }}</strong>
+                  <span>Chill beats radio</span>
+                  <button type="button" tabindex="-1">
+                    <mat-icon>play_arrow</mat-icon>
+                    Ouvir
+                  </button>
+                </div>
+              </div>
+              <div class="theme-preview__palette" aria-hidden="true">
+                <i></i><i></i><i></i><i></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <div class="saved-themes" *ngIf="themeArray.length">
+        <span class="saved-themes__title">Temas no Firebase ({{ themeArray.length }})</span>
+        <div class="saved-themes__grid">
+          <article class="saved-theme" *ngFor="let theme of themeArray; trackBy: trackByThemeId">
+            <span class="saved-theme__swatch" [style.background-color]="theme.colors.primary"></span>
+            <strong>{{ theme.name }}</strong>
+            <button
+              class="row-action row-action--danger"
+              type="button"
+              (click)="deleteTheme(theme)"
+              [attr.aria-label]="'Excluir tema ' + theme.name"
+              matTooltip="Remover"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </article>
+        </div>
+      </div>
+    </section>
   </main>
 </section>

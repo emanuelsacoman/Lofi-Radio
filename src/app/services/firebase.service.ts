@@ -3,6 +3,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Chip } from './interfaces/chip';
 import { Youtuber } from './interfaces/youtuber';
+import { SiteTheme } from './interfaces/site-theme';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ import { Youtuber } from './interfaces/youtuber';
 export class FirebaseService {
   private PATH: string = "radios";
   private YOUTUBERS_PATH: string = "youtubers";
+  private SITE_THEMES_PATH: string = "siteThemes";
 
   constructor(private firestore: AngularFirestore, private storage: AngularFireStorage) {}
 
@@ -104,6 +106,18 @@ export class FirebaseService {
 
   obterTodosYoutubers() {
     return this.firestore.collection(this.YOUTUBERS_PATH).snapshotChanges();
+  }
+
+  obterTodosTemas() {
+    return this.firestore.collection<SiteTheme>(this.SITE_THEMES_PATH).snapshotChanges();
+  }
+
+  cadastrarTema(theme: Omit<SiteTheme, 'id'>) {
+    return this.firestore.collection<Omit<SiteTheme, 'id'>>(this.SITE_THEMES_PATH).add(theme);
+  }
+
+  excluirTema(id: string): Promise<void> {
+    return this.firestore.collection(this.SITE_THEMES_PATH).doc(id).delete();
   }
 
   cadastrarYoutuber(youtuber: Omit<Youtuber, 'id'>): Promise<{ created: boolean; id: string }> {

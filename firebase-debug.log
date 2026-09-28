@@ -1,0 +1,66 @@
+[debug] [2026-09-28T23:31:30.079Z] ----------------------------------------------------------------------
+[debug] [2026-09-28T23:31:30.081Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\Emanuel Sacoman\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js hosting:sites:list --project lofi-radio-d03a7 --non-interactive
+[debug] [2026-09-28T23:31:30.081Z] CLI Version:   14.13.0
+[debug] [2026-09-28T23:31:30.081Z] Platform:      win32
+[debug] [2026-09-28T23:31:30.081Z] Node Version:  v22.22.3
+[debug] [2026-09-28T23:31:30.082Z] Time:          Mon Sep 28 2026 20:31:30 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2026-09-28T23:31:30.082Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-28T23:31:30.234Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-28T23:31:30.235Z] > authorizing via signed-in user (emanuelsacoman@gmail.com)
+[debug] [2026-09-28T23:31:30.235Z] [iam] checking project lofi-radio-d03a7 for permissions ["firebase.projects.get","firebasehosting.sites.get"]
+[debug] [2026-09-28T23:31:30.236Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:30.236Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:30.237Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions [none]
+[debug] [2026-09-28T23:31:30.237Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions x-goog-quota-user=projects/lofi-radio-d03a7
+[debug] [2026-09-28T23:31:30.237Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-09-28T23:31:30.079Z] ----------------------------------------------------------------------
+[debug] [2026-09-28T23:31:30.081Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\Emanuel Sacoman\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js hosting:channel:list --site lofiradio --project lofi-radio-d03a7 --non-interactive
+[debug] [2026-09-28T23:31:30.081Z] CLI Version:   14.13.0
+[debug] [2026-09-28T23:31:30.081Z] Platform:      win32
+[debug] [2026-09-28T23:31:30.081Z] Node Version:  v22.22.3
+[debug] [2026-09-28T23:31:30.082Z] Time:          Mon Sep 28 2026 20:31:30 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2026-09-28T23:31:30.082Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-28T23:31:30.234Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-28T23:31:30.235Z] > authorizing via signed-in user (emanuelsacoman@gmail.com)
+[debug] [2026-09-28T23:31:30.235Z] [iam] checking project lofi-radio-d03a7 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-09-28T23:31:30.236Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:30.237Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:30.238Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions [none]
+[debug] [2026-09-28T23:31:30.238Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions x-goog-quota-user=projects/lofi-radio-d03a7
+[debug] [2026-09-28T23:31:30.238Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-09-28T23:31:31.398Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions 200
+[debug] [2026-09-28T23:31:31.399Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-09-28T23:31:31.399Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:31.399Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:31.399Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/lofi-radio-d03a7/sites pageToken=&pageSize=10
+[debug] [2026-09-28T23:31:31.501Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions 200
+[debug] [2026-09-28T23:31:31.502Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-09-28T23:31:31.502Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:31.502Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:31.502Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/lofi-radio-d03a7/sites/lofiradio/channels pageToken=&pageSize=10
+[debug] [2026-09-28T23:31:32.518Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/lofi-radio-d03a7/sites/lofiradio/channels 200
+[debug] [2026-09-28T23:31:32.841Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/lofi-radio-d03a7/sites 200
+[debug] [2026-09-28T23:31:38.804Z] ----------------------------------------------------------------------
+[debug] [2026-09-28T23:31:38.806Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\Emanuel Sacoman\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js hosting:sites:list --project lofi-radio-d03a7 --non-interactive
+[debug] [2026-09-28T23:31:38.807Z] CLI Version:   14.13.0
+[debug] [2026-09-28T23:31:38.807Z] Platform:      win32
+[debug] [2026-09-28T23:31:38.807Z] Node Version:  v22.22.3
+[debug] [2026-09-28T23:31:38.807Z] Time:          Mon Sep 28 2026 20:31:38 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2026-09-28T23:31:38.807Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-28T23:31:38.936Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-28T23:31:38.937Z] > authorizing via signed-in user (emanuelsacoman@gmail.com)
+[debug] [2026-09-28T23:31:38.937Z] [iam] checking project lofi-radio-d03a7 for permissions ["firebase.projects.get","firebasehosting.sites.get"]
+[debug] [2026-09-28T23:31:38.938Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:38.938Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:38.939Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions [none]
+[debug] [2026-09-28T23:31:38.939Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions x-goog-quota-user=projects/lofi-radio-d03a7
+[debug] [2026-09-28T23:31:38.939Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-09-28T23:31:40.159Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions 200
+[debug] [2026-09-28T23:31:40.160Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lofi-radio-d03a7:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.get"]}
+[debug] [2026-09-28T23:31:40.161Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:40.161Z] Checked if tokens are valid: true, expires at: 1790641756781
+[debug] [2026-09-28T23:31:40.162Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/lofi-radio-d03a7/sites pageToken=&pageSize=10
+[debug] [2026-09-28T23:31:41.726Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/lofi-radio-d03a7/sites 200
