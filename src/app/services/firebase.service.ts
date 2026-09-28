@@ -9,15 +9,10 @@ import { SiteTheme } from './interfaces/site-theme';
   providedIn: 'root'
 })
 export class FirebaseService {
-<<<<<<< HEAD
-  private PATH: string = "radios";
-  private YOUTUBERS_PATH: string = "youtubers";
-  private SITE_THEMES_PATH: string = "siteThemes";
-=======
   private readonly PATH = 'radios';
   private readonly YOUTUBERS_PATH = 'youtubers';
+  private readonly SITE_THEMES_PATH = 'siteThemes';
   private readonly MAX_BATCH_WRITES = 500;
->>>>>>> c160ed48e0127613588062c9cbb287fde9ca24ce
 
   constructor(private firestore: AngularFirestore) {}
 

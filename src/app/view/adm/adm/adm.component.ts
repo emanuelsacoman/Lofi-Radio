@@ -48,13 +48,10 @@ export class AdmComponent implements OnInit, OnDestroy {
   isAddingYoutuber = false;
   isSyncingLives = false;
   isCleaningLives = false;
-<<<<<<< HEAD
   isSavingTheme = false;
   themeSaveError = '';
-=======
   isSavingChipOrder = false;
   isSavingYoutuberOrder = false;
->>>>>>> c160ed48e0127613588062c9cbb287fde9ca24ce
 
   private subscriptions = new Subscription();
   private readonly titleCollator = new Intl.Collator('pt-BR', {
@@ -107,7 +104,6 @@ export class AdmComponent implements OnInit, OnDestroy {
     return youtuber.id;
   }
 
-<<<<<<< HEAD
   trackByThemeId(_: number, theme: SiteTheme): string {
     return theme.id;
   }
@@ -125,12 +121,8 @@ export class AdmComponent implements OnInit, OnDestroy {
     };
   }
 
-  onDrop(event: CdkDragDrop<Chip[]>) {
-    if (event.previousIndex === event.currentIndex) {
-=======
   async onDrop(event: CdkDragDrop<Chip[]>) {
     if (event.previousIndex === event.currentIndex || this.isSavingChipOrder) {
->>>>>>> c160ed48e0127613588062c9cbb287fde9ca24ce
       return;
     }
 
