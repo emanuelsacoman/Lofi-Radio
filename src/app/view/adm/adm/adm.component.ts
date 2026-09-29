@@ -49,6 +49,8 @@ export class AdmComponent implements OnInit, OnDestroy {
   isSyncingLives = false;
   isCleaningLives = false;
   isSavingTheme = false;
+  isSavingThemeOrder = false;
+  editingThemeId: string | null = null;
   themeSaveError = '';
   isSavingChipOrder = false;
   isSavingYoutuberOrder = false;
@@ -96,6 +98,10 @@ export class AdmComponent implements OnInit, OnDestroy {
       this.chipArray.some(chip => !chip.title);
   }
 
+  get isEditingTheme(): boolean {
+    return this.editingThemeId !== null;
+  }
+
   trackByChipId(_: number, chip: Chip): string {
     return chip.id;
   }
@@ -112,12 +118,12 @@ export class AdmComponent implements OnInit, OnDestroy {
     const defaultColors = FALLBACK_SITE_THEME.colors;
 
     return {
-      '--preview-background': this.themeCreate?.get('background')?.value || defaultColors.background,
-      '--preview-primary': this.themeCreate?.get('primary')?.value || defaultColors.primary,
-      '--preview-secondary': this.themeCreate?.get('secondary')?.value || defaultColors.secondary,
-      '--preview-accent': this.themeCreate?.get('accent')?.value || defaultColors.accent,
-      '--preview-accent-light': this.themeCreate?.get('accentLight')?.value || defaultColors.accentLight,
-      '--preview-text': this.themeCreate?.get('text')?.value || defaultColors.text
+      '--preview-background': this.themeCreate ? this.getThemeColorPreview('background') : defaultColors.background,
+      '--preview-primary': this.themeCreate ? this.getThemeColorPreview('primary') : defaultColors.primary,
+      '--preview-secondary': this.themeCreate ? this.getThemeColorPreview('secondary') : defaultColors.secondary,
+      '--preview-accent': this.themeCreate ? this.getThemeColorPreview('accent') : defaultColors.accent,
+      '--preview-accent-light': this.themeCreate ? this.getThemeColorPreview('accentLight') : defaultColors.accentLight,
+      '--preview-text': this.themeCreate ? this.getThemeColorPreview('text') : defaultColors.text
     };
   }
 
@@ -139,6 +145,16 @@ export class AdmComponent implements OnInit, OnDestroy {
     const previousOrder = this.youtuberArray.map(youtuber => youtuber.id);
     moveItemInArray(this.youtuberArray, event.previousIndex, event.currentIndex);
     await this.saveYoutuberOrder(previousOrder);
+  }
+
+  async onThemeDrop(event: CdkDragDrop<SiteTheme[]>) {
+    if (event.previousIndex === event.currentIndex || this.isSavingThemeOrder) {
+      return;
+    }
+
+    const previousOrder = this.themeArray.map(theme => theme.id);
+    moveItemInArray(this.themeArray, event.previousIndex, event.currentIndex);
+    await this.saveThemeOrder(previousOrder);
   }
 
   async onChipHandleKeydown(event: KeyboardEvent, index: number) {
@@ -167,6 +183,19 @@ export class AdmComponent implements OnInit, OnDestroy {
     await this.saveYoutuberOrder(previousOrder);
   }
 
+  async onThemeHandleKeydown(event: KeyboardEvent, index: number) {
+    const targetIndex = this.getKeyboardMoveIndex(event.key, index, this.themeArray.length);
+
+    if (targetIndex === index || this.isSavingThemeOrder) {
+      return;
+    }
+
+    event.preventDefault();
+    const previousOrder = this.themeArray.map(theme => theme.id);
+    moveItemInArray(this.themeArray, index, targetIndex);
+    await this.saveThemeOrder(previousOrder);
+  }
+
   async sortChipsAlphabetically() {
     if (this.isChipSortDisabled) {
       return;
@@ -193,6 +222,19 @@ export class AdmComponent implements OnInit, OnDestroy {
     );
 
     await this.saveYoutuberOrder(previousOrder, 'Youtubers organizados de A a Z.');
+  }
+
+  async sortThemesAlphabetically() {
+    if (!this.themeArray.length || this.isSavingThemeOrder) {
+      return;
+    }
+
+    const previousOrder = this.themeArray.map(theme => theme.id);
+    this.themeArray = [...this.themeArray].sort((a, b) =>
+      this.compareLabels(a.name, b.name)
+    );
+
+    await this.saveThemeOrder(previousOrder, 'Temas organizados de A a Z.');
   }
 
   chipCreateForm() {
@@ -276,9 +318,13 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   themeCreateForm() {
+    if (this.isSavingTheme || this.isSavingThemeOrder) {
+      return;
+    }
+
     if (this.themeCreate.invalid) {
       this.themeCreate.markAllAsTouched();
-      this.toastService.warning('Atencao!', 'Preencha o nome e todas as cores.', 5000);
+      this.toastService.warning('Atencao!', 'Revise o nome e os codigos de cor.', 5000);
       return;
     }
 
@@ -291,7 +337,7 @@ export class AdmComponent implements OnInit, OnDestroy {
 
     const normalizedName = name.toLocaleLowerCase();
     const themeAlreadyExists = this.themeArray
-      .some(theme => theme.name.toLocaleLowerCase() === normalizedName);
+      .some(theme => theme.id !== this.editingThemeId && theme.name.trim().toLocaleLowerCase() === normalizedName);
 
     if (themeAlreadyExists) {
       this.toastService.info('Tema', 'Ja existe um tema com esse nome.', 5000);
@@ -301,23 +347,29 @@ export class AdmComponent implements OnInit, OnDestroy {
     this.isSavingTheme = true;
     this.themeSaveError = '';
 
-    this.firebase.cadastrarTema({
+    const colors = this.getThemeColorsFromForm();
+    const themeData = {
       name,
-      colors: {
-        background: this.themeCreate.value.background,
-        primary: this.themeCreate.value.primary,
-        secondary: this.themeCreate.value.secondary,
-        accent: this.themeCreate.value.accent,
-        accentLight: this.themeCreate.value.accentLight,
-        text: this.themeCreate.value.text
-      },
-      order: Math.max(0, ...this.themeArray.map(theme => theme.order || 0)) + 1,
-      swatch: this.themeCreate.value.primary,
-      createdAt: new Date().toISOString()
-    })
+      colors,
+      swatch: colors.primary
+    };
+    const saveRequest = this.editingThemeId
+      ? this.firebase.atualizarTema(this.editingThemeId, themeData)
+      : this.firebase.cadastrarTema({
+          ...themeData,
+          order: Math.max(0, ...this.themeArray.map(theme => theme.order || 0)) + 1,
+          createdAt: new Date().toISOString()
+        });
+
+    saveRequest
       .then(() => {
         this.resetThemeForm();
-        this.toastService.success('Sucesso!', 'Tema salvo no Firebase.', 5000);
+        this.toastService.success(
+          'Sucesso!',
+          this.editingThemeId ? 'Tema atualizado.' : 'Tema adicionado.',
+          5000
+        );
+        this.editingThemeId = null;
       })
       .catch((error: unknown) => {
         console.error('Erro ao salvar tema no Firestore:', error);
@@ -327,7 +379,94 @@ export class AdmComponent implements OnInit, OnDestroy {
       .finally(() => this.isSavingTheme = false);
   }
 
+  editTheme(theme: SiteTheme) {
+    if (this.isSavingTheme || this.isSavingThemeOrder) {
+      return;
+    }
+
+    this.editingThemeId = theme.id;
+    this.themeSaveError = '';
+    this.themeCreate.reset({
+      name: theme.name,
+      ...theme.colors
+    });
+    this.themeCreate.markAsPristine();
+
+    requestAnimationFrame(() => {
+      document.getElementById('theme-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('theme-name')?.focus({ preventScroll: true });
+    });
+  }
+
+  duplicateTheme(theme: SiteTheme) {
+    if (this.isSavingTheme || this.isSavingThemeOrder) {
+      return;
+    }
+
+    this.editingThemeId = null;
+    this.themeSaveError = '';
+    this.themeCreate.reset({
+      name: this.getDuplicateThemeName(theme.name),
+      ...theme.colors
+    });
+    this.themeCreate.markAsDirty();
+
+    requestAnimationFrame(() => {
+      document.getElementById('theme-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('theme-name')?.focus({ preventScroll: true });
+    });
+  }
+
+  cancelThemeEdit() {
+    if (this.isSavingTheme) {
+      return;
+    }
+
+    this.editingThemeId = null;
+    this.themeSaveError = '';
+    this.resetThemeForm();
+  }
+
+  resetThemeColors() {
+    this.themeCreate.patchValue(FALLBACK_SITE_THEME.colors);
+    this.themeCreate.markAsDirty();
+  }
+
+  updateThemeColor(key: keyof SiteThemeColors, event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.themeCreate.get(key)?.setValue(value.toUpperCase());
+    this.themeCreate.get(key)?.markAsDirty();
+  }
+
+  normalizeThemeColor(key: keyof SiteThemeColors) {
+    const control = this.themeCreate.get(key);
+    const value = String(control?.value || '').trim();
+    const withoutHash = value.replace(/^#/, '');
+    let normalized = withoutHash;
+
+    if (/^[0-9a-fA-F]{3}$/.test(withoutHash)) {
+      normalized = withoutHash.split('').map(character => character.repeat(2)).join('');
+    }
+
+    if (/^[0-9a-fA-F]{6}$/.test(normalized)) {
+      control?.setValue(`#${normalized.toUpperCase()}`);
+    } else {
+      control?.setValue(value);
+    }
+
+    control?.markAsTouched();
+  }
+
+  getThemeColorPreview(key: keyof SiteThemeColors): string {
+    const value = String(this.themeCreate?.get(key)?.value || '');
+    return /^#[0-9a-fA-F]{6}$/.test(value) ? value : FALLBACK_SITE_THEME.colors[key];
+  }
+
   deleteTheme(theme: SiteTheme) {
+    if (this.isSavingThemeOrder) {
+      return;
+    }
+
     Swal.fire({
       title: `Excluir o tema ${theme.name}?`,
       text: 'Ele deixara de aparecer no seletor de cores do site.',
@@ -339,9 +478,16 @@ export class AdmComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar'
     }).then(result => {
       if (result.isConfirmed) {
+        this.isSavingThemeOrder = true;
         this.firebase.excluirTema(theme.id)
-          .then(() => this.toastService.success('Sucesso!', 'Tema excluido.', 5000))
-          .catch(() => this.toastService.error('Erro!', 'Nao foi possivel excluir o tema.', 5000));
+          .then(() => {
+            if (this.editingThemeId === theme.id) {
+              this.cancelThemeEdit();
+            }
+            this.toastService.success('Sucesso!', 'Tema excluido.', 5000);
+          })
+          .catch(() => this.toastService.error('Erro!', 'Nao foi possivel excluir o tema.', 5000))
+          .finally(() => this.isSavingThemeOrder = false);
       }
     });
   }
@@ -538,13 +684,12 @@ export class AdmComponent implements OnInit, OnDestroy {
 
   private loadThemes() {
     const subscription = this.firebase.obterTodosTemas().subscribe(res => {
-      this.themeArray = res
-        .map(item => ({
+      const themes = res.map(item => ({
           id: item.payload.doc.id,
           ...(item.payload.doc.data() as Omit<SiteTheme, 'id'>)
-        }))
-        .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
-          || a.name.localeCompare(b.name));
+        }));
+
+      this.themeArray = this.sortByStoredOrder(themes, theme => theme.name);
     });
 
     this.subscriptions.add(subscription);
@@ -556,6 +701,28 @@ export class AdmComponent implements OnInit, OnDestroy {
       name: '',
       ...defaultColors
     });
+    this.themeCreate.markAsPristine();
+  }
+
+  private getThemeColorsFromForm(): SiteThemeColors {
+    return this.themeColorFields.reduce((colors, field) => {
+      colors[field.key] = String(this.themeCreate.get(field.key)?.value).toUpperCase();
+      return colors;
+    }, {} as SiteThemeColors);
+  }
+
+  private getDuplicateThemeName(originalName: string): string {
+    const baseName = `${originalName} copia`.slice(0, 40);
+    let candidate = baseName;
+    let suffix = 2;
+    const existingNames = new Set(this.themeArray.map(theme => theme.name.trim().toLocaleLowerCase()));
+
+    while (existingNames.has(candidate.toLocaleLowerCase())) {
+      const suffixText = ` ${suffix++}`;
+      candidate = `${baseName.slice(0, 40 - suffixText.length)}${suffixText}`;
+    }
+
+    return candidate;
   }
 
   private getThemeSaveErrorMessage(error: unknown): string {
@@ -684,6 +851,24 @@ export class AdmComponent implements OnInit, OnDestroy {
       this.toastService.error('Erro!', 'Nao foi possivel salvar a ordem dos youtubers.', 5000);
     } finally {
       this.isSavingYoutuberOrder = false;
+    }
+  }
+
+  private async saveThemeOrder(previousOrder: string[], successMessage?: string) {
+    this.isSavingThemeOrder = true;
+    this.applySequentialOrder(this.themeArray);
+
+    try {
+      await this.firebase.atualizarOrdemTemas(this.themeArray.map(theme => theme.id));
+      if (successMessage) {
+        this.toastService.success('Sucesso!', successMessage, 5000);
+      }
+    } catch {
+      this.themeArray = this.restoreOrder(this.themeArray, previousOrder);
+      this.applySequentialOrder(this.themeArray);
+      this.toastService.error('Erro!', 'Nao foi possivel salvar a ordem dos temas.', 5000);
+    } finally {
+      this.isSavingThemeOrder = false;
     }
   }
 

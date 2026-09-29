@@ -300,6 +300,87 @@ describe('FirebaseService', () => {
     });
   });
 
+  describe('theme management', () => {
+    it('updates only editable theme fields', async () => {
+      const update = jasmine.createSpy('update').and.resolveTo(undefined);
+      const collection = {
+        doc: jasmine.createSpy('doc').and.returnValue({ update })
+      };
+      const { service } = createHarness(collection);
+      const colors = {
+        background: '#111111',
+        primary: '#222222',
+        secondary: '#333333',
+        accent: '#444444',
+        accentLight: '#555555',
+        text: '#FFFFFF'
+      };
+
+      await service.atualizarTema(' theme-a ', {
+        name: '  Tema editado  ',
+        colors,
+        swatch: '#222222'
+      });
+
+      expect(collection.doc).toHaveBeenCalledOnceWith('theme-a');
+      expect(update).toHaveBeenCalledOnceWith({
+        name: 'Tema editado',
+        colors,
+        swatch: '#222222'
+      });
+    });
+
+    it('deletes a theme and compacts the remaining order atomically', async () => {
+      const deletedRef = { id: 'theme-b', path: 'siteThemes/theme-b' };
+      const firstRef = { id: 'theme-a', path: 'siteThemes/theme-a' };
+      const thirdRef = { id: 'theme-c', path: 'siteThemes/theme-c' };
+      const snapshot = querySnapshot([
+        queryDocument('theme-c', { name: 'Verde', order: 3 }, thirdRef),
+        queryDocument('theme-b', { name: 'Azul', order: 2 }, deletedRef),
+        queryDocument('theme-a', { name: 'Roxo', order: 1 }, firstRef)
+      ]);
+      const collectionRef = {
+        get: jasmine.createSpy('get').and.resolveTo(snapshot)
+      };
+      const collection = { ref: collectionRef };
+      const batch = createBatch();
+      const { service } = createHarness(collection, collectionRef, {}, batch);
+
+      await service.excluirTema('theme-b');
+
+      expect(batch['delete']).toHaveBeenCalledOnceWith(deletedRef);
+      expect(batch['update'].calls.allArgs()).toEqual([
+        [firstRef, { order: 1 }],
+        [thirdRef, { order: 2 }]
+      ]);
+      expect(batch['commit']).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses the shared atomic reorder for themes', async () => {
+      const refs = new Map<string, LooseMock>();
+      const collection = {
+        doc: jasmine.createSpy('doc').and.callFake((id: string) => {
+          const ref = { id, path: `siteThemes/${id}` };
+          refs.set(id, ref);
+          return { ref };
+        })
+      };
+      const batch = createBatch();
+      const { service, collectionSpy } = createHarness(collection, {}, {}, batch);
+
+      await service.atualizarOrdemTemas(['theme-c', 'theme-a']);
+
+      expect(collectionSpy.calls.allArgs()).toEqual([
+        ['siteThemes'],
+        ['siteThemes']
+      ]);
+      expect(batch['update'].calls.allArgs()).toEqual([
+        [refs.get('theme-c'), { order: 1 }],
+        [refs.get('theme-a'), { order: 2 }]
+      ]);
+    });
+  });
+
   function createHarness(
     collection: LooseMock,
     queryRoot: LooseMock = {},

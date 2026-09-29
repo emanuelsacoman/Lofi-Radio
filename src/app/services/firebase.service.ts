@@ -184,8 +184,64 @@ export class FirebaseService {
     return this.firestore.collection<Omit<SiteTheme, 'id'>>(this.SITE_THEMES_PATH).add(theme);
   }
 
+  atualizarTema(id: string, theme: Pick<SiteTheme, 'name' | 'colors' | 'swatch'>): Promise<void> {
+    const themeId = this.normalizeId(id);
+
+    if (!themeId) {
+      return Promise.reject(new Error('Theme ID is required'));
+    }
+
+    return this.firestore.collection(this.SITE_THEMES_PATH).doc(themeId).update({
+      name: theme.name.trim(),
+      colors: theme.colors,
+      swatch: theme.swatch || theme.colors.primary
+    });
+  }
+
   excluirTema(id: string): Promise<void> {
-    return this.firestore.collection(this.SITE_THEMES_PATH).doc(id).delete();
+    const themeId = this.normalizeId(id);
+
+    if (!themeId) {
+      return Promise.reject(new Error('Theme ID is required'));
+    }
+
+    const collection = this.firestore.collection<SiteTheme>(this.SITE_THEMES_PATH);
+
+    return collection.ref.get().then(snapshot => {
+      const documentToDelete = snapshot.docs.find(document => document.id === themeId);
+
+      if (!documentToDelete) {
+        throw new Error('Document does not exist');
+      }
+
+      if (snapshot.size > this.MAX_BATCH_WRITES) {
+        throw new Error('The theme catalog is too large for an atomic delete');
+      }
+
+      const remainingThemes = snapshot.docs
+        .filter(document => document.id !== themeId)
+        .map(document => ({
+          id: document.id,
+          ref: document.ref,
+          theme: document.data() as SiteTheme
+        }))
+        .sort((a, b) =>
+          (a.theme.order ?? Number.MAX_SAFE_INTEGER) - (b.theme.order ?? Number.MAX_SAFE_INTEGER) ||
+          (a.theme.name || '').localeCompare(b.theme.name || '')
+        );
+      const batch = this.firestore.firestore.batch();
+
+      batch.delete(documentToDelete.ref);
+      remainingThemes.forEach((item, index) => {
+        batch.update(item.ref, { order: index + 1 });
+      });
+
+      return batch.commit();
+    });
+  }
+
+  atualizarOrdemTemas(ids: string[]): Promise<void> {
+    return this.atualizarOrdem(this.SITE_THEMES_PATH, ids);
   }
 
   cadastrarYoutuber(youtuber: Omit<Youtuber, 'id'>): Promise<{ created: boolean; id: string }> {

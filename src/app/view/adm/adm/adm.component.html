@@ -253,18 +253,20 @@
       </section>
     </section>
 
-    <section class="tool-panel theme-panel theme-panel--bottom">
-      <div class="panel-heading">
-        <div>
+    <section class="tool-panel theme-panel theme-panel--bottom" id="theme-editor">
+      <div class="panel-heading theme-panel__header">
+        <span class="theme-heading-icon">
+          <mat-icon aria-hidden="true">palette</mat-icon>
+        </span>
+        <div class="theme-panel__heading-copy">
           <span>Aparencia</span>
-          <h2>Adicionar tema de cores</h2>
+          <h2>{{ isEditingTheme ? 'Editar tema de cores' : 'Novo tema de cores' }}</h2>
+          <p class="panel-description">
+            Monte a paleta, confira o resultado no preview e salve. Os temas podem ser editados e reordenados abaixo.
+          </p>
         </div>
-        <mat-icon>palette</mat-icon>
+        <span class="editing-pill" *ngIf="isEditingTheme">Editando</span>
       </div>
-
-      <p class="panel-description">
-        Todas as paletas sao carregadas do Firebase. O roxo existe no codigo apenas como fallback.
-      </p>
 
       <form class="control-form theme-form" (ngSubmit)="themeCreateForm()" [formGroup]="themeCreate">
         <div class="theme-editor-grid">
@@ -276,32 +278,71 @@
               placeholder="Ex.: Noite neon"
               formControlName="name"
               maxlength="40"
+              autocomplete="off"
               required
             >
+            <small class="field-error" *ngIf="themeCreate.get('name')?.touched && themeCreate.get('name')?.invalid">
+              Informe um nome com ate 40 caracteres.
+            </small>
 
             <div class="color-field-grid">
-              <label
+              <div
                 class="color-field"
                 *ngFor="let field of themeColorFields"
-                [attr.for]="'theme-' + field.key"
               >
-                <span>{{ field.label }}</span>
-                <span class="color-control">
+                <label [attr.for]="'theme-' + field.key">{{ field.label }}</label>
+                <span
+                  class="color-control"
+                  [class.color-control--invalid]="themeCreate.get(field.key)?.touched && themeCreate.get(field.key)?.invalid"
+                >
                   <input
                     type="color"
+                    [id]="'theme-' + field.key + '-picker'"
+                    [value]="getThemeColorPreview(field.key)"
+                    (input)="updateThemeColor(field.key, $event)"
+                    [attr.aria-label]="'Selecionar cor ' + field.label"
+                    [disabled]="isSavingTheme"
+                  >
+                  <input
+                    class="color-hex-input"
+                    type="text"
                     [id]="'theme-' + field.key"
                     [formControlName]="field.key"
-                    [attr.aria-label]="'Cor ' + field.label"
+                    (blur)="normalizeThemeColor(field.key)"
+                    maxlength="7"
+                    spellcheck="false"
+                    autocomplete="off"
+                    [attr.aria-label]="'Codigo hexadecimal da cor ' + field.label"
                   >
-                  <code>{{ themeCreate.get(field.key)?.value }}</code>
                 </span>
-              </label>
+                <small class="field-error" *ngIf="themeCreate.get(field.key)?.touched && themeCreate.get(field.key)?.invalid">
+                  Use #RRGGBB.
+                </small>
+              </div>
             </div>
 
-            <button class="button button--primary button--full" type="submit" [disabled]="isSavingTheme">
-              <mat-icon>{{ isSavingTheme ? 'hourglass_empty' : 'save' }}</mat-icon>
-              <span>{{ isSavingTheme ? 'Salvando' : 'Salvar tema' }}</span>
-            </button>
+            <div class="theme-form__tools">
+              <button class="button button--ghost button--compact" type="button" (click)="resetThemeColors()" [disabled]="isSavingTheme">
+                <mat-icon>restart_alt</mat-icon>
+                <span>Restaurar cores</span>
+              </button>
+            </div>
+
+            <div class="theme-form__actions">
+              <button
+                class="button button--ghost"
+                *ngIf="isEditingTheme"
+                type="button"
+                (click)="cancelThemeEdit()"
+                [disabled]="isSavingTheme"
+              >
+                <span>Cancelar</span>
+              </button>
+              <button class="button button--primary" type="submit" [disabled]="isSavingTheme || isSavingThemeOrder || themeCreate.invalid">
+                <mat-icon>{{ isSavingTheme ? 'hourglass_empty' : (isEditingTheme ? 'save' : 'add') }}</mat-icon>
+                <span>{{ isSavingTheme ? 'Salvando' : (isEditingTheme ? 'Salvar alteracoes' : 'Adicionar tema') }}</span>
+              </button>
+            </div>
             <p class="form-error" *ngIf="themeSaveError" role="alert">{{ themeSaveError }}</p>
           </div>
 
@@ -333,23 +374,85 @@
         </div>
       </form>
 
-      <div class="saved-themes" *ngIf="themeArray.length">
-        <span class="saved-themes__title">Temas no Firebase ({{ themeArray.length }})</span>
-        <div class="saved-themes__grid">
-          <article class="saved-theme" *ngFor="let theme of themeArray; trackBy: trackByThemeId">
-            <span class="saved-theme__swatch" [style.background-color]="theme.colors.primary"></span>
-            <strong>{{ theme.name }}</strong>
+      <div class="saved-themes">
+        <div class="saved-themes__header">
+          <div>
+            <span class="saved-themes__eyebrow">Biblioteca</span>
+            <strong>Temas cadastrados</strong>
+          </div>
+          <div class="saved-themes__actions">
             <button
-              class="row-action row-action--danger"
+              class="button button--ghost button--compact"
               type="button"
-              (click)="deleteTheme(theme)"
-              [attr.aria-label]="'Excluir tema ' + theme.name"
-              matTooltip="Remover"
+              (click)="sortThemesAlphabetically()"
+              [disabled]="isSavingThemeOrder || themeArray.length < 2"
+              matTooltip="Organizar temas por nome"
             >
-              <mat-icon>delete</mat-icon>
+              <mat-icon>{{ isSavingThemeOrder ? 'hourglass_empty' : 'sort_by_alpha' }}</mat-icon>
+              <span>{{ isSavingThemeOrder ? 'Salvando' : 'Ordenar A-Z' }}</span>
             </button>
+            <span class="count-pill">{{ themeArray.length }}</span>
+          </div>
+        </div>
+
+        <div
+          class="theme-list"
+          *ngIf="themeArray.length; else emptyThemes"
+          cdkDropList
+          [cdkDropListData]="themeArray"
+          (cdkDropListDropped)="onThemeDrop($event)"
+          aria-label="Temas cadastrados. Arraste para reordenar."
+        >
+          <article
+            class="saved-theme"
+            *ngFor="let theme of themeArray; let index = index; trackBy: trackByThemeId"
+            [class.saved-theme--editing]="editingThemeId === theme.id"
+            cdkDrag
+            [cdkDragData]="theme"
+            [cdkDragDisabled]="isSavingThemeOrder"
+          >
+            <button
+              class="drag-handle"
+              type="button"
+              cdkDragHandle
+              [disabled]="isSavingThemeOrder"
+              (keydown)="onThemeHandleKeydown($event, index)"
+              matTooltip="Mover"
+              [attr.aria-label]="'Mover tema ' + theme.name + '. Use as setas, Home ou End.'"
+            >
+              <mat-icon>drag_indicator</mat-icon>
+            </button>
+
+            <span class="order-badge">{{ theme.order || index + 1 }}</span>
+
+            <div class="saved-theme__content">
+              <strong>{{ theme.name }}</strong>
+              <div class="saved-theme__palette" [attr.aria-label]="'Paleta do tema ' + theme.name">
+                <i *ngFor="let field of themeColorFields" [style.background-color]="theme.colors[field.key]" [matTooltip]="field.label + ': ' + theme.colors[field.key]"></i>
+              </div>
+            </div>
+
+            <div class="saved-theme__actions">
+              <button class="row-action" type="button" (click)="duplicateTheme(theme)" [disabled]="isSavingThemeOrder" [attr.aria-label]="'Duplicar tema ' + theme.name" matTooltip="Duplicar">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+              <button class="row-action" type="button" (click)="editTheme(theme)" [disabled]="isSavingThemeOrder" [attr.aria-label]="'Editar tema ' + theme.name" matTooltip="Editar">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="row-action row-action--danger" type="button" (click)="deleteTheme(theme)" [disabled]="isSavingThemeOrder" [attr.aria-label]="'Excluir tema ' + theme.name" matTooltip="Remover">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
           </article>
         </div>
+
+        <ng-template #emptyThemes>
+          <div class="empty-state empty-state--compact">
+            <mat-icon>palette</mat-icon>
+            <span>Nenhum tema cadastrado</span>
+            <small>Crie a primeira paleta usando o editor acima.</small>
+          </div>
+        </ng-template>
       </div>
     </section>
   </main>
