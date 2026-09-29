@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
-import { NgToastService } from 'ng-angular-popup';
+
 import { AuthService } from 'src/app/services/auth.service';
 import { User } from 'src/app/services/interfaces/user';
 import { ToastService } from 'src/app/services/toast.service';
@@ -12,60 +12,107 @@ import { ToastService } from 'src/app/services/toast.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   userForm!: FormGroup;
   loginError: string | null = null;
+  isSubmitting = false;
+  showPassword = false;
 
-  title = 'Lofi Radio | Login';
-  description = 'Login Page.';
-  
-  constructor(private router: Router,
-    private formBuilder: FormBuilder,
+  readonly title = 'Lofi Radio | Login';
+  readonly description = 'Acesso ao painel administrativo da Lofi Radio.';
+
+  constructor(
+    private router: Router,
     private authService: AuthService,
     private titleService: Title,
     private metaService: Meta,
-    private toast: NgToastService,
-    private toastService: ToastService) {
-      this.setDocTitle(this.title);
-      this.setMetaDescription(this.description);
+    private toastService: ToastService
+  ) {
+    this.setDocTitle(this.title);
+    this.setMetaDescription(this.description);
   }
+
   ngOnInit(): void {
     this.userForm = new FormGroup({
-      senha: new FormControl('', [Validators.required]),
-      email: new FormControl('', [Validators.email]),
+      email: new FormControl('', [Validators.required, Validators.email]),
+      senha: new FormControl('', [Validators.required])
     });
   }
 
-  submit() {
-    if (this.userForm.invalid) {
-      this.toastService.warning("Atenção", "Preencha todos os campos corretamente.");
+  submit(): void {
+    if (this.isSubmitting) {
       return;
     }
 
-    const user: User = this.userForm.value;
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      this.toastService.warning('Atencao', 'Preencha os campos corretamente.');
+      return;
+    }
 
-    this.authService.login(user).then(() => {
-      this.router.navigate(['']);
-      this.toastService.success("Sucesso!", "Login Efetuado com Sucesso.");
-    }).catch((error: any) => {
-      this.loginError = error.message || 'Email ou senha incorretos.';
-      this.toastService.error("Erro!", this.loginError!);
-      this.userForm.reset();
-    });
+    const user: User = {
+      email: this.userForm.value.email.trim(),
+      senha: this.userForm.value.senha
+    };
+
+    this.isSubmitting = true;
+    this.loginError = null;
+
+    this.authService.login(user)
+      .then(() => {
+        this.router.navigate(['']);
+        this.toastService.success('Sucesso!', 'Login realizado.');
+      })
+      .catch((error: unknown) => {
+        this.loginError = this.getLoginErrorMessage(error);
+        this.toastService.error('Nao foi possivel entrar', this.loginError);
+      })
+      .finally(() => {
+        this.isSubmitting = false;
+      });
   }
 
-  isInvalidControl(controlName: string) {
+  isInvalidControl(controlName: string): boolean {
     const control = this.userForm.get(controlName);
-    return control && control.invalid && (control.dirty || control.touched);
+    return Boolean(control && control.invalid && (control.dirty || control.touched));
   }
 
-  setDocTitle(title: string) {
-    console.log('current title:::::' + this.titleService.getTitle());
-    this.titleService.setTitle(title);
- }
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
 
-  setMetaDescription(description: string) {
-    console.log('Updating meta description:::::', description);
+  clearLoginError(): void {
+    this.loginError = null;
+  }
+
+  goHome(): void {
+    this.router.navigate(['']);
+  }
+
+  private setDocTitle(title: string): void {
+    this.titleService.setTitle(title);
+  }
+
+  private setMetaDescription(description: string): void {
     this.metaService.updateTag({ name: 'description', content: description });
+  }
+
+  private getLoginErrorMessage(error: unknown): string {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code)
+      : '';
+
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'E-mail ou senha incorretos.';
+      case 'auth/too-many-requests':
+        return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+      case 'auth/network-request-failed':
+        return 'Sem conexao com o servidor. Verifique sua internet.';
+      default:
+        return 'Nao foi possivel acessar o painel. Tente novamente.';
+    }
   }
 }

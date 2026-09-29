@@ -1,32 +1,119 @@
-<head>
-    <meta name="description" content="Lofi Radio | Login">
-</head>
+<main class="login-page">
+  <span class="ambient-light ambient-light--one" aria-hidden="true"></span>
+  <span class="ambient-light ambient-light--two" aria-hidden="true"></span>
 
-<body>
-    <div class="all">
-        <section class="form fadeIn">
-            <form (ngSubmit)="submit()" [formGroup]="userForm" #formDir="ngForm" class="formTrue">
-                <h1 class="titulo">LOGIN</h1>
-                <br>
-                <div class="form-group">
-                    <div class="picSpace">
-                        <img src="https://cdn-icons-png.flaticon.com/512/561/561188.png" alt="Email" class="pic">
-                    </div>
-                    <input type="email" id="email" class="item" placeholder="Insira seu e-mail" formControlName="email" required />
-                </div>
-                <p *ngIf="isInvalidControl('email')">Erro no e-mail</p>
-                <br>
-                <div class="form-group">
-                    <div class="picSpace">
-                        <img src="https://www.svgrepo.com/show/84319/password.svg" alt="Senha" class="pic">
-                    </div>
-                    <input type="password" id="senha" class="item" placeholder="Insira sua senha" formControlName="senha" required />
-                </div>
-                <p *ngIf="isInvalidControl('senha')">Erro na senha</p>
-                <br>
-                <div *ngIf="loginError" class="alert alert-danger">{{ loginError }}</div>
-                <button class="sendButton" type="submit" (click)="submit()">Enviar</button>
-            </form>
-        </section>
+  <section class="login-shell" aria-labelledby="login-title">
+    <aside class="brand-panel" aria-label="Lofi Radio">
+      <div class="brand">
+        <span class="brand__mark">
+          <mat-icon aria-hidden="true">graphic_eq</mat-icon>
+        </span>
+        <div>
+          <strong>Lofi Radio</strong>
+          <span>Admin studio</span>
+        </div>
+      </div>
+
+      <div class="brand-message">
+        <span class="brand-message__eyebrow">Seu espaco de controle</span>
+        <h2>Som para focar.<br>Espaco para criar.</h2>
+        <p>Gerencie radios, canais e paletas em um unico lugar.</p>
+
+        <div class="sound-wave" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+
+      <span class="brand-panel__footer">
+        <mat-icon aria-hidden="true">lock</mat-icon>
+        Ambiente administrativo protegido
+      </span>
+    </aside>
+
+    <div class="form-panel">
+      <button class="back-button" type="button" (click)="goHome()">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+        <span>Voltar para a radio</span>
+      </button>
+
+      <div class="mobile-brand" aria-hidden="true">
+        <span class="brand__mark"><mat-icon>graphic_eq</mat-icon></span>
+        <strong>Lofi Radio</strong>
+      </div>
+
+      <header class="form-heading">
+        <span class="form-heading__eyebrow">Painel administrativo</span>
+        <h1 id="login-title">Bem-vindo de volta</h1>
+        <p>Entre com suas credenciais para continuar.</p>
+      </header>
+
+      <form class="login-form" (ngSubmit)="submit()" [formGroup]="userForm" [attr.aria-busy]="isSubmitting" novalidate>
+        <div class="field-group">
+          <label for="email">E-mail</label>
+          <div class="field-control" [class.field-control--invalid]="isInvalidControl('email')">
+            <mat-icon aria-hidden="true">mail_outline</mat-icon>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              placeholder="voce@exemplo.com"
+              autocomplete="email"
+              inputmode="email"
+              [attr.aria-invalid]="isInvalidControl('email')"
+              aria-describedby="email-error"
+              (input)="clearLoginError()"
+            >
+          </div>
+          <small id="email-error" class="field-error" *ngIf="isInvalidControl('email')">
+            Informe um e-mail valido.
+          </small>
+        </div>
+
+        <div class="field-group">
+          <label for="senha">Senha</label>
+          <div class="field-control" [class.field-control--invalid]="isInvalidControl('senha')">
+            <mat-icon aria-hidden="true">lock_outline</mat-icon>
+            <input
+              id="senha"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="senha"
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+              [attr.aria-invalid]="isInvalidControl('senha')"
+              aria-describedby="password-error"
+              (input)="clearLoginError()"
+            >
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+              [attr.aria-pressed]="showPassword"
+            >
+              <mat-icon aria-hidden="true">{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+          <small id="password-error" class="field-error" *ngIf="isInvalidControl('senha')">
+            Informe sua senha.
+          </small>
+        </div>
+
+        <div class="login-alert" *ngIf="loginError" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ loginError }}</span>
+        </div>
+
+        <button class="submit-button" type="submit" [disabled]="isSubmitting">
+          <span class="button-spinner" *ngIf="isSubmitting" aria-hidden="true"></span>
+          <mat-icon *ngIf="!isSubmitting" aria-hidden="true">login</mat-icon>
+          <span>{{ isSubmitting ? 'Entrando...' : 'Entrar no painel' }}</span>
+        </button>
+      </form>
+
+      <p class="form-note">
+        <mat-icon aria-hidden="true">verified_user</mat-icon>
+        Acesso exclusivo para administradores autorizados.
+      </p>
     </div>
-</body>
+  </section>
+</main>
