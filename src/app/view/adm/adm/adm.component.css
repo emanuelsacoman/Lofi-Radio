@@ -574,6 +574,56 @@ input[type="text"]:focus {
   text-transform: uppercase;
 }
 
+.theme-sort-control {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.theme-sort-control > span {
+  padding: 0 7px;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.theme-sort-control button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 6px;
+  color: #64748b;
+  background: transparent;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.theme-sort-control button mat-icon {
+  width: 17px;
+  height: 17px;
+  font-size: 17px;
+}
+
+.theme-sort-control button.is-active {
+  color: #1d4ed8;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.theme-sort-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .theme-list {
   display: grid;
   gap: 10px;
@@ -1004,6 +1054,11 @@ input[type="text"]:focus {
   .saved-themes__actions,
   .saved-themes__actions .button {
     width: 100%;
+  }
+
+  .theme-sort-control {
+    width: 100%;
+    justify-content: center;
   }
 
   .saved-theme {

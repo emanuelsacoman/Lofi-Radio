@@ -176,6 +176,24 @@ describe('AdmComponent ordering', () => {
     expect(toastService.error).toHaveBeenCalled();
   });
 
+  it('filters themes by manual order or alphabetically without overwriting Firestore', () => {
+    component.themeArray = [
+      createTheme('purple', 'Roxo', 1),
+      createTheme('green', 'Verde', 2),
+      createTheme('blue', 'Azul', 3)
+    ];
+
+    component.setThemeSortMode('alphabetical');
+
+    expect(component.themeArray.map(theme => theme.id)).toEqual(['blue', 'purple', 'green']);
+    expect(firebase.atualizarOrdemTemas).not.toHaveBeenCalled();
+
+    component.setThemeSortMode('order');
+
+    expect(component.themeArray.map(theme => theme.id)).toEqual(['purple', 'green', 'blue']);
+    expect(firebase.atualizarOrdemTemas).not.toHaveBeenCalled();
+  });
+
   it('loads a theme into the editor and normalizes short hexadecimal colors', () => {
     (component as any).initForms();
     const theme = createTheme('purple', 'Roxo', 1);

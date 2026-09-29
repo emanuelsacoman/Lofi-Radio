@@ -19,6 +19,8 @@ type ThemeColorField = {
   label: string;
 };
 
+type ThemeSortMode = 'order' | 'alphabetical';
+
 @Component({
   selector: 'app-adm',
   templateUrl: './adm.component.html',
@@ -51,6 +53,7 @@ export class AdmComponent implements OnInit, OnDestroy {
   isSavingTheme = false;
   isSavingThemeOrder = false;
   editingThemeId: string | null = null;
+  themeSortMode: ThemeSortMode = 'order';
   themeSaveError = '';
   isSavingChipOrder = false;
   isSavingYoutuberOrder = false;
@@ -148,7 +151,7 @@ export class AdmComponent implements OnInit, OnDestroy {
   }
 
   async onThemeDrop(event: CdkDragDrop<SiteTheme[]>) {
-    if (event.previousIndex === event.currentIndex || this.isSavingThemeOrder) {
+    if (event.previousIndex === event.currentIndex || this.isSavingThemeOrder || this.themeSortMode !== 'order') {
       return;
     }
 
@@ -186,7 +189,7 @@ export class AdmComponent implements OnInit, OnDestroy {
   async onThemeHandleKeydown(event: KeyboardEvent, index: number) {
     const targetIndex = this.getKeyboardMoveIndex(event.key, index, this.themeArray.length);
 
-    if (targetIndex === index || this.isSavingThemeOrder) {
+    if (targetIndex === index || this.isSavingThemeOrder || this.themeSortMode !== 'order') {
       return;
     }
 
@@ -224,17 +227,13 @@ export class AdmComponent implements OnInit, OnDestroy {
     await this.saveYoutuberOrder(previousOrder, 'Youtubers organizados de A a Z.');
   }
 
-  async sortThemesAlphabetically() {
-    if (!this.themeArray.length || this.isSavingThemeOrder) {
+  setThemeSortMode(mode: ThemeSortMode): void {
+    if (mode === this.themeSortMode || this.isSavingThemeOrder) {
       return;
     }
 
-    const previousOrder = this.themeArray.map(theme => theme.id);
-    this.themeArray = [...this.themeArray].sort((a, b) =>
-      this.compareLabels(a.name, b.name)
-    );
-
-    await this.saveThemeOrder(previousOrder, 'Temas organizados de A a Z.');
+    this.themeSortMode = mode;
+    this.sortThemesForView();
   }
 
   chipCreateForm() {
@@ -690,6 +689,7 @@ export class AdmComponent implements OnInit, OnDestroy {
         }));
 
       this.themeArray = this.sortByStoredOrder(themes, theme => theme.name);
+      this.sortThemesForView();
     });
 
     this.subscriptions.add(subscription);
@@ -741,6 +741,15 @@ export class AdmComponent implements OnInit, OnDestroy {
     return code
       ? `Nao foi possivel salvar o tema (${code}).`
       : 'Nao foi possivel salvar o tema no Firebase.';
+  }
+
+  private sortThemesForView(): void {
+    if (this.themeSortMode === 'alphabetical') {
+      this.themeArray = [...this.themeArray].sort((a, b) => this.compareLabels(a.name, b.name));
+      return;
+    }
+
+    this.themeArray = this.sortByStoredOrder(this.themeArray, theme => theme.name);
   }
 
   private populateVideoDetails(chip: Chip) {

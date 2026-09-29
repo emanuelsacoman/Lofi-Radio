@@ -159,6 +159,31 @@ body {
       height: 100%;
     }
 
+    .theme-panel-title {
+      position: relative;
+      overflow: visible;
+    }
+
+    .theme-panel-title .theme-new-warning {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 16px;
+      height: 16px;
+      color: var(--clr-accent);
+      font-size: 16px;
+      line-height: 16px;
+      pointer-events: none;
+      transform: rotate(-30deg);
+      animation: pulses 2s infinite ease-in-out;
+    }
+
+    .theme-option {
+      display: inline-flex;
+      position: relative;
+      vertical-align: middle;
+    }
+
     .theme-buttons .colors {
       height: var(--sz-icons-player);
       width: var(--sz-icons-player);
@@ -181,6 +206,24 @@ body {
 
     .colors:not(:hover) {
       filter: brightness(0.8);
+    }
+
+    .theme-new-label {
+      position: absolute;
+      top: -4px;
+      right: -10px;
+      z-index: 100;
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: var(--clr-background);
+      background: var(--clr-primary);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--clr-background) 45%, transparent);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.5rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      pointer-events: none;
     }
 
     .image-query {

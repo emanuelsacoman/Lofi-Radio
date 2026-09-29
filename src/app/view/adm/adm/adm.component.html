@@ -381,16 +381,31 @@
             <strong>Temas cadastrados</strong>
           </div>
           <div class="saved-themes__actions">
-            <button
-              class="button button--ghost button--compact"
-              type="button"
-              (click)="sortThemesAlphabetically()"
-              [disabled]="isSavingThemeOrder || themeArray.length < 2"
-              matTooltip="Organizar temas por nome"
-            >
-              <mat-icon>{{ isSavingThemeOrder ? 'hourglass_empty' : 'sort_by_alpha' }}</mat-icon>
-              <span>{{ isSavingThemeOrder ? 'Salvando' : 'Ordenar A-Z' }}</span>
-            </button>
+            <div class="theme-sort-control" role="group" aria-label="Ordenar temas">
+              <span>Exibir por</span>
+              <button
+                type="button"
+                [class.is-active]="themeSortMode === 'order'"
+                [attr.aria-pressed]="themeSortMode === 'order'"
+                (click)="setThemeSortMode('order')"
+                [disabled]="isSavingThemeOrder"
+                matTooltip="Ordem manual salva"
+              >
+                <mat-icon>format_list_numbered</mat-icon>
+                Ordem
+              </button>
+              <button
+                type="button"
+                [class.is-active]="themeSortMode === 'alphabetical'"
+                [attr.aria-pressed]="themeSortMode === 'alphabetical'"
+                (click)="setThemeSortMode('alphabetical')"
+                [disabled]="isSavingThemeOrder"
+                matTooltip="Ordem alfabetica"
+              >
+                <mat-icon>sort_by_alpha</mat-icon>
+                A-Z
+              </button>
+            </div>
             <span class="count-pill">{{ themeArray.length }}</span>
           </div>
         </div>
@@ -401,7 +416,7 @@
           cdkDropList
           [cdkDropListData]="themeArray"
           (cdkDropListDropped)="onThemeDrop($event)"
-          aria-label="Temas cadastrados. Arraste para reordenar."
+          [attr.aria-label]="themeSortMode === 'order' ? 'Temas cadastrados. Arraste para reordenar.' : 'Temas cadastrados em ordem alfabetica.'"
         >
           <article
             class="saved-theme"
@@ -409,16 +424,16 @@
             [class.saved-theme--editing]="editingThemeId === theme.id"
             cdkDrag
             [cdkDragData]="theme"
-            [cdkDragDisabled]="isSavingThemeOrder"
+            [cdkDragDisabled]="isSavingThemeOrder || themeSortMode !== 'order'"
           >
             <button
               class="drag-handle"
               type="button"
               cdkDragHandle
-              [disabled]="isSavingThemeOrder"
+              [disabled]="isSavingThemeOrder || themeSortMode !== 'order'"
               (keydown)="onThemeHandleKeydown($event, index)"
-              matTooltip="Mover"
-              [attr.aria-label]="'Mover tema ' + theme.name + '. Use as setas, Home ou End.'"
+              [matTooltip]="themeSortMode === 'order' ? 'Mover' : 'Selecione Ordem para reordenar'"
+              [attr.aria-label]="themeSortMode === 'order' ? 'Mover tema ' + theme.name + '. Use as setas, Home ou End.' : 'Tema ' + theme.name + '. Selecione Ordem para reordenar.'"
             >
               <mat-icon>drag_indicator</mat-icon>
             </button>

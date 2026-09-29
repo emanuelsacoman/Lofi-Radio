@@ -16,22 +16,29 @@
                         aria-label="Expand Palette Colors" 
                         role="button" 
                         tabindex="0">
-                        <mat-panel-title>
+                        <mat-panel-title class="theme-panel-title">
                             <mat-icon aria-label="Palette">palette</mat-icon>
+                            <mat-icon *ngIf="hasNewThemes" class="theme-new-warning" aria-hidden="true">
+                              new_releases
+                            </mat-icon>
                         </mat-panel-title>
                     </mat-expansion-panel-header>
                     <div class="theme-buttons" aria-label="Selecionar tema">
-                      <button
-                        *ngFor="let theme of themeOptions"
-                        class="colors"
-                        type="button"
-                        [style.background-color]="getThemeSwatch(theme)"
-                        (click)="setTheme(theme.id)"
-                        [attr.aria-label]="'Tema ' + theme.name"
-                        [attr.aria-pressed]="selectedPalette === theme.id"
-                        [matTooltip]="theme.name"
-                        matTooltipPosition="right"
-                      ></button>
+                      <span class="theme-option" *ngFor="let theme of themeOptions">
+                        <button
+                          class="colors"
+                          type="button"
+                          [style.background-color]="getThemeSwatch(theme)"
+                          (click)="setTheme(theme.id)"
+                          (mouseenter)="markThemeAsSeen(theme.id)"
+                          (focus)="markThemeAsSeen(theme.id)"
+                          [attr.aria-label]="'Tema ' + theme.name + (isThemeNew(theme.id) ? ', novo' : '')"
+                          [attr.aria-pressed]="selectedPalette === theme.id"
+                          [matTooltip]="theme.name"
+                          matTooltipPosition="right"
+                        ></button>
+                        <span class="theme-new-label" *ngIf="isThemeNew(theme.id)">NEW!</span>
+                      </span>
                     </div>                    
                 </mat-expansion-panel>
             </mat-accordion> 

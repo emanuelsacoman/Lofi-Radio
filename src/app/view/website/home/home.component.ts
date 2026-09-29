@@ -11,7 +11,7 @@ import { ProfileVisitsService } from 'src/app/services/profile-visits.service';
 import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
-import { FALLBACK_SITE_THEME, SiteTheme, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
+import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
 
 type FloatingEmoji = {
@@ -148,7 +148,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
   themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
   selectedPalette = 'purple';
+  newThemeIds = new Set<string>();
   private themeSubscription?: Subscription;
+  private readonly selectedThemeKey = 'selectedPalette';
+  private readonly cachedThemeKey = 'selectedSiteTheme';
+  private readonly themeCatalogInitializedKey = 'themeCatalogInitialized';
+  private readonly seenThemePrefix = 'seen_theme_';
   
   constructor(
     private titleService: Title,
@@ -362,7 +367,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fetchConnectedUsersCount();
     this.emoji();
     
-    this.setTheme(FALLBACK_SITE_THEME.id);
+    this.restoreSavedTheme();
     this.loadThemes();
   }
 
@@ -1306,19 +1311,33 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     localStorage.setItem('volume', volumeValue.toString());
   }  
 
-  setTheme(paletteKey: string) {
+  setTheme(paletteKey: string): void {
     const theme = this.themeOptions.find(option => option.id === paletteKey);
     if (theme) {
-      Object.entries(siteThemeToCssVariables(theme.colors)).forEach(([key, value]) => {
-        document.documentElement.style.setProperty(key, value);
-      });
-      this.selectedPalette = paletteKey;
-      localStorage.setItem('selectedPalette', paletteKey);
+      this.applyTheme(theme, true);
+      this.markThemeAsSeen(theme.id);
     }
   }
 
   getThemeSwatch(theme: SiteTheme): string {
     return theme.swatch || theme.colors.primary;
+  }
+
+  get hasNewThemes(): boolean {
+    return this.newThemeIds.size > 0;
+  }
+
+  isThemeNew(themeId: string): boolean {
+    return this.newThemeIds.has(themeId);
+  }
+
+  markThemeAsSeen(themeId: string): void {
+    if (!this.newThemeIds.has(themeId)) {
+      return;
+    }
+
+    localStorage.setItem(`${this.seenThemePrefix}${themeId}`, 'true');
+    this.newThemeIds.delete(themeId);
   }
 
   private loadThemes(): void {
@@ -1333,19 +1352,99 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             || a.name.localeCompare(b.name));
 
         this.themeOptions = firestoreThemes.length ? firestoreThemes : [FALLBACK_SITE_THEME];
+        this.initializeNewThemes();
 
-        const savedPalette = localStorage.getItem('selectedPalette');
+        const savedPalette = localStorage.getItem(this.selectedThemeKey);
         const nextPalette = savedPalette && this.themeOptions.some(theme => theme.id === savedPalette)
           ? savedPalette
           : (this.themeOptions.find(theme => theme.id === FALLBACK_SITE_THEME.id)?.id || this.themeOptions[0].id);
 
-        this.setTheme(nextPalette);
+        const theme = this.themeOptions.find(option => option.id === nextPalette);
+        if (theme) {
+          this.applyTheme(theme, true);
+        }
       },
       error: () => {
-        this.themeOptions = [FALLBACK_SITE_THEME];
-        this.setTheme(FALLBACK_SITE_THEME.id);
+        const cachedTheme = this.readCachedTheme();
+        const theme = cachedTheme || FALLBACK_SITE_THEME;
+        this.themeOptions = [theme];
+        this.applyTheme(theme, false);
       }
     });
+  }
+
+  private applyTheme(theme: SiteTheme, persist: boolean): void {
+    Object.entries(siteThemeToCssVariables(theme.colors)).forEach(([key, value]) => {
+      document.documentElement.style.setProperty(key, value);
+    });
+    this.selectedPalette = theme.id;
+
+    if (persist) {
+      localStorage.setItem(this.selectedThemeKey, theme.id);
+      localStorage.setItem(this.cachedThemeKey, JSON.stringify(theme));
+    }
+  }
+
+  private restoreSavedTheme(): void {
+    const cachedTheme = this.readCachedTheme();
+    const savedThemeId = localStorage.getItem(this.selectedThemeKey);
+
+    if (cachedTheme && cachedTheme.id === savedThemeId) {
+      this.applyTheme(cachedTheme, false);
+      return;
+    }
+
+    this.applyTheme(FALLBACK_SITE_THEME, false);
+  }
+
+  private readCachedTheme(): SiteTheme | null {
+    const cachedValue = localStorage.getItem(this.cachedThemeKey);
+
+    if (!cachedValue) {
+      return null;
+    }
+
+    try {
+      const theme = JSON.parse(cachedValue) as Partial<SiteTheme>;
+      const colorKeys: Array<keyof SiteThemeColors> = [
+        'background',
+        'primary',
+        'secondary',
+        'accent',
+        'accentLight',
+        'text'
+      ];
+      const hasValidColors = theme.colors && colorKeys.every(key =>
+        typeof theme.colors?.[key] === 'string' && /^#[0-9a-fA-F]{6}$/.test(theme.colors[key])
+      );
+
+      if (typeof theme.id !== 'string' || typeof theme.name !== 'string' || !hasValidColors) {
+        return null;
+      }
+
+      return theme as SiteTheme;
+    } catch {
+      return null;
+    }
+  }
+
+  private initializeNewThemes(): void {
+    const isCatalogInitialized = localStorage.getItem(this.themeCatalogInitializedKey) === 'true';
+
+    if (!isCatalogInitialized) {
+      this.themeOptions.forEach(theme => {
+        localStorage.setItem(`${this.seenThemePrefix}${theme.id}`, 'true');
+      });
+      localStorage.setItem(this.themeCatalogInitializedKey, 'true');
+      this.newThemeIds.clear();
+      return;
+    }
+
+    this.newThemeIds = new Set(
+      this.themeOptions
+        .filter(theme => localStorage.getItem(`${this.seenThemePrefix}${theme.id}`) === null)
+        .map(theme => theme.id)
+    );
   }
 
   getLogin(){

@@ -2,6 +2,7 @@ import { NEVER, Subject, of } from 'rxjs';
 
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
 import { Chip } from 'src/app/services/interfaces/chip';
+import { FALLBACK_SITE_THEME, SiteTheme } from 'src/app/services/interfaces/site-theme';
 import { HomeComponent } from './home.component';
 
 describe('HomeComponent non-verbal radio feedback', () => {
@@ -9,7 +10,10 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
   let component: HomeComponent;
   let changeDetector: jasmine.SpyObj<{ detectChanges: () => void }>;
-  let firebase: jasmine.SpyObj<{ obterTodosChip: () => unknown }>;
+  let firebase: jasmine.SpyObj<{
+    obterTodosChip: () => unknown;
+    obterTodosTemas: () => unknown;
+  }>;
   let youtube: jasmine.SpyObj<{ getVideoDetailsBatch: (videoIds: string[]) => unknown }>;
 
   beforeEach(() => {
@@ -23,11 +27,12 @@ describe('HomeComponent non-verbal radio feedback', () => {
     const users = jasmine.createSpyObj('UserService', ['getConnectedUsersCount']);
     const emojis = jasmine.createSpyObj('EmojiService', ['getLastEmoji', 'sendEmoji']);
     const router = jasmine.createSpyObj('Router', ['navigate']);
-    firebase = jasmine.createSpyObj('FirebaseService', ['obterTodosChip']);
+    firebase = jasmine.createSpyObj('FirebaseService', ['obterTodosChip', 'obterTodosTemas']);
     youtube = jasmine.createSpyObj('YoutubeService', ['getVideoDetailsBatch']);
     const share = jasmine.createSpyObj('ShareService', ['shareSite']);
 
     firebase.obterTodosChip.and.returnValue(NEVER);
+    firebase.obterTodosTemas.and.returnValue(NEVER);
     youtube.getVideoDetailsBatch.and.returnValue(of([]));
 
     component = new HomeComponent(
@@ -77,6 +82,70 @@ describe('HomeComponent non-verbal radio feedback', () => {
     expect(component.showPlaySpinner).toBeFalse();
     expect(component.playerControlIcon).toBe('pause');
     expect(component.isPlayerControlDisabled).toBeFalse();
+  });
+
+  it('persists the selected theme and restores its cached colors on reload', () => {
+    const oceanTheme = createTheme('ocean', 'Oceano', '#123456');
+    component.themeOptions = [FALLBACK_SITE_THEME, oceanTheme];
+
+    component.setTheme(oceanTheme.id);
+
+    expect(component.selectedPalette).toBe('ocean');
+    expect(localStorage.getItem('selectedPalette')).toBe('ocean');
+    expect(JSON.parse(localStorage.getItem('selectedSiteTheme') || '{}').id).toBe('ocean');
+    expect(document.documentElement.style.getPropertyValue('--clr-primary')).toBe('#123456');
+
+    component.selectedPalette = FALLBACK_SITE_THEME.id;
+    (component as any).restoreSavedTheme();
+
+    expect(component.selectedPalette).toBe('ocean');
+    expect(document.documentElement.style.getPropertyValue('--clr-primary')).toBe('#123456');
+  });
+
+  it('uses the persisted theme id after the remote catalog loads', () => {
+    const themes$ = new Subject<any[]>();
+    const oceanTheme = createTheme('ocean', 'Oceano', '#123456');
+    localStorage.setItem('selectedPalette', oceanTheme.id);
+    firebase.obterTodosTemas.and.returnValue(themes$);
+
+    (component as any).loadThemes();
+    themes$.next([{
+      payload: {
+        doc: {
+          id: oceanTheme.id,
+          data: () => ({
+            name: oceanTheme.name,
+            order: oceanTheme.order,
+            swatch: oceanTheme.swatch,
+            colors: oceanTheme.colors
+          })
+        }
+      }
+    }]);
+
+    expect(component.selectedPalette).toBe('ocean');
+    expect(document.documentElement.style.getPropertyValue('--clr-primary')).toBe('#123456');
+  });
+
+  it('marks only themes added after the initial catalog as new', () => {
+    const oceanTheme = createTheme('ocean', 'Oceano', '#123456');
+    component.themeOptions = [FALLBACK_SITE_THEME, oceanTheme];
+
+    (component as any).initializeNewThemes();
+
+    expect(component.hasNewThemes).toBeFalse();
+
+    const forestTheme = createTheme('forest', 'Floresta', '#228855');
+    component.themeOptions = [FALLBACK_SITE_THEME, oceanTheme, forestTheme];
+    (component as any).initializeNewThemes();
+
+    expect(component.isThemeNew('forest')).toBeTrue();
+    expect(component.hasNewThemes).toBeTrue();
+
+    component.markThemeAsSeen('forest');
+
+    expect(component.isThemeNew('forest')).toBeFalse();
+    expect(localStorage.getItem('seen_theme_forest')).toBe('true');
   });
 
   it('loads an empty catalog without enabling unavailable controls', () => {
@@ -775,6 +844,23 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
   function readStoredFavoriteIds(): string[] {
     return JSON.parse(localStorage.getItem('favoriteVideoIds') || '[]') as string[];
+  }
+
+  function createTheme(id: string, name: string, primary: string): SiteTheme {
+    return {
+      id,
+      name,
+      order: 2,
+      swatch: primary,
+      colors: {
+        background: '#101820',
+        primary,
+        secondary: '#203040',
+        accent: '#304050',
+        accentLight: '#405060',
+        text: '#F0F0F0'
+      }
+    };
   }
 
   function emitError(player?: ReturnType<typeof createPlayer>, errorCode = 100): void {
