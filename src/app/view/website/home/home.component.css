@@ -65,7 +65,7 @@ body {
     .aside {
       position: absolute;
       left: -1rem;
-      top: 0;
+      top: 10px;
     }
 
     .adm {
