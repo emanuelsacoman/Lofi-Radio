@@ -161,21 +161,38 @@ body {
 
     .theme-panel-title {
       position: relative;
+      display: grid;
+      place-items: center;
+      flex: 0 0 44px;
+      width: 44px;
+      height: 44px;
+      margin: 0;
       overflow: visible;
+    }
+
+    .theme-panel-title .theme-palette-icon {
+      width: var(--sz-icons-player);
+      height: var(--sz-icons-player);
+      line-height: var(--sz-icons-player);
     }
 
     .theme-panel-title .theme-new-warning {
       position: absolute;
-      top: -3px;
-      right: -3px;
-      width: 16px;
-      height: 16px;
+      top: 3px;
+      right: 3px;
+      width: 15px;
+      height: 15px;
       color: var(--clr-accent);
-      font-size: 16px;
-      line-height: 16px;
+      font-size: 15px;
+      line-height: 15px;
       pointer-events: none;
-      transform: rotate(-30deg);
+      transform: rotate(-25deg);
+      transform-origin: center;
       animation: pulses 2s infinite ease-in-out;
+    }
+
+    .transparent-panel mat-expansion-panel-header:hover .theme-new-warning {
+      transform: rotate(-25deg) scale(1.05);
     }
 
     .theme-option {
