@@ -13,6 +13,7 @@ import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
+import { VisualizerService } from 'src/app/services/visualizer.service';
 
 type FloatingEmoji = {
   emoji: string;
@@ -168,12 +169,28 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private youtubeService: YoutubeService,
     private shareService: ShareService,
     private radioFavorites: RadioFavoritesService,
-    private profileVisits: ProfileVisitsService
+    private profileVisits: ProfileVisitsService,
+
+    private visualizerService: VisualizerService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
 
     this.loadStations();
+  }
+
+  testVisualizer(): void {
+    this.visualizerService.setPreset('default-wave');
+
+    this.visualizerService.updateParameters({
+      amplitude: 70,
+      frequency: 5,
+      harmonics: 4,
+    });
+
+    const points = this.visualizerService.calculatePoints(2, 100);
+
+    console.log(points);
   }
 
   toggleList(): void {
