@@ -43,6 +43,7 @@ body {
   background: var(--clr-background);
   color: var(--clr-text);
 
+
   :is(main) {
     display: flex;
     flex-direction: column;
@@ -50,6 +51,15 @@ body {
     align-items: center;
     height: 100%;
     width: 100%;
+
+    .visualizer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -999;
+    }
 
     .index {
       color: var(--clr-secondary);
