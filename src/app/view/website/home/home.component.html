@@ -7,103 +7,113 @@
             {{ totalVideos ? currentIndex + 1 : 0 }} / {{ totalVideos }}
         </p>
           
-        <div class="aside">
-            <mat-accordion>
-                <mat-expansion-panel class="transparent-panel" hideToggle>
-                    <mat-expansion-panel-header 
-                        collapsedHeight="44px"
-                        expandedHeight="44px"
-                        matTooltip="Palette" 
-                        matTooltipShowDelay="500" 
-                        matTooltipPosition="right" 
-                        aria-label="Expand Palette Colors" 
-                        role="button" 
-                        tabindex="0">
-                        <mat-panel-title class="theme-panel-title">
-                            <mat-icon class="theme-palette-icon" aria-label="Palette">palette</mat-icon>
-                            <mat-icon *ngIf="hasNewThemes" class="theme-new-warning" aria-hidden="true">
-                              new_releases
-                            </mat-icon>
-                        </mat-panel-title>
-                    </mat-expansion-panel-header>
-                    <div class="theme-buttons" aria-label="Selecionar tema">
-                      <span class="theme-option" *ngFor="let theme of themeOptions">
-                        <button
-                          class="colors"
-                          type="button"
-                          [style.background-color]="getThemeSwatch(theme)"
-                          (click)="setTheme(theme.id)"
-                          (mouseenter)="markThemeAsSeen(theme.id)"
-                          (focus)="markThemeAsSeen(theme.id)"
-                          [attr.aria-label]="'Tema ' + theme.name + (isThemeNew(theme.id) ? ', novo' : '')"
-                          [attr.aria-pressed]="selectedPalette === theme.id"
-                          [matTooltip]="theme.name"
-                          matTooltipPosition="right"
-                        ></button>
-                        <span class="theme-new-label" *ngIf="isThemeNew(theme.id)">NEW!</span>
-                      </span>
-                    </div>                    
-                </mat-expansion-panel>
-              </mat-accordion> 
-              <mat-accordion class="visualizer-accordion">
-                <mat-expansion-panel class="transparent-panel visualizer-panel" hideToggle>
-                  <mat-expansion-panel-header
-                    collapsedHeight="44px"
-                    expandedHeight="44px"
-                    matTooltip="Visualizers"
-                    matTooltipShowDelay="500"
-                    matTooltipPosition="right"
-                    aria-label="Toggle visualizers">
-                    <mat-panel-title class="theme-panel-title">
-                      <mat-icon class="theme-palette-icon" aria-hidden="true">equalizer</mat-icon>
-                      <mat-icon
-                        *ngIf="audioCaptureStatus === 'active'"
-                        class="visualizer-audio-indicator"
-                        aria-hidden="true">fiber_manual_record</mat-icon>
-                    </mat-panel-title>
-                  </mat-expansion-panel-header>
+        <div class="aside" role="group" aria-label="Appearance controls">
+          <!-- Independent absolute-positioned menus. No Material expansion panel. -->
+          <section class="visual-control visual-control--palette">
+            <button
+              type="button"
+              class="visual-control__trigger"
+              matTooltip="Palette"
+              matTooltipPosition="right"
+              [attr.aria-expanded]="paletteExpanded"
+              aria-controls="palette-options"
+              aria-label="Toggle color palette"
+              (click)="paletteExpanded = !paletteExpanded">
+              <mat-icon class="visual-control__icon" aria-hidden="true">palette</mat-icon>
+              <mat-icon *ngIf="hasNewThemes" class="visual-control__notice" aria-hidden="true">new_releases</mat-icon>
+            </button>
 
-                  <div class="visualizer-options" role="group" aria-label="Choose a visualizer">
-                    <button
-                      type="button"
-                      class="visualizer-option"
-                      [class.is-selected]="selectedVisualizerId === 'off'"
-                      [attr.aria-pressed]="selectedVisualizerId === 'off'"
-                      aria-label="Off: stop visualizer and audio sharing"
-                      matTooltip="Off"
-                      matTooltipPosition="right"
-                      (click)="selectVisualizer('off')">
-                      <mat-icon aria-hidden="true">visibility_off</mat-icon>
-                    </button>
+            <div
+              id="palette-options"
+              class="visual-control__menu"
+              [class.is-open]="paletteExpanded"
+              [attr.aria-hidden]="!paletteExpanded"
+              [attr.inert]="paletteExpanded ? null : ''"
+              role="group"
+              aria-label="Select color palette">
+              <span class="visual-control__item" *ngFor="let theme of themeOptions">
+                <button
+                  class="visual-control__swatch"
+                  type="button"
+                  [style.background-color]="getThemeSwatch(theme)"
+                  (click)="setTheme(theme.id)"
+                  (mouseenter)="markThemeAsSeen(theme.id)"
+                  (focus)="markThemeAsSeen(theme.id)"
+                  [attr.aria-label]="'Palette ' + theme.name + (isThemeNew(theme.id) ? ', new' : '')"
+                  [attr.aria-pressed]="selectedPalette === theme.id"
+                  [matTooltip]="theme.name"
+                  matTooltipPosition="right"></button>
+                <span class="theme-new-label" *ngIf="isThemeNew(theme.id)">NEW!</span>
+              </span>
+            </div>
+          </section>
 
-                    <button
-                      *ngFor="let preset of visualizerPresets"
-                      type="button"
-                      class="visualizer-option"
-                      [class.is-selected]="selectedVisualizerId === preset.id"
-                      [attr.aria-pressed]="selectedVisualizerId === preset.id"
-                      [attr.aria-label]="'Select ' + preset.name"
-                      [matTooltip]="preset.name"
-                      matTooltipPosition="right"
-                      (click)="selectVisualizer(preset.id)">
-                      <mat-icon aria-hidden="true">{{ preset.icon }}</mat-icon>
-                    </button>
+          <section class="visual-control visual-control--visualizers">
+            <button
+              type="button"
+              class="visual-control__trigger"
+              [matTooltip]="audioCaptureStatus === 'error' ? audioCaptureError : 'Visualizers'"
+              matTooltipPosition="right"
+              [attr.aria-expanded]="visualizerExpanded"
+              aria-controls="visualizer-options"
+              aria-label="Toggle visualizers"
+              (click)="visualizerExpanded = !visualizerExpanded">
+              <mat-icon class="visual-control__icon" aria-hidden="true">equalizer</mat-icon>
+              <mat-icon
+                *ngIf="audioCaptureStatus === 'active'"
+                class="visual-control__notice"
+                aria-hidden="true">fiber_manual_record</mat-icon>
+              <mat-icon
+                *ngIf="audioCaptureStatus === 'error'"
+                class="visual-control__notice visual-control__notice--error"
+                aria-hidden="true">error_outline</mat-icon>
+            </button>
 
-                    <mat-icon
-                      *ngIf="audioCaptureStatus === 'requesting'"
-                      class="visualizer-state-icon"
-                      role="img"
-                      aria-label="Waiting for tab audio permission"
-                      matTooltip="Choose this tab and share its audio">hourglass_empty</mat-icon>
-                    <mat-icon
-                      *ngIf="audioCaptureStatus === 'error'"
-                      class="visualizer-state-icon visualizer-error-icon"
-                      role="img"
-                      [attr.aria-label]="audioCaptureError"
-                      [matTooltip]="audioCaptureError">error_outline</mat-icon>
-                  </div>
-                </mat-expansion-panel>
-              </mat-accordion>
+            <div
+              id="visualizer-options"
+              class="visual-control__menu"
+              [class.is-open]="visualizerExpanded"
+              [attr.aria-hidden]="!visualizerExpanded"
+              [attr.inert]="visualizerExpanded ? null : ''"
+              role="group"
+              aria-label="Select visualizer">
+              <button
+                class="visual-control__effect"
+                type="button"
+                [class.is-selected]="selectedVisualizerId === 'off'"
+                [attr.aria-pressed]="selectedVisualizerId === 'off'"
+                aria-label="Off: stop visualizer and audio sharing"
+                matTooltip="Off"
+                matTooltipPosition="right"
+                (click)="selectVisualizer('off')">
+                <mat-icon aria-hidden="true">visibility_off</mat-icon>
+              </button>
+              <button
+                *ngFor="let preset of visualizerPresets"
+                class="visual-control__effect"
+                type="button"
+                [class.is-selected]="selectedVisualizerId === preset.id"
+                [attr.aria-pressed]="selectedVisualizerId === preset.id"
+                [attr.aria-label]="'Select ' + preset.name"
+                [matTooltip]="preset.name"
+                matTooltipPosition="right"
+                (click)="selectVisualizer(preset.id)">
+                <mat-icon aria-hidden="true">{{ preset.icon }}</mat-icon>
+              </button>
+              <mat-icon
+                *ngIf="audioCaptureStatus === 'requesting'"
+                class="visual-control__state"
+                role="img"
+                matTooltip="Choose this tab and share audio"
+                aria-label="Waiting for tab audio permission">hourglass_empty</mat-icon>
+              <mat-icon
+                *ngIf="audioCaptureStatus === 'error'"
+                class="visual-control__state visual-control__state--error"
+                role="img"
+                [matTooltip]="audioCaptureError"
+                [attr.aria-label]="audioCaptureError">error_outline</mat-icon>
+            </div>
+          </section>
         </div>
         <nav class="adm" aria-label="Site controls">
             <button

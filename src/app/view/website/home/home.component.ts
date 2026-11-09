@@ -150,6 +150,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
   themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
   selectedPalette = 'purple';
+  paletteExpanded = false;
+  visualizerExpanded = false;
   newThemeIds = new Set<string>();
   private themeSubscription?: Subscription;
   private readonly selectedThemeKey = 'selectedPalette';

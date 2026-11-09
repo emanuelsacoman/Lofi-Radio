@@ -16,8 +16,8 @@ O visualizador agora pode reagir ao áudio REAL da live selecionada:
 
 1. Abra o Lofi Radio em localhost ou HTTPS.
 2. Inicie uma live no player YouTube.
-3. Ao lado do painel de paletas, use o seletor simples **Visualizer** (interface restaurada do primeiro commit desta branch).
-4. Selecione um preset (Waveform, Orbit, Spiral, Equalizer ou Lissajous).
+3. Clique no ícone **Visualizers** ao lado do ícone Palette para abrir as opções.
+4. Clique no ícone de um preset (Waveform, Orbit, Spiral, Equalizer ou Lissajous).
 5. O navegador solicita imediatamente o compartilhamento. Escolha **a aba do Lofi Radio** e habilite **Compartilhar áudio da guia**.
 6. Para trocar de efeito, escolha outro preset. Para encerrar a captura, selecione **Off**.
 7. Se a permissão for cancelada, selecione **Off** e depois o preset desejado para tentar novamente.
@@ -40,7 +40,7 @@ desativado, quando o componente sai da página ou quando a captura termina.
 - services/visualizer.service.ts — geometrias moduladas por frequências reais
 - services/visualizer-presets.ts — presets com audioSensitivity configurável
 - view/effect/visualizer/visualizer.component.ts — Canvas e ciclo de renderização
-- view/website/home/home.component.* — seletor simples de presets; a captura inicia após escolher um efeito
+- view/website/home/home.component.* — dois menus independentes de ícones; a captura inicia após escolher um efeito
 
 ## Ajustes diretos no código
 
@@ -75,26 +75,32 @@ Não há deploy nesta branch. Valide a captura na interface real do navegador.
 - O decaimento do detector de batidas, isoladamente, nao gera movimento no silencio.
 - Para testar: pare/retome a live, silencie o audio da live e observe a borda inferior. A captura da aba deve estar ativa.
 
-## Visualizer icon selector
+## Absolute-positioned settings menus
 
-A paleta continua utilizando seu `mat-accordion` original. Ao lado dela,
-o usuário agora encontra um **segundo accordion independente**, contendo:
+A Palette e o Visualizer agora utilizam botões e menus HTML independentes,
+sem `mat-accordion` nem `mat-expansion-panel`. Esses componentes adicionavam
+espaçamentos e margens internas que, combinados com a largura flexível da barra,
+desalinhavam os ícones do início das colunas.
 
-- Ícone `equalizer` que abre e fecha as opções;
-- Botão `Off` (`visibility_off`) para desativar e encerrar a captura;
-- Cinco botões com ícones definidos em `VISUALIZER_PRESETS`: Waveform, Orbit,
-  Spiral, Equalizer e Lissajous;
-- `matTooltip` e rótulos acessíveis em todos os botões;
-- Indicadores de permissão em andamento ou erro da captura de áudio.
+O contêiner `.aside` está em `position: absolute; left: 0;`, com duas
+colunas também absolutas, de 64px cada, em `left: 0` e `left: 80px`.
+O cabeçalho e as opções de cada coluna compartilham **exatamente a mesma largura**.
+A abertura usa uma transição curta de opacidade e `translateY`, sem alterar
+as coordenadas da outra coluna. A preferência por movimento reduzido é respeitada.
 
-O CSS `display: flex` introduzido pelo usuário em `.aside` foi preservado.
-Os dois accordions são irmãos (não compartilham o estado de expansão).
-Apenas o corpo do accordion do Visualizer recebe padding específico em
-`src/styles.css`; o funcionamento e o estilo original da Palette não mudam.
+As duas colunas têm tooltips, estados acessíveis (`aria-expanded`,
+`aria-pressed`, `aria-controls`) e as opções fechadas ficam inertes.
+Os estados `paletteExpanded` e `visualizerExpanded` são independentes no
+`HomeComponent`; expandir um não expande nem reposiciona o outro.
 
-A captura da aba continua sendo solicitada apenas após clicar no ícone de
-um preset, reaproveitando `HomeComponent.selectVisualizer()`. Abrir o painel
-não solicita permissão. A opção Off interrompe a captura.
+O menu Palette mantém as mesmas cores carregadas do Firebase, indicação
+de novos temas e persistência da seleção. O menu Visualizers preserva
+as cinco opções, o botão Off e o indicador de captura.
 
-As geometrias matemáticas, o analisador de áudio do YouTube com permissão,
-as cores da paleta, as regras de silêncio e o Canvas permanecem inalterados.
+**A captura de áudio é solicitada somente após o usuário clicar no ícone de
+um visualizador**, usando o mesmo `selectVisualizer()` já existente; a
+abertura dos menus não solicita nenhuma permissão. Os cálculos, a análise
+de áudio, o Canvas, os presets e a lógica de silêncio permanecem inalterados.
+
+O indicador de compartilhamento pertence ao navegador e permanece visível
+durante a captura autorizada.

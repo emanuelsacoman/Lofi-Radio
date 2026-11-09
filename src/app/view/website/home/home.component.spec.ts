@@ -70,6 +70,27 @@ describe('HomeComponent non-verbal radio feedback', () => {
   });
 
 
+  describe('independent appearance menus', () => {
+    it('starts with both menus closed', () => {
+      expect(component.paletteExpanded).toBeFalse();
+      expect(component.visualizerExpanded).toBeFalse();
+    });
+
+    it('keeps menu state independent of preset selection', () => {
+      component.paletteExpanded = true;
+      expect(component.visualizerExpanded).toBeFalse();
+
+      component.visualizerExpanded = true;
+      component.paletteExpanded = false;
+      expect(component.visualizerExpanded).toBeTrue();
+
+      spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      component.selectVisualizer('pulse-bars');
+      expect(component.visualizerExpanded).toBeTrue();
+      expect(component.paletteExpanded).toBeFalse();
+    });
+  });
+
   describe('visualizer icon selection and audio consent', () => {
     it('never requests sharing just by initializing the page', () => {
       const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
