@@ -401,7 +401,7 @@
                 <mat-icon aria-hidden="true">visibility_off</mat-icon>
               </button>
               <button
-                *ngFor="let preset of visualizerPresets"
+                *ngFor="let preset of visualizerPresets; trackBy: trackVisualizerPreset"
                 class="visual-control__effect"
                 type="button"
                 [class.is-selected]="selectedVisualizerId === preset.id"
