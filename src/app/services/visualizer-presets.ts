@@ -17,14 +17,6 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     resolution: 280, barCount: 48, rotation: 0
   },
   {
-    id: 'cosmic-spiral', name: 'Spiral', icon: 'cyclone', geometry: 'spiral', visualStyle: 'vortex',
-    amplitude: 40,
-    audioSensitivity: 1.4, frequency: 4.5, speed: 0.28, harmonics: 3, phase: 30,
-    color: 'accent', secondaryColor: 'secondary',
-    lineWidth: 1.6, glow: 12, opacity: 0.72, layers: 3,
-    resolution: 500, barCount: 48, rotation: 0.12
-  },
-  {
     id: 'pulse-bars', name: 'Equalizer', icon: 'graphic_eq', geometry: 'bars', visualStyle: 'bars',
     amplitude: 75,
     audioSensitivity: 2.1, frequency: 5, speed: 0.54, harmonics: 5, phase: 0,
