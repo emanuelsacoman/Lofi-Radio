@@ -17,6 +17,10 @@
   --gap-emoji: clamp(0.1rem, 50vw, 1rem);
   --padding-footer: clamp(0.1rem, 4vw, 1rem);
   --sz-text-yt-name: clamp(14px, 3vw, 20px);
+  /* Shared horizontal rhythm for left and right toolbar icons. */
+  --header-icon-size: 44px;
+  --header-icon-gap: 16px;
+  --header-icon-step: calc(var(--header-icon-size) + var(--header-icon-gap));
 }
 
 .sr-only {
@@ -43,6 +47,7 @@ body {
   background: var(--clr-background);
   color: var(--clr-text);
 
+
   :is(main) {
     display: flex;
     flex-direction: column;
@@ -50,6 +55,16 @@ body {
     align-items: center;
     height: 100%;
     width: 100%;
+
+    .visualizer {
+      /* The canvas must cover the viewport regardless of main's height. */
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      z-index: 1;
+      pointer-events: none;
+    }
 
     .index {
       color: var(--clr-secondary);
@@ -62,12 +77,6 @@ body {
       z-index: 2;
     }
 
-    .aside {
-      position: absolute;
-      left: -1rem;
-      top: 10px;
-    }
-
     .adm {
       position: absolute;
       top: 10px;
@@ -78,7 +87,7 @@ body {
       flex-direction: row;
       align-items: center;
       justify-content: center;
-      gap: var(--gap-normal);
+      gap: var(--header-icon-gap);
       z-index: 3;
 
       .newWarning {
@@ -101,9 +110,9 @@ body {
         transition: all 0.2s ease;
         cursor: pointer;
         font-size: var(--sz-icons-player);
-        width: 44px;
-        height: 44px;
-        flex: 0 0 44px;
+        width: var(--header-icon-size);
+        height: var(--header-icon-size);
+        flex: 0 0 var(--header-icon-size);
         padding: 0;
         color: var(--clr-primary);
       }
@@ -119,128 +128,6 @@ body {
         outline: 2px solid var(--clr-text);
         outline-offset: 2px;
       }
-    }
-
-    .transparent-panel {
-      background: transparent;
-      box-shadow: none;
-    }
-
-    :is(mat-accordion) {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-    }
-
-    .transparent-panel mat-expansion-panel-header {
-      padding: 0;
-      margin-left: 33%;
-      background: transparent;
-      overflow: visible;
-      transition: all 0.2s ease;
-      z-index: 99;
-    }
-
-    .transparent-panel mat-expansion-panel-header:hover {
-      filter: drop-shadow(0 0 0.5rem var(--clr-accent));
-    }
-
-    .transparent-panel mat-expansion-panel-header:hover mat-icon {
-      transform: scale(1.1);
-    }
-
-    .transparent-panel mat-expansion-panel-header mat-icon {
-      color: var(--clr-primary);
-      font-size: var(--sz-icons-player);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      width: 100%;
-      height: 100%;
-    }
-
-    .theme-panel-title {
-      position: relative;
-      display: grid;
-      place-items: center;
-      flex: 0 0 44px;
-      width: 44px;
-      height: 44px;
-      margin: 0;
-      overflow: visible;
-    }
-
-    .theme-panel-title .theme-palette-icon {
-      width: var(--sz-icons-player);
-      height: var(--sz-icons-player);
-      line-height: var(--sz-icons-player);
-    }
-
-    .theme-panel-title .theme-new-warning {
-      position: absolute;
-      top: 3px;
-      right: 3px;
-      width: 15px;
-      height: 15px;
-      color: var(--clr-accent);
-      font-size: 15px;
-      line-height: 15px;
-      pointer-events: none;
-      transform: rotate(-25deg);
-      transform-origin: center;
-      animation: pulses 2s infinite ease-in-out;
-    }
-
-    .transparent-panel mat-expansion-panel-header:hover .theme-new-warning {
-      transform: rotate(-25deg) scale(1.05);
-    }
-
-    .theme-option {
-      display: inline-flex;
-      position: relative;
-      vertical-align: middle;
-    }
-
-    .theme-buttons .colors {
-      height: var(--sz-icons-player);
-      width: var(--sz-icons-player);
-      margin: 5px;
-      border-radius: 5px;
-      display: inline-block;
-      cursor: pointer;
-      z-index: 98;
-      border: 0;
-      padding: 0;
-    }
-
-    .colors {
-      transition: all 0.2s ease;
-    }
-
-    .colors:hover {
-      filter: brightness(1.1);
-    }
-
-    .colors:not(:hover) {
-      filter: brightness(0.8);
-    }
-
-    .theme-new-label {
-      position: absolute;
-      top: -4px;
-      right: -10px;
-      z-index: 100;
-      padding: 2px 4px;
-      border-radius: 4px;
-      color: var(--clr-background);
-      background: var(--clr-primary);
-      box-shadow: 0 2px 8px color-mix(in srgb, var(--clr-background) 45%, transparent);
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.5rem;
-      font-weight: 900;
-      line-height: 1;
-      letter-spacing: 0.02em;
-      pointer-events: none;
     }
 
     .image-query {
@@ -271,6 +158,8 @@ body {
     }
 
     .musicArea {
+      position: relative;
+      z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -624,22 +513,10 @@ body {
       }
     }
 
-    .theme-buttons {
-      opacity: 1;
-      display: flex;
-      flex-direction: column;
-      z-index: 98;
 
-      gap: var(--gap-normal);
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 100%;
-      animation: fadeOut 1s ease alternate;
-      transition: all 0.2s ease;
-    }
 
     .footer {
+      z-index: 2;
       position: absolute;
       display: flex;
       flex-direction: row;
@@ -946,6 +823,11 @@ span {
 
 .fadeIn {
   animation: fadeIn 0.2s ease-in forwards;
+}
+
+@keyframes appearance-menu-open {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
@@ -1276,3 +1158,190 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
     transition: none !important;
   }
 }
+
+/* Appearance controls intentionally live outside the animated <main>. */
+    .aside {
+      /* Top-level fixed controls avoid the animated main's stacking context.
+         The CDK tooltip overlay can now appear above these controls. */
+      position: fixed;
+      top: 10px;
+      left: 0;
+      width: calc(20px + var(--header-icon-size) * 2 + var(--header-icon-gap));
+      height: var(--header-icon-size);
+      z-index: 200;
+      overflow: visible;
+      pointer-events: auto;
+    }
+
+    /* Both triggers use 44px hit areas and the same 16px spacing as .adm.
+       The 64px dropdown is centered under its own trigger. */
+    .visual-control {
+      position: absolute;
+      top: 0;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
+      overflow: visible;
+      pointer-events: auto;
+    }
+
+    .visual-control--palette { left: 10px; }
+    .visual-control--visualizers { left: calc(10px + var(--header-icon-step)); }
+
+    .visual-control__trigger {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--clr-primary);
+      cursor: pointer;
+      z-index: 1;
+      pointer-events: auto;
+      transition: filter 180ms ease;
+    }
+
+    .visual-control__trigger:hover { filter: drop-shadow(0 0 0.5rem var(--clr-accent)); }
+
+    .visual-control__trigger:focus-visible,
+    .visual-control__swatch:focus-visible,
+    .visual-control__effect:focus-visible {
+      outline: 2px solid var(--clr-primary);
+      outline-offset: 2px;
+    }
+
+    .visual-control__icon {
+      display: block;
+      width: var(--sz-icons-player);
+      height: var(--sz-icons-player);
+      font-size: var(--sz-icons-player);
+      line-height: var(--sz-icons-player);
+    }
+
+    .visual-control__notice {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      width: 13px;
+      height: 13px;
+      font-size: 13px;
+      line-height: 13px;
+      color: var(--clr-accent);
+      pointer-events: none;
+    }
+    .visual-control__notice--error { color: var(--clr-accent-light); }
+
+    .visual-control__menu {
+      position: absolute;
+      top: 52px;
+      left: calc((var(--header-icon-size) - 64px) / 2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-sizing: border-box;
+      width: 64px;
+      max-height: calc(100dvh - 100px);
+      margin: 0;
+      padding: 4px 0 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      background: transparent;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      animation: appearance-menu-open 180ms ease-out both;
+    }
+    .visual-control__menu::-webkit-scrollbar { display: none; }
+
+    /* The menu only exists while open (*ngIf). No hidden/inert node remains
+       in the DOM to unexpectedly intercept or disable pointer events. */
+    .visual-control__item {
+      position: relative;
+      display: flex;
+      flex: 0 0 var(--sz-icons-player);
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: var(--sz-icons-player);
+    }
+
+    .visual-control__swatch,
+    .visual-control__effect {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      width: var(--sz-icons-player);
+      height: var(--sz-icons-player);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: filter 180ms ease, background-color 180ms ease;
+    }
+
+    .visual-control__swatch:hover,
+    .visual-control__effect:hover { filter: brightness(1.2); }
+
+    .visual-control__effect {
+      background: var(--clr-secondary);
+      color: var(--clr-text);
+    }
+
+    .visual-control__effect.is-selected {
+      outline: 1px solid var(--clr-accent-light);
+      background: var(--clr-accent);
+      color: var(--clr-background);
+    }
+
+    .visual-control__effect mat-icon {
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
+      line-height: 24px;
+    }
+
+    .visual-control__item .theme-new-label {
+      position: absolute;
+      right: 0;
+      top: -8px;
+      z-index: 1;
+      padding: 2px 3px;
+      border-radius: 4px;
+      background: var(--clr-primary);
+      color: var(--clr-background);
+      font: 900 8px Arial, sans-serif;
+      pointer-events: none;
+    }
+
+    .visual-control__state {
+      display: block;
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
+      line-height: 24px;
+      color: var(--clr-accent-light);
+    }
+    .visual-control__state--error { color: var(--clr-accent); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .visual-control__trigger,
+      .visual-control__menu,
+      .visual-control__swatch,
+      .visual-control__effect {
+        transition: none;
+      }
+      .visual-control__menu {
+        animation: none;
+      }
+    }
+
+
