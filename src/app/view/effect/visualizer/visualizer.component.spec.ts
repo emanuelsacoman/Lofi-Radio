@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { VisualizerComponent } from './visualizer.component';
+import { VisualizerComponent, fireflyAudioResponse } from './visualizer.component';
 import { VisualizerService } from 'src/app/services/visualizer.service';
 
 describe('VisualizerComponent', () => {
@@ -65,6 +65,45 @@ describe('VisualizerComponent', () => {
     });
     expect(ctx.clearRect).toHaveBeenCalled();
     expect(ctx.stroke).not.toHaveBeenCalled();
+  });
+
+  it('makes Firefly pulse visibly with real bass and beats', () => {
+    const quiet = {
+      source: 'tab' as const,
+      level: 0.05, bass: 0.04, mids: 0.08, treble: 0.02, beat: 0,
+      spectrum: new Array(64).fill(0.02)
+    };
+    const music = {
+      source: 'tab' as const,
+      level: 0.65, bass: 0.75, mids: 0.6, treble: 0.6, beat: 0.9,
+      spectrum: new Array(64).fill(0.8)
+    };
+    const calm = fireflyAudioResponse(quiet, quiet.spectrum[3], 1);
+    const loud = fireflyAudioResponse(music, music.spectrum[3], 1);
+
+    expect(loud.scale).toBeGreaterThan(calm.scale + 0.6);
+    expect(loud.alpha).toBeGreaterThan(calm.alpha + 0.3);
+    expect(loud.expansion).toBeGreaterThan(calm.expansion + 0.1);
+
+    const noBeat = fireflyAudioResponse({ ...music, beat: 0 }, music.spectrum[3], 1);
+    expect(loud.scale).toBeGreaterThan(noBeat.scale);
+    expect(loud.expansion).toBeGreaterThan(noBeat.expansion);
+    const dimBand = fireflyAudioResponse(music, 0, 1);
+    expect(loud.scale).toBeGreaterThan(dimBand.scale);
+  });
+
+  it('never lights up Firefly using beat decay alone or unshared audio', () => {
+    const beatOnly = {
+      source: 'tab' as const,
+      level: 0, bass: 0, mids: 0, treble: 0, beat: 1,
+      spectrum: new Array(64).fill(0)
+    };
+    expect(fireflyAudioResponse(beatOnly, 0, 0)).toEqual({
+      scale: 0, alpha: 0, expansion: 0
+    });
+    expect(fireflyAudioResponse({ ...beatOnly, source: 'none' }, 1, 1)).toEqual({
+      scale: 0, alpha: 0, expansion: 0
+    });
   });
 
   it('renders Firefly with cached glow sprites and without blurred strokes', () => {
