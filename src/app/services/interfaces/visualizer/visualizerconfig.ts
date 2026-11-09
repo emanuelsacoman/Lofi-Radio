@@ -1,11 +1,17 @@
 /** Todos os parametros sao editaveis nos presets ou via updateParameters(). */
 export type VisualizerGeometry = 'wave' | 'circle' | 'spiral' | 'bars' | 'lissajous';
 
+/** Layered Canvas art direction, separate from the mathematical audio geometry. */
+export type VisualizerStyle =
+  | 'silk' | 'orbit' | 'vortex' | 'bars' | 'constellation'
+  | 'fireflies' | 'meteor' | 'lotus';
+
 export interface VisualizerConfig {
   id: string;
   name: string;
   icon: string;         // nome de ícone Material exibido no seletor
   geometry: VisualizerGeometry;
+  visualStyle: VisualizerStyle; // Visual treatment without changing the math engine
   amplitude: number;     // 0..100: intensidade da deformacao
   audioSensitivity: number; // 0.2..4: ganho das frequencias/da batida reais
   frequency: number;     // 0.25..12: repeticoes espaciais
