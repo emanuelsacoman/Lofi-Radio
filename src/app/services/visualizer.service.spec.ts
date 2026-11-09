@@ -18,12 +18,12 @@ describe('VisualizerService procedural engine', () => {
   it('has English names for every visualizer icon', () => {
     expect(service.getPresets().map(preset => preset.name)).toEqual([
       'Waveform', 'Orbit', 'Spiral', 'Equalizer', 'Lissajous',
-      'Firefly Garden', 'Meteor Shower', 'Lotus Dream'
+      'Firefly Garden'
     ]);
   });
 
-  it('offers eight configurable presets and a single active configuration', () => {
-    expect(service.getPresets().length).toBe(8);
+  it('offers six configurable presets and a single active configuration', () => {
+    expect(service.getPresets().length).toBe(6);
     expect(service.setPreset('orbit-bloom')).toBeTrue();
     expect(service.activeConfig?.geometry).toBe('circle');
     expect(service.setPreset('pulse-bars')).toBeTrue();
@@ -34,7 +34,7 @@ describe('VisualizerService procedural engine', () => {
 
   it('keeps each artistic style distinct while preserving its audio geometry', () => {
     const presets = service.getPresets();
-    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(8);
+    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(6);
     for (const preset of presets) {
       expect(service.setPreset(preset.id)).toBeTrue();
       expect(service.activeConfig?.visualStyle).toBe(preset.visualStyle);
@@ -43,9 +43,17 @@ describe('VisualizerService procedural engine', () => {
   });
 
   it('normalizes an unsupported visual style', () => {
-    service.setPreset('lotus-dream');
+    service.setPreset('moonlit-fireflies');
     service.updateParameters({ visualStyle: 'invalid' as any });
     expect(service.activeConfig?.visualStyle).toBe('silk');
+  });
+
+  it('rejects removed visualizers and starts Off when a removed selection was stored', () => {
+    expect(service.getPresets().some(p => p.id === 'neon-meteor-rain' || p.id === 'lotus-dream')).toBeFalse();
+    expect(service.setPreset('neon-meteor-rain')).toBeFalse();
+    expect(service.setPreset('lotus-dream')).toBeFalse();
+    localStorage.setItem('lofi.visualizer.preset.v1', 'lotus-dream');
+    expect(new VisualizerService().activePresetId).toBeNull();
   });
 
   it('disables rendering and remembers the off selection', () => {
