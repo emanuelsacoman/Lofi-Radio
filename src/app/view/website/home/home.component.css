@@ -17,6 +17,10 @@
   --gap-emoji: clamp(0.1rem, 50vw, 1rem);
   --padding-footer: clamp(0.1rem, 4vw, 1rem);
   --sz-text-yt-name: clamp(14px, 3vw, 20px);
+  /* Shared horizontal rhythm for left and right toolbar icons. */
+  --header-icon-size: 44px;
+  --header-icon-gap: 16px;
+  --header-icon-step: calc(var(--header-icon-size) + var(--header-icon-gap));
 }
 
 .sr-only {
@@ -79,30 +83,31 @@ body {
       position: absolute;
       top: 10px;
       left: 0;
-      width: 144px;
-      height: 44px;
+      width: calc(20px + var(--header-icon-size) * 2 + var(--header-icon-gap));
+      height: var(--header-icon-size);
       z-index: 4;
       overflow: visible;
     }
 
-    /* Independent menu anchors: a 64px column centered at x=32 and x=112. */
+    /* Both triggers use 44px hit areas and the same 16px spacing as .adm.
+       The 64px dropdown is centered under its own trigger. */
     .visual-control {
       position: absolute;
       top: 0;
-      width: 64px;
-      height: 44px;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
       overflow: visible;
     }
 
-    .visual-control--palette { left: 0; }
-    .visual-control--visualizers { left: 80px; }
+    .visual-control--palette { left: 10px; }
+    .visual-control--visualizers { left: calc(10px + var(--header-icon-step)); }
 
     .visual-control__trigger {
       position: relative;
       display: grid;
       place-items: center;
-      width: 64px;
-      height: 44px;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
       margin: 0;
       padding: 0;
       border: 0;
@@ -146,7 +151,7 @@ body {
     .visual-control__menu {
       position: absolute;
       top: 52px;
-      left: 0;
+      left: calc((var(--header-icon-size) - 64px) / 2);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -266,7 +271,7 @@ body {
       flex-direction: row;
       align-items: center;
       justify-content: center;
-      gap: var(--gap-normal);
+      gap: var(--header-icon-gap);
       z-index: 3;
 
       .newWarning {
@@ -289,9 +294,9 @@ body {
         transition: all 0.2s ease;
         cursor: pointer;
         font-size: var(--sz-icons-player);
-        width: 44px;
-        height: 44px;
-        flex: 0 0 44px;
+        width: var(--header-icon-size);
+        height: var(--header-icon-size);
+        flex: 0 0 var(--header-icon-size);
         padding: 0;
         color: var(--clr-primary);
       }
