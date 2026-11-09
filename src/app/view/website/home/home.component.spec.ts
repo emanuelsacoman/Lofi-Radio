@@ -1,6 +1,7 @@
 import { NEVER, Subject, of } from 'rxjs';
 
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
+import { VisualizerService } from 'src/app/services/visualizer.service';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { FALLBACK_SITE_THEME, SiteTheme } from 'src/app/services/interfaces/site-theme';
 import { HomeComponent } from './home.component';
@@ -48,7 +49,8 @@ describe('HomeComponent non-verbal radio feedback', () => {
       youtube as any,
       share,
       new RadioFavoritesService(),
-      jasmine.createSpyObj('ProfileVisitsService', { registerVisit: Promise.resolve() })
+      jasmine.createSpyObj('ProfileVisitsService', { registerVisit: Promise.resolve() }),
+      new VisualizerService()
     );
 
     component.isOnline = true;

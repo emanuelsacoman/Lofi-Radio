@@ -179,18 +179,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadStations();
   }
 
-  testVisualizer(): void {
-    this.visualizerService.setPreset('default-wave');
+  get visualizerPresets() {
+    return this.visualizerService.getPresets();
+  }
 
-    this.visualizerService.updateParameters({
-      amplitude: 70,
-      frequency: 5,
-      harmonics: 4,
-    });
+  get selectedVisualizerId(): string {
+    return this.visualizerService.activePresetId ?? 'off';
+  }
 
-    const points = this.visualizerService.calculatePoints(2, 100);
-
-    console.log(points);
+  selectVisualizer(id: string): void {
+    this.visualizerService.setPreset(id === 'off' ? null : id);
   }
 
   toggleList(): void {

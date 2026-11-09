@@ -2,7 +2,7 @@
   <app-vhs></app-vhs>
   
     <main class="fadeIn">
-      <app-visualizer class="visualizer"></app-visualizer>
+      <app-visualizer class="visualizer" [playing]="isPlaying"></app-visualizer>
         <p class="index">
             {{ totalVideos ? currentIndex + 1 : 0 }} / {{ totalVideos }}
         </p>
@@ -44,9 +44,13 @@
                       </span>
                     </div>                    
                 </mat-expansion-panel>
-                <mat-icon (click)="testVisualizer()">
-                  radio_button_on
-                </mat-icon>
+                <div class="visualizer-picker">
+                  <label for="visualizer-mode">Visualizer</label>
+                  <select id="visualizer-mode" [value]="selectedVisualizerId" (change)="selectVisualizer($any($event.target).value)">
+                    <option value="off">Off</option>
+                    <option *ngFor="let preset of visualizerPresets" [value]="preset.id">{{ preset.name }}</option>
+                  </select>
+                </div>
             </mat-accordion> 
         </div>
         <nav class="adm" aria-label="Site controls">
