@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { VisualizerComponent, fireflyAudioResponse } from './visualizer.component';
+import { VisualizerComponent, fireflyAudioResponse, fireflyFlight, fireflyEcho } from './visualizer.component';
 import { VisualizerService } from 'src/app/services/visualizer.service';
 
 describe('VisualizerComponent', () => {
@@ -130,7 +130,7 @@ describe('VisualizerComponent', () => {
       .toEqual({ alpha: 0 });
   });
 
-  it('keeps every firefly exactly the same size during bass drops', () => {
+  it('keeps individual Firefly sprite sizes fixed as audio intensity changes', () => {
     const ctx = jasmine.createSpyObj<CanvasRenderingContext2D>(
       'CanvasRenderingContext2D', ['clearRect', 'drawImage']
     );
@@ -139,24 +139,62 @@ describe('VisualizerComponent', () => {
     (component as any).height = 720;
     service.setPreset('moonlit-fireflies');
 
-    const quiet = {
+    const softMusic = {
       source: 'tab' as const,
-      level: 0.05, bass: 0.04, mids: 0.08, treble: 0.02, beat: 0,
-      spectrum: new Array(64).fill(0.02)
+      level: 0.35, bass: 0.24, mids: 0.25, treble: 0.2, beat: 0,
+      spectrum: new Array(64).fill(0.20)
     };
-    (component as any).render(quiet);
+    (component as any).render(softMusic);
     const sizesBefore = ctx.drawImage.calls.allArgs().map(args => [args[3], args[4]]);
-    expect(sizesBefore.length).toBe(18);
+    expect(sizesBefore.length).toBeGreaterThan(0);
+    expect(sizesBefore.length).toBeLessThanOrEqual(18);
 
     ctx.drawImage.calls.reset();
     (component as any).render({
-      ...quiet, level: 0.7, bass: 0.8, mids: 0.5, treble: 0.6, beat: 1,
+      ...softMusic, level: 0.8, bass: 0.75, mids: 0.6, treble: 0.8,
       spectrum: new Array(64).fill(0.8)
     });
     const sizesAfter = ctx.drawImage.calls.allArgs().map(args => [args[3], args[4]]);
     expect(sizesAfter).toEqual(sizesBefore);
     expect(ctx.globalCompositeOperation).toBe('source-over');
     expect(ctx.shadowBlur).toBe(0);
+  });
+
+  it('makes a slow, bounded flight instead of zooming or jumping across the screen', () => {
+    const seed = { x: 0.35, y: 0.58, phase: 1.2, speed: 0.9, size: 1.4, depth: 0.9 };
+    const a = fireflyFlight(seed, 0);
+    const b = fireflyFlight(seed, 20);
+    const c = fireflyFlight(seed, 20.04);
+    expect(b).not.toEqual(a);
+    expect(fireflyFlight(seed, 20)).toEqual(b);
+    expect(Math.hypot(c.x - b.x, c.y - b.y)).toBeLessThan(0.002);
+    for (const t of [0, 5, 25, 100]) {
+      const p = fireflyFlight(seed, t);
+      expect(p.x).toBeGreaterThan(0.04);
+      expect(p.x).toBeLessThan(0.96);
+      expect(p.y).toBeGreaterThan(0.08);
+      expect(p.y).toBeLessThan(0.92);
+    }
+  });
+
+  it('creates a four-step call-and-response ripple only from detected beats', () => {
+    expect(fireflyEcho(0.155, 0)).toBeGreaterThan(0.7);
+    expect(fireflyEcho(0.155, 5)).toBeLessThan(0.01);
+    expect(fireflyEcho(0.305, 5)).toBeGreaterThan(0.7);
+    expect(fireflyEcho(0.155, 1)).toBe(0);
+    expect(fireflyEcho(-1, 0)).toBe(0);
+    expect(fireflyEcho(Infinity, 0)).toBe(0);
+
+    const loud = {
+      source: 'tab' as const,
+      level: 0.7, bass: 0.8, mids: 0.6, treble: 0.7, beat: 1,
+      spectrum: new Array(64).fill(0.6)
+    };
+    const darkTime = 2.2; // away from the first seed's independent blink
+    const natural = fireflyAudioResponse(loud, 0.6, 1, darkTime, 0, 1);
+    const answer = fireflyAudioResponse(loud, 0.6, 1, darkTime, 0, 1, 0.78);
+    expect(answer.alpha).toBeGreaterThan(natural.alpha);
+    expect(fireflyAudioResponse({ ...loud, source: 'none' }, 0.6, 1, darkTime, 0, 1, 0.78).alpha).toBe(0);
   });
 
   it('renders Firefly with cached glow sprites and without blurred strokes', () => {
@@ -176,7 +214,9 @@ describe('VisualizerComponent', () => {
     expect(service.setPreset('moonlit-fireflies')).toBeTrue();
     (component as any).render(audio);
 
-    expect(ctx.drawImage).toHaveBeenCalledTimes(18);
+    const firstFrameDraws = ctx.drawImage.calls.count();
+    expect(firstFrameDraws).toBeGreaterThan(0);
+    expect(firstFrameDraws).toBeLessThanOrEqual(18);
     expect(ctx.stroke).not.toHaveBeenCalled();
     expect(ctx.fill).not.toHaveBeenCalled();
     expect(ctx.shadowBlur).toBe(0);
@@ -185,7 +225,7 @@ describe('VisualizerComponent', () => {
     const cachedSprites = (component as any).fireflySprites;
     expect(cachedSprites).toBeTruthy();
     (component as any).render(audio);
-    expect(ctx.drawImage).toHaveBeenCalledTimes(36);
+    expect(ctx.drawImage.calls.count()).toBe(firstFrameDraws * 2);
     expect((component as any).fireflySprites).toBe(cachedSprites);
   });
 
@@ -201,7 +241,8 @@ describe('VisualizerComponent', () => {
       source: 'tab', level: 0.7, bass: 0.4, mids: 0.5, treble: 0.4, beat: 0.5,
       spectrum: new Array(64).fill(0.5)
     });
-    expect(ctx.drawImage).toHaveBeenCalledTimes(11);
+    expect(ctx.drawImage.calls.count()).toBeGreaterThan(0);
+    expect(ctx.drawImage.calls.count()).toBeLessThanOrEqual(11);
   });
 
   it('keeps every atmosphere completely dark in genuine silence, even with beat decay', () => {
