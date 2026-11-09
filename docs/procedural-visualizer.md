@@ -10,14 +10,14 @@ O visualizador agora pode reagir ao áudio REAL da live selecionada:
 - Detector adaptativo de batidas a partir de transientes de graves (estimativa)
 - 64 bandas espectrais para barras e energia para as outras geometrias
 - Cores herdadas dinamicamente do tema selecionado (sem hex fixo nos presets)
-- Um único canvas e um único loop. Sem áudio compartilhado, a forma fica estática.
+- Um único canvas e um único loop. Sem áudio detectável, o canvas fica transparente.
 
 ## Ativação no navegador
 
 1. Abra o Lofi Radio em localhost ou HTTPS.
 2. Inicie uma live no player YouTube.
 3. Clique no ícone **Visualizers** ao lado do ícone Palette para abrir as opções.
-4. Clique no ícone de um preset (Waveform, Orbit, Spiral, Equalizer ou Lissajous).
+4. Clique no ícone de um dos oito presets (incluindo Firefly Garden, Meteor Shower e Lotus Dream).
 5. O navegador solicita imediatamente o compartilhamento. Escolha **a aba do Lofi Radio** e habilite **Compartilhar áudio da guia**.
 6. Para trocar de efeito, escolha outro preset. Para encerrar a captura, selecione **Off**.
 7. Se a permissão for cancelada, selecione **Off** e depois o preset desejado para tentar novamente.
@@ -97,12 +97,12 @@ Os estados `paletteExpanded` e `visualizerExpanded` são independentes no
 
 O menu Palette mantém as mesmas cores carregadas do Firebase, indicação
 de novos temas e persistência da seleção. O menu Visualizers preserva
-as cinco opções, o botão Off e o indicador de captura.
+as oito opções, o botão Off e o indicador de captura.
 
 **A captura de áudio é solicitada somente após o usuário clicar no ícone de
 um visualizador**, usando o mesmo `selectVisualizer()` já existente; a
-abertura dos menus não solicita nenhuma permissão. Os cálculos, a análise
-de áudio, o Canvas, os presets e a lógica de silêncio permanecem inalterados.
+abertura dos menus não solicita nenhuma permissão. O consentimento de captura continua independente da seleção: apenas o clique
+em um preset pode pedir acesso. A lógica de silêncio continua obrigatória.
 
 O indicador de compartilhamento pertence ao navegador e permanece visível
 durante a captura autorizada.
@@ -144,3 +144,39 @@ console.log({
 
 `sameTarget` deve ser `true` e `pointerEvents` deve ser `auto`.
 Se não forem, haverá outra camada cobrindo o controle.
+
+
+## V2 — Atmosferas cinematográficas (8 estilos)
+
+| Preset | Direção de arte | O que reage ao áudio |
+| --- | --- | --- |
+| Waveform / Silk | Cortinas translúcidas de aurora e ondas brilhantes | Graves modulam ondulações e faixas |
+| Orbit / Halo | Anéis concêntricos com satélites luminosos | Graves expandem raios; agudos iluminam satélites |
+| Spiral / Vortex | Poeira estelar girando em camadas | Médios e transientes revelam partículas |
+| Equalizer / Sparks | Barras espectrais com pontos brilhantes nas cristas | Cada banda FFT controla sua própria altura |
+| Lissajous / Constellation | Traçados orbitais e pontos de constelação | Agudos fazem estrelas cintilar |
+| Firefly Garden | Vagalumes flutuando sobre véus suaves | Agudos acendem partículas; silêncio apaga tudo |
+| Meteor Shower | Rastros diagonais e chuva de energia | Bandas FFT regulam brilho e comprimento |
+| Lotus Dream | Rosácea geométrica com pétalas luminosas | Graves abrem o mandala; batidas intensificam brilho |
+
+### Contratos preservados
+
+- **Privacidade:** o áudio da aba continua sendo analisado localmente; nenhum stream ou dado FFT é enviado ao servidor. O pedido de permissão acontece apenas ao clicar em um efeito, e Off encerra a sessão.
+- **Sem movimento falso:** não há partículas, faixas ou petalas visíveis sem atividade espectral real, mesmo que o envelope do beat ainda esteja decaindo.
+- **Sem regressão dos menus:** lista de presets com identidade estável e \`trackBy\`; Palette e Visualizers continuam independentes e com tooltips.
+- **Acessibilidade:** \`prefers-reduced-motion\` desativa o loop de animação, mas mostra um snapshot estático quando há áudio disponível.
+- **Performance:** animação limitada a ~45 FPS, framebuffer limitado a ~4,5 MP, partículas procedurais determinísticas e contagem reduzida em telas pequenas. Canvas 2D único e sem novas dependências.
+- **Temas:** todos os efeitos utilizam tokens da paleta selecionada; não adicionam cores fixas ao catálogo.
+
+### Validação recomendada
+
+\`\`\`bash
+npm ci
+npm run build
+npx ng test --watch=false --include=src/app/services/visualizer.service.spec.ts --include=src/app/view/effect/visualizer/visualizer.component.spec.ts
+npm run test:radio
+\`\`\`
+
+Revisar manualmente no Chrome/Edge: alternar os oito efeitos, escolher esta aba
+com áudio, trocar a paleta durante a reprodução, testar Off, silêncio, tela
+estreita e preferência por movimento reduzido. Nenhuma alteração de deploy.
