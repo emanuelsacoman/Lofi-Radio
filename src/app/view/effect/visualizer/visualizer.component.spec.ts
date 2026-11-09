@@ -106,6 +106,36 @@ describe('VisualizerComponent', () => {
     });
   });
 
+  it('actually draws visibly larger Firefly sprites during a bass drop', () => {
+    const ctx = jasmine.createSpyObj<CanvasRenderingContext2D>(
+      'CanvasRenderingContext2D', ['clearRect', 'drawImage']
+    );
+    (component as any).ctx = ctx;
+    (component as any).width = 1280;
+    (component as any).height = 720;
+    service.setPreset('moonlit-fireflies');
+
+    const quiet = {
+      source: 'tab' as const,
+      level: 0.05, bass: 0.04, mids: 0.08, treble: 0.02, beat: 0,
+      spectrum: new Array(64).fill(0.02)
+    };
+    (component as any).render(quiet);
+    expect(ctx.drawImage).toHaveBeenCalledTimes(18);
+    const calmWidth = ctx.drawImage.calls.first().args[3] as number;
+
+    ctx.drawImage.calls.reset();
+    (component as any).render({
+      ...quiet, level: 0.7, bass: 0.8, mids: 0.5, treble: 0.6, beat: 1,
+      spectrum: new Array(64).fill(0.8)
+    });
+    expect(ctx.drawImage).toHaveBeenCalledTimes(18);
+    const beatWidth = ctx.drawImage.calls.first().args[3] as number;
+    expect(beatWidth).toBeGreaterThan(calmWidth * 1.6);
+    expect(ctx.globalCompositeOperation).toBe('source-over');
+    expect(ctx.shadowBlur).toBe(0);
+  });
+
   it('renders Firefly with cached glow sprites and without blurred strokes', () => {
     const ctx = jasmine.createSpyObj<CanvasRenderingContext2D>(
       'CanvasRenderingContext2D',
