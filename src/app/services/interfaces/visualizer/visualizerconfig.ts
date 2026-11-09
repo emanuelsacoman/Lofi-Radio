@@ -4,7 +4,7 @@ export type VisualizerGeometry = 'wave' | 'circle' | 'spiral' | 'bars' | 'lissaj
 /** Layered Canvas art direction, separate from the mathematical audio geometry. */
 export type VisualizerStyle =
   | 'silk' | 'orbit' | 'vortex' | 'bars' | 'constellation'
-  | 'fireflies' | 'meteor' | 'lotus';
+  | 'fireflies';
 
 export interface VisualizerConfig {
   id: string;
