@@ -34,6 +34,14 @@ const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 18 }, (_,
   };
 });
 
+/** A smooth flash with dark gaps; no objects or closures per particle/frame. */
+function fireflyFlash(cycle: number, start: number, duration: number): number {
+  const progress = (cycle - start) / duration;
+  if (progress <= 0 || progress >= 1) return 0;
+  const intensity = Math.sin(Math.PI * progress);
+  return intensity * intensity;
+}
+
 /** Deterministic asynchronous flashes: fixed-size fireflies spend most of
  * their time dark and briefly light up on individual staggered schedules.
  * Actual shared audio controls brightness, while the existing analyser still
@@ -54,13 +62,8 @@ export function fireflyAudioResponse(
   // remains dark; a few emit a smaller second flash as real fireflies do.
   const period = 2.4 + clamp(speed / 1.5) * 2.2;
   const cycle = fraction(Math.max(0, seconds) / period + phase / TAU);
-  const flash = (start: number, duration: number): number => {
-    const progress = (cycle - start) / duration;
-    if (progress <= 0 || progress >= 1) return 0;
-    return Math.pow(Math.sin(Math.PI * progress), 2);
-  };
-  const first = flash(0.04, 0.14);
-  const doubleFlash = phase > Math.PI ? flash(0.25, 0.11) * 0.65 : 0;
+  const first = fireflyFlash(cycle, 0.04, 0.14);
+  const doubleFlash = phase > Math.PI ? fireflyFlash(cycle, 0.25, 0.11) * 0.65 : 0;
   const blink = Math.max(first, doubleFlash);
 
   // Low-end transients brighten an occurring flash, high bands make some
