@@ -107,11 +107,40 @@ de áudio, o Canvas, os presets e a lógica de silêncio permanecem inalterados.
 O indicador de compartilhamento pertence ao navegador e permanece visível
 durante a captura autorizada.
 
-## Correção de interação dos ícones
+## Correção de clique e tooltip — isolamento do contexto de empilhamento
 
-- Os botões Palette e Visualizers agora chamam métodos de alternância explícitos no HomeComponent.
-- O painel é inserido/removido com `*ngIf`, em vez de sempre permanecer no DOM invisível com `inert`.
-- A área de controles fica em `position: fixed`, acima do conteúdo de fundo, com cliques habilitados somente nos botões e menus.
-- Uma animação de entrada de 180ms substitui a combinação de visibilidade e transições de saída.
-- Mantidos os ícones, os tooltips, as posições e o espaçamento de 60px entre os centros dos gatilhos.
-- Abrir qualquer menu **não** pede compartilhamento de áudio; isso permanece exclusivo do clique em um preset.
+- O `main.fadeIn` recebe uma animação com `animation-fill-mode: forwards`,
+  que pode criar um contexto de empilhamento próprio. A barra `.aside`
+  foi movida para **depois de `</main>`**, como irmã do conteúdo animado,
+  permanecendo dentro do componente Angular.
+- O CSS dos menus foi transferido do bloco `body main` para seletores
+  locais ao componente, porque `.aside` não é mais descendente de `main`.
+- A barra usa `position: fixed`, `z-index: 200`, `pointer-events: auto`;
+  os filhos clicáveis também recebem `pointer-events: auto`. Não há
+  dependência de um ancestral não interativo.
+- As opções continuam sendo criadas com `*ngIf`, com animação de 180ms.
+- O painel de áudio só pede permissão depois de clicar em um dos presets;
+  a paleta continua chamando `setTheme()`. A distância e o tamanho dos
+  ícones não foram alterados.
+- O overlay padrão de tooltip do Angular CDK (z-index 1000) pode ser
+  renderizado acima da barra (z-index 200).
+
+### Diagnóstico no navegador (somente se persistir)
+
+Abra DevTools (F12) e execute:
+
+```js
+const button = document.querySelector('.visual-control--palette .visual-control__trigger');
+const r = button.getBoundingClientRect();
+const x = r.left + r.width / 2;
+const y = r.top + r.height / 2;
+console.log({
+  center: {x, y},
+  above: document.elementFromPoint(x, y),
+  sameTarget: button.contains(document.elementFromPoint(x, y)),
+  pointerEvents: getComputedStyle(button).pointerEvents
+});
+```
+
+`sameTarget` deve ser `true` e `pointerEvents` deve ser `auto`.
+Se não forem, haverá outra camada cobrindo o controle.

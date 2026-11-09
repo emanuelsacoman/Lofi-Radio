@@ -77,191 +77,6 @@ body {
       z-index: 2;
     }
 
-    .aside {
-      /* Keep the menu triggers above the main content and overlapping
-         UI. The element's clickable footprint remains just the toolbar. */
-      position: fixed;
-      top: 10px;
-      left: 0;
-      width: calc(20px + var(--header-icon-size) * 2 + var(--header-icon-gap));
-      height: var(--header-icon-size);
-      z-index: 10000;
-      isolation: isolate;
-      overflow: visible;
-      pointer-events: none;
-    }
-
-    /* Both triggers use 44px hit areas and the same 16px spacing as .adm.
-       The 64px dropdown is centered under its own trigger. */
-    .visual-control {
-      position: absolute;
-      top: 0;
-      width: var(--header-icon-size);
-      height: var(--header-icon-size);
-      overflow: visible;
-      pointer-events: none;
-    }
-
-    .visual-control--palette { left: 10px; }
-    .visual-control--visualizers { left: calc(10px + var(--header-icon-step)); }
-
-    .visual-control__trigger {
-      position: relative;
-      display: grid;
-      place-items: center;
-      width: var(--header-icon-size);
-      height: var(--header-icon-size);
-      margin: 0;
-      padding: 0;
-      border: 0;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--clr-primary);
-      cursor: pointer;
-      z-index: 1;
-      pointer-events: auto;
-      transition: filter 180ms ease;
-    }
-
-    .visual-control__trigger:hover { filter: drop-shadow(0 0 0.5rem var(--clr-accent)); }
-
-    .visual-control__trigger:focus-visible,
-    .visual-control__swatch:focus-visible,
-    .visual-control__effect:focus-visible {
-      outline: 2px solid var(--clr-primary);
-      outline-offset: 2px;
-    }
-
-    .visual-control__icon {
-      display: block;
-      width: var(--sz-icons-player);
-      height: var(--sz-icons-player);
-      font-size: var(--sz-icons-player);
-      line-height: var(--sz-icons-player);
-    }
-
-    .visual-control__notice {
-      position: absolute;
-      top: 2px;
-      right: 3px;
-      width: 13px;
-      height: 13px;
-      font-size: 13px;
-      line-height: 13px;
-      color: var(--clr-accent);
-      pointer-events: none;
-    }
-    .visual-control__notice--error { color: var(--clr-accent-light); }
-
-    .visual-control__menu {
-      position: absolute;
-      top: 52px;
-      left: calc((var(--header-icon-size) - 64px) / 2);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      box-sizing: border-box;
-      width: 64px;
-      max-height: calc(100dvh - 100px);
-      margin: 0;
-      padding: 4px 0 8px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      scrollbar-width: none;
-      background: transparent;
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      animation: appearance-menu-open 180ms ease-out both;
-    }
-    .visual-control__menu::-webkit-scrollbar { display: none; }
-
-    /* The menu only exists while open (*ngIf). No hidden/inert node remains
-       in the DOM to unexpectedly intercept or disable pointer events. */
-    .visual-control__item {
-      position: relative;
-      display: flex;
-      flex: 0 0 var(--sz-icons-player);
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: var(--sz-icons-player);
-    }
-
-    .visual-control__swatch,
-    .visual-control__effect {
-      display: inline-flex;
-      flex: 0 0 auto;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      width: var(--sz-icons-player);
-      height: var(--sz-icons-player);
-      margin: 0;
-      padding: 0;
-      border: 0;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: filter 180ms ease, background-color 180ms ease;
-    }
-
-    .visual-control__swatch:hover,
-    .visual-control__effect:hover { filter: brightness(1.2); }
-
-    .visual-control__effect {
-      background: var(--clr-secondary);
-      color: var(--clr-text);
-    }
-
-    .visual-control__effect.is-selected {
-      outline: 1px solid var(--clr-accent-light);
-      background: var(--clr-accent);
-      color: var(--clr-background);
-    }
-
-    .visual-control__effect mat-icon {
-      width: 24px;
-      height: 24px;
-      font-size: 24px;
-      line-height: 24px;
-    }
-
-    .visual-control__item .theme-new-label {
-      position: absolute;
-      right: 0;
-      top: -8px;
-      z-index: 1;
-      padding: 2px 3px;
-      border-radius: 4px;
-      background: var(--clr-primary);
-      color: var(--clr-background);
-      font: 900 8px Arial, sans-serif;
-      pointer-events: none;
-    }
-
-    .visual-control__state {
-      display: block;
-      width: 24px;
-      height: 24px;
-      font-size: 24px;
-      line-height: 24px;
-      color: var(--clr-accent-light);
-    }
-    .visual-control__state--error { color: var(--clr-accent); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .visual-control__trigger,
-      .visual-control__menu,
-      .visual-control__swatch,
-      .visual-control__effect {
-        transition: none;
-      }
-      .visual-control__menu {
-        animation: none;
-      }
-    }
-
     .adm {
       position: absolute;
       top: 10px;
@@ -1343,3 +1158,190 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
     transition: none !important;
   }
 }
+
+/* Appearance controls intentionally live outside the animated <main>. */
+    .aside {
+      /* Top-level fixed controls avoid the animated main's stacking context.
+         The CDK tooltip overlay can now appear above these controls. */
+      position: fixed;
+      top: 10px;
+      left: 0;
+      width: calc(20px + var(--header-icon-size) * 2 + var(--header-icon-gap));
+      height: var(--header-icon-size);
+      z-index: 200;
+      overflow: visible;
+      pointer-events: auto;
+    }
+
+    /* Both triggers use 44px hit areas and the same 16px spacing as .adm.
+       The 64px dropdown is centered under its own trigger. */
+    .visual-control {
+      position: absolute;
+      top: 0;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
+      overflow: visible;
+      pointer-events: auto;
+    }
+
+    .visual-control--palette { left: 10px; }
+    .visual-control--visualizers { left: calc(10px + var(--header-icon-step)); }
+
+    .visual-control__trigger {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: var(--header-icon-size);
+      height: var(--header-icon-size);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--clr-primary);
+      cursor: pointer;
+      z-index: 1;
+      pointer-events: auto;
+      transition: filter 180ms ease;
+    }
+
+    .visual-control__trigger:hover { filter: drop-shadow(0 0 0.5rem var(--clr-accent)); }
+
+    .visual-control__trigger:focus-visible,
+    .visual-control__swatch:focus-visible,
+    .visual-control__effect:focus-visible {
+      outline: 2px solid var(--clr-primary);
+      outline-offset: 2px;
+    }
+
+    .visual-control__icon {
+      display: block;
+      width: var(--sz-icons-player);
+      height: var(--sz-icons-player);
+      font-size: var(--sz-icons-player);
+      line-height: var(--sz-icons-player);
+    }
+
+    .visual-control__notice {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      width: 13px;
+      height: 13px;
+      font-size: 13px;
+      line-height: 13px;
+      color: var(--clr-accent);
+      pointer-events: none;
+    }
+    .visual-control__notice--error { color: var(--clr-accent-light); }
+
+    .visual-control__menu {
+      position: absolute;
+      top: 52px;
+      left: calc((var(--header-icon-size) - 64px) / 2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-sizing: border-box;
+      width: 64px;
+      max-height: calc(100dvh - 100px);
+      margin: 0;
+      padding: 4px 0 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      background: transparent;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      animation: appearance-menu-open 180ms ease-out both;
+    }
+    .visual-control__menu::-webkit-scrollbar { display: none; }
+
+    /* The menu only exists while open (*ngIf). No hidden/inert node remains
+       in the DOM to unexpectedly intercept or disable pointer events. */
+    .visual-control__item {
+      position: relative;
+      display: flex;
+      flex: 0 0 var(--sz-icons-player);
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: var(--sz-icons-player);
+    }
+
+    .visual-control__swatch,
+    .visual-control__effect {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      width: var(--sz-icons-player);
+      height: var(--sz-icons-player);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: filter 180ms ease, background-color 180ms ease;
+    }
+
+    .visual-control__swatch:hover,
+    .visual-control__effect:hover { filter: brightness(1.2); }
+
+    .visual-control__effect {
+      background: var(--clr-secondary);
+      color: var(--clr-text);
+    }
+
+    .visual-control__effect.is-selected {
+      outline: 1px solid var(--clr-accent-light);
+      background: var(--clr-accent);
+      color: var(--clr-background);
+    }
+
+    .visual-control__effect mat-icon {
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
+      line-height: 24px;
+    }
+
+    .visual-control__item .theme-new-label {
+      position: absolute;
+      right: 0;
+      top: -8px;
+      z-index: 1;
+      padding: 2px 3px;
+      border-radius: 4px;
+      background: var(--clr-primary);
+      color: var(--clr-background);
+      font: 900 8px Arial, sans-serif;
+      pointer-events: none;
+    }
+
+    .visual-control__state {
+      display: block;
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
+      line-height: 24px;
+      color: var(--clr-accent-light);
+    }
+    .visual-control__state--error { color: var(--clr-accent); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .visual-control__trigger,
+      .visual-control__menu,
+      .visual-control__swatch,
+      .visual-control__effect {
+        transition: none;
+      }
+      .visual-control__menu {
+        animation: none;
+      }
+    }
+
+
