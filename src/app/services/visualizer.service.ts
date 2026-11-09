@@ -99,7 +99,6 @@ export class VisualizerService {
     const hasAudio = audio?.source === 'tab';
     const bass = hasAudio ? clamp(audio?.bass ?? 0, 0, 1, 0) : 0;
     const mids = hasAudio ? clamp(audio?.mids ?? 0, 0, 1, 0) : 0;
-    const treble = hasAudio ? clamp(audio?.treble ?? 0, 0, 1, 0) : 0;
     const beat = hasAudio ? clamp(audio?.beat ?? 0, 0, 1, 0) : 0;
     const level = hasAudio ? clamp(audio?.level ?? 0, 0, 1, 0) : 0;
     const activity = this.getAudioActivity(audio);
@@ -112,19 +111,11 @@ export class VisualizerService {
       const steps = isBars ? config.barCount : count;
       for (let i = 0; i < steps; i++) {
         const u = isBars ? (i + 0.5) / steps : i / (steps - 1);
-        const signal = this.wave(u, t, layer, config);
+        const signal = isBars ? 0 : this.wave(u, t, layer, config);
         const amount = config.amplitude / 100 * gain;
         let x: number;
         let y: number;
         switch (config.geometry) {
-          case 'spiral': {
-            const angle = TAU * (u * config.frequency + config.rotation * t);
-            const radius = (0.025 + u * 0.40 + layer * 0.012) * activity +
-              signal * amount * (0.045 + treble * 0.03);
-            x = 0.5 + Math.cos(angle) * radius;
-            y = 0.5 + Math.sin(angle) * radius;
-            break;
-          }
           case 'bars': {
             x = u;
             const spectrum = hasAudio && audio?.spectrum?.length
@@ -178,9 +169,9 @@ export class VisualizerService {
   }
 
   private normalizeConfig(config: VisualizerConfig): VisualizerConfig {
-    const allowed = ['wave', 'spiral', 'bars'];
+    const allowed = ['wave', 'bars'];
     const styles: VisualizerStyle[] = [
-      'silk', 'vortex', 'bars', 'fireflies'
+      'silk', 'bars', 'fireflies'
     ];
     return {
       ...config,
