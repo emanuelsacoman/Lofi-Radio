@@ -57,6 +57,8 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   private height = 0;
   private destroyed = false;
   private reducedMotion: MediaQueryList | null = null;
+  // Tiny pre-rendered light textures. Rebuild only when the palette changes.
+  private fireflySprites: { key: string; main: HTMLCanvasElement; accent: HTMLCanvasElement } | null = null;
   private readonly visibilityHandler = () => this.syncAnimation();
   private readonly motionHandler = () => this.syncAnimation();
 
@@ -78,7 +80,10 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
     this.resize();
     this.subscription = this.visualizer.activeConfig$.subscribe(config => {
+      const wasFirefly = this.config?.visualStyle === 'fireflies';
       this.config = config;
+      // Firefly uses a smaller framebuffer; restore normal resolution on exit.
+      if (wasFirefly !== (config?.visualStyle === 'fireflies')) this.resize();
       this.syncAnimation();
     });
     this.audioSubscription = this.audio.status$.subscribe(() => this.syncAnimation());
@@ -97,8 +102,12 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     if (this.width <= 0 || this.height <= 0) return;
 
     // Limit the framebuffer to ~4.5 MP on large/high-DPI screens.
-    const scale = Math.min(window.devicePixelRatio || 1, 2,
-      Math.sqrt(4_500_000 / Math.max(1, this.width * this.height)));
+    // Firefly is deliberately lower-resolution: its diffuse light needs no
+    // per-pixel sharpness and large backing buffers are expensive to clear.
+    const firefly = this.config?.visualStyle === 'fireflies';
+    const pixelBudget = firefly ? 1_400_000 : 4_500_000;
+    const scale = Math.min(window.devicePixelRatio || 1, firefly ? 1 : 2,
+      Math.sqrt(pixelBudget / Math.max(1, this.width * this.height)));
     const pixelWidth = Math.max(1, Math.round(this.width * scale));
     const pixelHeight = Math.max(1, Math.round(this.height * scale));
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
@@ -128,8 +137,9 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   private readonly tick = (timestamp: number): void => {
     this.frameId = null;
     if (this.destroyed || !this.config || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
-    // A 45 FPS ceiling leaves CPU/GPU headroom for YouTube, audio and the page.
-    if (this.lastFrame && timestamp - this.lastFrame < 1000 / 45) {
+    // Firefly needs gentle motion, not 45 blurred frames every second.
+    const frameInterval = this.config.visualStyle === 'fireflies' ? 1000 / 24 : 1000 / 45;
+    if (this.lastFrame && timestamp - this.lastFrame < frameInterval) {
       this.frameId = requestAnimationFrame(this.tick);
       return;
     }
@@ -155,24 +165,34 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     const activity = this.visualizer.getAudioActivity(audio);
     if (activity <= 0) return;
 
-    const paths = this.visualizer.calculatePaths(this.time, undefined, audio);
     const main = this.color(config.color, '--clr-primary', '#aea4d3');
     const accent = this.color(config.secondaryColor, '--clr-accent', '#805cb1');
-    const minSide = Math.min(this.width, this.height);
     const style = config.visualStyle;
 
+    if (style === 'fireflies') {
+      // No wave geometry, translucent full-screen veils, per-particle blur or
+      // additive whole-screen compositing; only small cached sprite blits.
+      this.drawFireflies(ctx, audio, activity, main, accent);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.shadowBlur = 0;
+      return;
+    }
+
+    const paths = this.visualizer.calculatePaths(this.time, undefined, audio);
+    const minSide = Math.min(this.width, this.height);
+
     ctx.globalCompositeOperation = 'lighter';
-    if (style === 'silk' || style === 'fireflies') {
+    if (style === 'silk') {
       this.drawAuroraVeils(ctx, audio, activity, main, accent);
     }
 
     for (const path of paths) {
       const blend = paths.length <= 1 ? 0 : path.layer / (paths.length - 1);
       const color = blend < 0.5 ? main : accent;
-      const quietUnderlay = style === 'fireflies' || style === 'meteor';
       ctx.strokeStyle = color;
       ctx.globalAlpha = Math.min(0.95, config.opacity *
-        (quietUnderlay ? 0.26 : 0.64) * (1 - blend * 0.36) *
+        0.64 * (1 - blend * 0.36) *
         activity * (0.65 + audio.level * 0.35 + audio.beat * 0.18));
       ctx.lineWidth = config.lineWidth * (1 - blend * 0.25) * (1 + audio.beat * 0.5);
       ctx.lineCap = 'round';
@@ -195,15 +215,6 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
         break;
       case 'constellation':
         this.drawConstellation(ctx, paths[0], audio, activity, main, accent);
-        break;
-      case 'fireflies':
-        this.drawFireflies(ctx, audio, activity, main, accent);
-        break;
-      case 'meteor':
-        this.drawMeteorShower(ctx, audio, activity, main, accent);
-        break;
-      case 'lotus':
-        this.drawLotus(ctx, audio, activity, main, accent, minSide);
         break;
       default:
         // Silk already has three translucent aurora curtains.
@@ -345,87 +356,55 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
   }
 
+  /** Renders the costly radial glow once per palette, not once per particle/frame. */
+  private fireflySprite(color: string): HTMLCanvasElement | null {
+    if (typeof document === 'undefined') return null;
+    const sprite = document.createElement('canvas');
+    sprite.width = 40;
+    sprite.height = 40;
+    const paint = sprite.getContext('2d');
+    if (!paint) return null;
+    const glow = paint.createRadialGradient(20, 20, 0, 20, 20, 20);
+    glow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    glow.addColorStop(0.12, color);
+    glow.addColorStop(0.32, color);
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    paint.fillStyle = glow;
+    paint.fillRect(0, 0, 40, 40);
+    return sprite;
+  }
+
   private drawFireflies(
     ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
     activity: number, main: string, accent: string
   ): void {
-    const count = this.width < 640 ? 32 : 58;
+    const key = main + '|' + accent;
+    if (this.fireflySprites?.key !== key) {
+      const primary = this.fireflySprite(main);
+      const secondary = this.fireflySprite(accent);
+      this.fireflySprites = primary && secondary
+        ? { key, main: primary, accent: secondary } : null;
+    }
+    const sprites = this.fireflySprites;
+    if (!sprites || typeof ctx.drawImage !== 'function') return;
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowBlur = 0;
+    const count = this.width < 640 ? 11 : 18;
+    // Stable seeds keep the composition calm while motion stays audio-driven.
     for (let i = 0; i < count; i++) {
       const seed = ATMOSPHERE[i];
-      const driftX = Math.sin(seed.phase + this.time * seed.speed * 0.17) * 0.08;
-      const driftY = Math.cos(seed.phase + this.time * seed.speed * 0.12) * 0.06;
-      const x = fraction(seed.x + driftX) * this.width;
-      const y = fraction(seed.y + driftY) * this.height;
+      const driftX = Math.sin(seed.phase + this.time * seed.speed * 0.17) * 0.025;
+      const driftY = Math.cos(seed.phase + this.time * seed.speed * 0.12) * 0.03;
+      const x = (seed.x + driftX) * this.width;
+      const y = (seed.y + driftY) * this.height;
       const shimmer = 0.5 + 0.5 * Math.sin(this.time * (0.35 + seed.speed) + seed.phase);
-      this.drawOrb(ctx, x, y,
-        seed.size * (1 + audio.treble * 0.6) + shimmer,
-        i % 3 === 0 ? main : accent,
-        activity * (0.11 + shimmer * 0.36 + audio.beat * 0.14),
-        14 + shimmer * 15);
+      const size = (13 + seed.size * 4) * (1 + audio.treble * 0.22);
+      ctx.globalAlpha = Math.min(1, activity *
+        (0.26 + shimmer * 0.45 + audio.beat * 0.12));
+      ctx.drawImage(i % 3 === 0 ? sprites.main : sprites.accent,
+        x - size / 2, y - size / 2, size, size);
     }
-  }
-
-  private drawMeteorShower(
-    ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
-    activity: number, main: string, accent: string
-  ): void {
-    const count = this.width < 640 ? 24 : 44;
-    ctx.lineCap = 'round';
-    for (let i = 0; i < count; i++) {
-      const seed = ATMOSPHERE[i];
-      const bin = audio.spectrum[i % Math.max(1, audio.spectrum.length)] || 0;
-      const progress = fraction(seed.y + this.time * (0.035 + seed.speed * 0.04));
-      const x = fraction(seed.x + progress * 0.18) * this.width;
-      const y = progress * this.height;
-      const trail = (14 + 55 * bin + 22 * audio.beat) * (this.width < 640 ? 0.7 : 1);
-      const color = i % 3 === 0 ? accent : main;
-      ctx.beginPath();
-      ctx.moveTo(x - trail * 0.34, y - trail);
-      ctx.lineTo(x, y);
-      ctx.lineWidth = 0.65 + 2 * bin;
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = activity * (0.08 + bin * 0.42);
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 8 + 15 * bin;
-      ctx.stroke();
-      if (bin > 0.24) {
-        this.drawOrb(ctx, x, y, 0.8 + bin * 1.8, accent,
-          activity * (0.15 + bin * 0.45), 12);
-      }
-    }
-  }
-
-  private drawLotus(
-    ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
-    activity: number, main: string, accent: string, side: number
-  ): void {
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-    const bloom = side * (0.13 + audio.bass * 0.055) * activity;
-    for (let ring = 0; ring < 2; ring++) {
-      const petals = ring === 0 ? 12 : 8;
-      const outer = bloom * (ring === 0 ? 1.55 : 0.9);
-      const inner = bloom * (ring === 0 ? 0.47 : 0.2);
-      ctx.strokeStyle = ring ? accent : main;
-      ctx.globalAlpha = activity * (0.3 + audio.mids * 0.42);
-      ctx.lineWidth = 1.1 + audio.beat * 1.2;
-      ctx.shadowColor = ring ? accent : main;
-      ctx.shadowBlur = 16 + audio.beat * 12;
-      for (let petal = 0; petal < petals; petal++) {
-        ctx.beginPath();
-        for (let step = 0; step <= 24; step++) {
-          const u = step / 24;
-          const theta = (petal + u) * TAU / petals + this.time * (ring ? -0.045 : 0.03);
-          const r = inner + (outer - inner) * Math.pow(Math.sin(Math.PI * u), 1.15);
-          const x = cx + Math.cos(theta) * r;
-          const y = cy + Math.sin(theta) * r;
-          if (step === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-    }
-    this.drawOrb(ctx, cx, cy, 3 + audio.beat * 4,
-      accent, activity * (0.48 + audio.bass * 0.35), 22);
   }
 
   private drawCurve(ctx: CanvasRenderingContext2D, path: VisualizerPath): void {
@@ -472,6 +451,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.destroyed = true;
     this.subscription?.unsubscribe();
     this.audioSubscription?.unsubscribe();
+    this.fireflySprites = null;
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.resizeObserver?.disconnect();
     window.removeEventListener('resize', this.resize);
