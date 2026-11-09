@@ -67,46 +67,70 @@ describe('VisualizerComponent', () => {
     expect(ctx.stroke).not.toHaveBeenCalled();
   });
 
-  it('makes Firefly pulse visibly with real bass and beats', () => {
-    const quiet = {
-      source: 'tab' as const,
-      level: 0.05, bass: 0.04, mids: 0.08, treble: 0.02, beat: 0,
-      spectrum: new Array(64).fill(0.02)
-    };
+  it('blinks asynchronously rather than staying illuminated or zooming', () => {
     const music = {
       source: 'tab' as const,
       level: 0.65, bass: 0.75, mids: 0.6, treble: 0.6, beat: 0.9,
       spectrum: new Array(64).fill(0.8)
     };
-    const calm = fireflyAudioResponse(quiet, quiet.spectrum[3], 1);
-    const loud = fireflyAudioResponse(music, music.spectrum[3], 1);
+    const period = 2.4 + (1 / 1.5) * 2.2;
+    const peak = fireflyAudioResponse(music, 0.8, 1, period * 0.11, 0, 1);
+    const dark = fireflyAudioResponse(music, 0.8, 1, period * 0.6, 0, 1);
+    const staggered = fireflyAudioResponse(music, 0.8, 1, period * 0.11, Math.PI, 1);
 
-    expect(loud.scale).toBeGreaterThan(calm.scale + 0.6);
-    expect(loud.alpha).toBeGreaterThan(calm.alpha + 0.3);
-    expect(loud.expansion).toBeGreaterThan(calm.expansion + 0.1);
-
-    const noBeat = fireflyAudioResponse({ ...music, beat: 0 }, music.spectrum[3], 1);
-    expect(loud.scale).toBeGreaterThan(noBeat.scale);
-    expect(loud.expansion).toBeGreaterThan(noBeat.expansion);
-    const dimBand = fireflyAudioResponse(music, 0, 1);
-    expect(loud.scale).toBeGreaterThan(dimBand.scale);
+    expect(peak.alpha).toBeGreaterThan(0.8);
+    expect(dark.alpha).toBe(0);
+    expect(staggered.alpha).toBe(0);
+    expect(Object.keys(peak)).toEqual(['alpha']);
   });
 
-  it('never lights up Firefly using beat decay alone or unshared audio', () => {
+  it('lets the music brighten individual flashes and vary with frequency bands', () => {
+    const low = {
+      source: 'tab' as const,
+      level: 0.05, bass: 0.04, mids: 0.08, treble: 0.02, beat: 0,
+      spectrum: new Array(64).fill(0.02)
+    };
+    const loud = {
+      source: 'tab' as const,
+      level: 0.65, bass: 0.75, mids: 0.6, treble: 0.6, beat: 0.9,
+      spectrum: new Array(64).fill(0.8)
+    };
+    const time = (2.4 + (1 / 1.5) * 2.2) * 0.11;
+    const calm = fireflyAudioResponse(low, 0.02, 1, time, 0, 1);
+    const music = fireflyAudioResponse(loud, 0.8, 1, time, 0, 1);
+    const withoutBeat = fireflyAudioResponse({ ...loud, beat: 0 }, 0.8, 1, time, 0, 1);
+    const lowBand = fireflyAudioResponse(loud, 0, 1, time, 0, 1);
+
+    expect(music.alpha).toBeGreaterThan(calm.alpha + 0.25);
+    expect(music.alpha).toBeGreaterThan(withoutBeat.alpha);
+    expect(music.alpha).toBeGreaterThan(lowBand.alpha);
+  });
+
+  it('can produce a softer second flash on some fireflies', () => {
+    const music = {
+      source: 'tab' as const,
+      level: 0.65, bass: 0.75, mids: 0.6, treble: 0.6, beat: 0.9,
+      spectrum: new Array(64).fill(0.8)
+    };
+    const phase = Math.PI * 1.5;
+    const period = 2.4 + (1 / 1.5) * 2.2;
+    const time = period * 0.55; // fractional position 0.3 after phase=0.75
+    expect(fireflyAudioResponse(music, 0.8, 1, time, phase, 1).alpha).toBeGreaterThan(0.4);
+    expect(fireflyAudioResponse(music, 0.8, 1, time, 0, 1).alpha).toBe(0);
+  });
+
+  it('never blinks without real tab activity, even with lingering beat decay', () => {
     const beatOnly = {
       source: 'tab' as const,
       level: 0, bass: 0, mids: 0, treble: 0, beat: 1,
       spectrum: new Array(64).fill(0)
     };
-    expect(fireflyAudioResponse(beatOnly, 0, 0)).toEqual({
-      scale: 0, alpha: 0, expansion: 0
-    });
-    expect(fireflyAudioResponse({ ...beatOnly, source: 'none' }, 1, 1)).toEqual({
-      scale: 0, alpha: 0, expansion: 0
-    });
+    expect(fireflyAudioResponse(beatOnly, 0, 0, 1, 0, 1)).toEqual({ alpha: 0 });
+    expect(fireflyAudioResponse({ ...beatOnly, source: 'none' }, 1, 1, 1, 0, 1))
+      .toEqual({ alpha: 0 });
   });
 
-  it('actually draws visibly larger Firefly sprites during a bass drop', () => {
+  it('keeps every firefly exactly the same size during bass drops', () => {
     const ctx = jasmine.createSpyObj<CanvasRenderingContext2D>(
       'CanvasRenderingContext2D', ['clearRect', 'drawImage']
     );
@@ -121,17 +145,16 @@ describe('VisualizerComponent', () => {
       spectrum: new Array(64).fill(0.02)
     };
     (component as any).render(quiet);
-    expect(ctx.drawImage).toHaveBeenCalledTimes(18);
-    const calmWidth = ctx.drawImage.calls.first().args[3] as number;
+    const sizesBefore = ctx.drawImage.calls.allArgs().map(args => [args[3], args[4]]);
+    expect(sizesBefore.length).toBe(18);
 
     ctx.drawImage.calls.reset();
     (component as any).render({
       ...quiet, level: 0.7, bass: 0.8, mids: 0.5, treble: 0.6, beat: 1,
       spectrum: new Array(64).fill(0.8)
     });
-    expect(ctx.drawImage).toHaveBeenCalledTimes(18);
-    const beatWidth = ctx.drawImage.calls.first().args[3] as number;
-    expect(beatWidth).toBeGreaterThan(calmWidth * 1.6);
+    const sizesAfter = ctx.drawImage.calls.allArgs().map(args => [args[3], args[4]]);
+    expect(sizesAfter).toEqual(sizesBefore);
     expect(ctx.globalCompositeOperation).toBe('source-over');
     expect(ctx.shadowBlur).toBe(0);
   });
