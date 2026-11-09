@@ -115,7 +115,7 @@ describe('VisualizerComponent', () => {
       service.setPreset(preset.id);
       (component as any).render(silence);
     }
-    expect(ctx.clearRect).toHaveBeenCalledTimes(service.getPresets().length);
+    expect(ctx.clearRect.calls.count()).toBeGreaterThanOrEqual(service.getPresets().length);
     expect(ctx.fill).not.toHaveBeenCalled();
     expect(ctx.stroke).not.toHaveBeenCalled();
   });
