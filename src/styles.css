@@ -4,13 +4,3 @@
 }
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-
-/* Expansion-panel internals are rendered by Angular Material and need global
-   styling. This override is scoped to the radio's two settings panels only. */
-.home-settings-accordion .mat-expansion-panel-body {
-  padding: 0 8px 8px;
-}
-.home-settings-accordion .mat-expansion-panel-header:focus-visible {
-  outline: 2px solid var(--clr-primary, #a78bfa);
-  outline-offset: -2px;
-}

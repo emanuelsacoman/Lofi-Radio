@@ -14,14 +14,13 @@ O visualizador agora pode reagir ao áudio REAL da live selecionada:
 
 ## Ativação no navegador
 
-1. Abra a versão local via npm start (localhost) ou site com HTTPS.
-2. Inicie uma live no player YouTube do Lofi Radio.
-3. Escolha um preset no seletor Visualizer.
-4. Clique em "Ativar áudio real".
-5. No seletor do navegador, escolha **esta aba / Lofi Radio**.
-6. Ative **Compartilhar áudio da guia** e confirme.
-7. Teste pausando ou trocando as músicas e observe os picos dos graves.
-8. Para terminar, clique "Parar áudio real" ou interrompa o compartilhamento no navegador.
+1. Abra o Lofi Radio em localhost ou HTTPS.
+2. Inicie uma live no player YouTube.
+3. Ao lado do painel de paletas, use o seletor simples **Visualizer** (interface restaurada do primeiro commit desta branch).
+4. Selecione um preset (Waveform, Orbit, Spiral, Equalizer ou Lissajous).
+5. O navegador solicita imediatamente o compartilhamento. Escolha **a aba do Lofi Radio** e habilite **Compartilhar áudio da guia**.
+6. Para trocar de efeito, escolha outro preset. Para encerrar a captura, selecione **Off**.
+7. Se a permissão for cancelada, selecione **Off** e depois o preset desejado para tentar novamente.
 
 **IMPORTANTE:** Não escolha outra aba, monitor ou janela. O navegador
 pode não fornecer uma faixa de áudio, mesmo com audio:true.
@@ -41,7 +40,7 @@ desativado, quando o componente sai da página ou quando a captura termina.
 - services/visualizer.service.ts — geometrias moduladas por frequências reais
 - services/visualizer-presets.ts — presets com audioSensitivity configurável
 - view/effect/visualizer/visualizer.component.ts — Canvas e ciclo de renderização
-- view/website/home/home.component.* — botão de captura e seleção de efeitos
+- view/website/home/home.component.* — seletor simples de presets; a captura inicia após escolher um efeito
 
 ## Ajustes diretos no código
 
@@ -76,38 +75,20 @@ Não há deploy nesta branch. Valide a captura na interface real do navegador.
 - O decaimento do detector de batidas, isoladamente, nao gera movimento no silencio.
 - Para testar: pare/retome a live, silencie o audio da live e observe a borda inferior. A captura da aba deve estar ativa.
 
-## Seletor de visualizadores (ícones)
+## Interface restaurada
 
-O seletor utiliza um segundo `mat-expansion-panel` junto à paleta de cores.
-Todos os presets têm `icon` (nome de Material Icon) configurável no arquivo
-`src/app/services/visualizer-presets.ts`. Há também um botão com ícone de
-visibilidade desativada para desligar o visualizador.
+Os controles de paleta e seleção foram restaurados **somente na interface**
+para o layout do primeiro commit da branch ChatGPT (`cc7d9b67`):
 
-A janela de compartilhamento de áudio **não** aparece ao abrir o painel,
-carregar a página ou restaurar o preset salvo. Ela só é solicitada depois de
-um clique explícito no ícone de um efeito que ainda não tenha uma captura
-ativa. Trocar de efeito com áudio compartilhado reutiliza a captura existente.
-Clicar no ícone de desligar encerra o compartilhamento, incluindo capturas
-que ainda estejam aguardando a permissão. Se o usuário cancelar o diálogo,
-o botão do efeito pode ser clicado novamente para tentar outra vez.
+- Painel original de paletas do Lofi Radio, com seus swatches e tooltips.
+- Seletor compacto de presets (`select`) ao lado da paleta, sem segundo
+  painel expansível ou coluna de ícones.
+- Foram revertidas apenas as regras de apresentação desses controles e a
+  substituição global introduzida para os dois painéis.
 
-O navegador continua podendo exibir seu indicador de compartilhamento enquanto
-a análise do áudio estiver ativa; a aplicação não pode escondê-lo.
+Permanece implementado o motor procedural, a captura autorizada de áudio
+real via Web Audio API, a análise de frequências, a paleta no Canvas,
+os cinco presets, a lógica de silêncio e as barras ancoradas na base da tela.
 
-## UI layout, English labels and audio rendering
-
-- Both palette and Visualizers panels use top-aligned, fixed-width columns; expanding one no longer vertically repositions the other.
-- Icon tooltips and preset display names are English: Off, Waveform, Orbit, Spiral, Equalizer, Lissajous.
-- The canvas is fixed to the viewport and layered above the page background, with player/controls above it.
-- Render follows the energy of captured tab audio directly, not a possibly delayed YouTube `isPlaying` flag. With no audio energy, all modes remain hidden.
-- The Web Audio analyser connects through a gain-zero output for processing without echo or duplicate playback.
-
-## 2026-11-09: UI and tab permission fix
-
-- Material's `mat-accordion` explicitly uses `[multi]="true"`, allowing the Palette and Visualizers panels to open independently.
-- Both panels now occupy fixed 60px columns in a top-aligned CSS grid; expanding either one does not move the other header.
-- The settings panel body padding override lives in the global `src/styles.css`, scoped to `.home-settings-accordion`, because Angular Material renders the internal body.
-- The stray `fadeOut` animation and 100%-height palette list were removed. Angular Material now owns the expand/collapse timing.
-- Each palette and visualizer selection has a tooltip; the panel headers and sharing/status indicators are also labeled.
-- On preset selection, the `startCapture()` browser request runs before the preset state is published to subscribers. A canceled/denied request can be retried by clicking the same preset again.
-- No audio capture happens just by opening either panel. The user must explicitly choose a visualizer and permit tab audio.
+O navegador continua mostrando o aviso de compartilhamento enquanto
+a captura estiver ativa; a aplicação não pode ocultá-lo.
