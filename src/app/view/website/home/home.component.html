@@ -48,10 +48,10 @@
                   <mat-expansion-panel-header
                     collapsedHeight="44px"
                     expandedHeight="44px"
-                    matTooltip="Visualizadores"
+                    matTooltip="Visualizers"
                     matTooltipShowDelay="500"
                     matTooltipPosition="right"
-                    aria-label="Escolher visualizador">
+                    aria-label="Choose visualizer">
                     <mat-panel-title class="theme-panel-title">
                       <mat-icon class="theme-palette-icon" aria-hidden="true">equalizer</mat-icon>
                       <mat-icon
@@ -60,14 +60,14 @@
                         aria-hidden="true">fiber_manual_record</mat-icon>
                     </mat-panel-title>
                   </mat-expansion-panel-header>
-                  <div class="visualizer-options" role="group" aria-label="Estilos de visualizador">
+                  <div class="visualizer-options" role="group" aria-label="Visualizer styles">
                     <button
                       type="button"
                       class="visualizer-choice"
                       [class.selected]="selectedVisualizerId === 'off'"
                       [attr.aria-pressed]="selectedVisualizerId === 'off'"
-                      aria-label="Desligar visualizador e encerrar compartilhamento de áudio"
-                      matTooltip="Desligar visualizador"
+                      aria-label="Turn off visualizer and stop audio sharing"
+                      matTooltip="Off"
                       matTooltipPosition="right"
                       (click)="selectVisualizer('off')">
                       <mat-icon aria-hidden="true">visibility_off</mat-icon>
@@ -78,7 +78,7 @@
                       class="visualizer-choice"
                       [class.selected]="selectedVisualizerId === preset.id"
                       [attr.aria-pressed]="selectedVisualizerId === preset.id"
-                      [attr.aria-label]="'Selecionar ' + preset.name"
+                      [attr.aria-label]="'Select ' + preset.name"
                       [matTooltip]="preset.name"
                       matTooltipPosition="right"
                       (click)="selectVisualizer(preset.id)">
@@ -88,8 +88,8 @@
                       *ngIf="audioCaptureStatus === 'requesting'"
                       class="visualizer-feedback-icon"
                       role="img"
-                      aria-label="Aguardando permissão de áudio"
-                      matTooltip="Escolha esta aba e compartilhe seu áudio">hourglass_empty</mat-icon>
+                      aria-label="Waiting for tab audio permission"
+                      matTooltip="Choose this tab and share tab audio">hourglass_empty</mat-icon>
                     <mat-icon
                       *ngIf="audioCaptureStatus === 'error'"
                       class="visualizer-feedback-icon visualizer-feedback-error"

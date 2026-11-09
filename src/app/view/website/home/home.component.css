@@ -53,12 +53,12 @@ body {
     width: 100%;
 
     .visualizer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
+      /* The canvas must cover the viewport regardless of main's height. */
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      z-index: 1;
       pointer-events: none;
     }
 
@@ -136,6 +136,10 @@ body {
     .transparent-panel {
       background: transparent;
       box-shadow: none;
+      align-self: flex-start;
+      flex: 0 0 68px;
+      width: 68px;
+      overflow: visible;
     }
 
     /* Identical expansion-panel pattern used by the color palette. */
@@ -220,14 +224,16 @@ body {
 
     :is(mat-accordion) {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      /* Fixed top alignment: expanding one panel must not move the other. */
+      align-items: flex-start;
+      justify-content: flex-start;
       padding: 0;
     }
 
     .transparent-panel mat-expansion-panel-header {
       padding: 0;
-      margin-left: 33%;
+      /* Center each 44px trigger inside its own stable 68px column. */
+      margin-left: 12px;
       background: transparent;
       overflow: visible;
       transition: all 0.2s ease;
@@ -363,6 +369,8 @@ body {
     }
 
     .musicArea {
+      position: relative;
+      z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -732,6 +740,7 @@ body {
     }
 
     .footer {
+      z-index: 2;
       position: absolute;
       display: flex;
       flex-direction: row;

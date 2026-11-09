@@ -15,6 +15,12 @@ describe('VisualizerService procedural engine', () => {
     expect(service.calculatePaths(1)).toEqual([]);
   });
 
+  it('has English names for every visualizer icon', () => {
+    expect(service.getPresets().map(preset => preset.name)).toEqual([
+      'Waveform', 'Orbit', 'Spiral', 'Equalizer', 'Lissajous'
+    ]);
+  });
+
   it('offers five configurable presets and a single active configuration', () => {
     expect(service.getPresets().length).toBe(5);
     expect(service.setPreset('orbit-bloom')).toBeTrue();

@@ -92,7 +92,8 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.lastFrame = 0;
     if (!this.ctx || this.destroyed) return;
     this.render();
-    if (!this.config || !this.playing || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
+    // Audio from the captured tab is authoritative; YouTube state may lag behind.
+    if (!this.config || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
     this.zone.runOutsideAngular(() => {
       this.frameId = requestAnimationFrame(this.tick);
     });
@@ -100,7 +101,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
 
   private readonly tick = (timestamp: number): void => {
     this.frameId = null;
-    if (this.destroyed || !this.config || !this.playing || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
+    if (this.destroyed || !this.config || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
     const frame = this.audio.readFrame();
     // No real signal means no prerecorded looping animation.
     if (this.lastFrame) {
@@ -117,7 +118,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
     const config = this.config;
-    if (!config || !this.playing) return;
+    if (!config) return;
     const activity = this.visualizer.getAudioActivity(audio);
     // Every preset disappears when there is no actual audio energy.
     if (activity <= 0) return;

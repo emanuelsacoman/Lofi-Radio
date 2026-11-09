@@ -93,3 +93,11 @@ o botão do efeito pode ser clicado novamente para tentar outra vez.
 
 O navegador continua podendo exibir seu indicador de compartilhamento enquanto
 a análise do áudio estiver ativa; a aplicação não pode escondê-lo.
+
+## UI layout, English labels and audio rendering
+
+- Both palette and Visualizers panels use top-aligned, fixed-width columns; expanding one no longer vertically repositions the other.
+- Icon tooltips and preset display names are English: Off, Waveform, Orbit, Spiral, Equalizer, Lissajous.
+- The canvas is fixed to the viewport and layered above the page background, with player/controls above it.
+- Render follows the energy of captured tab audio directly, not a possibly delayed YouTube `isPlaying` flag. With no audio energy, all modes remain hidden.
+- The Web Audio analyser connects through a gain-zero output for processing without echo or duplicate playback.

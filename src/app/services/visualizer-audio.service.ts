@@ -25,6 +25,7 @@ export class VisualizerAudioService {
   private context: AudioContext | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private analyser: AnalyserNode | null = null;
+  private silentOutput: GainNode | null = null;
   private frequencies: Uint8Array = new Uint8Array(0);
   private waveform: Uint8Array = new Uint8Array(0);
   private baselineBass = 0;
@@ -99,8 +100,13 @@ export class VisualizerAudioService {
       this.frequencies = new Uint8Array(this.analyser.frequencyBinCount);
       this.waveform = new Uint8Array(this.analyser.fftSize);
       this.source = context.createMediaStreamSource(stream);
-      // Do not connect the analyser to destination: avoids doubled playback/echo.
+      // Keep the graph processing in browsers that prune disconnected nodes.
+      // A zero-gain output avoids replaying or doubling the live stream audio.
+      this.silentOutput = context.createGain();
+      this.silentOutput.gain.value = 0;
       this.source.connect(this.analyser);
+      this.analyser.connect(this.silentOutput);
+      this.silentOutput.connect(context.destination);
 
       // Stopping browser sharing also destroys all Web Audio resources.
       const stop = () => {
@@ -141,8 +147,10 @@ export class VisualizerAudioService {
     ++this.captureGeneration;
     this.source?.disconnect();
     this.analyser?.disconnect();
+    this.silentOutput?.disconnect();
     this.source = null;
     this.analyser = null;
+    this.silentOutput = null;
     this.stream?.getTracks().forEach(track => track.stop());
     this.stream = null;
     if (this.context) {
