@@ -114,36 +114,15 @@ export class VisualizerService {
         const u = isBars ? (i + 0.5) / steps : i / (steps - 1);
         const signal = this.wave(u, t, layer, config);
         const amount = config.amplitude / 100 * gain;
-        const rotation = config.rotation * t + layer * 0.025;
         let x: number;
         let y: number;
         switch (config.geometry) {
-          case 'circle': {
-            // Periodic integer lobes ensure that the seam is closed.
-            const lobes = Math.max(1, Math.round(config.frequency));
-            const a = TAU * u + rotation;
-            const envelope = Math.sin(TAU * lobes * u + t * config.speed * TAU + layer * 0.4) * (1 + treble * 0.5);
-            const radius = (0.25 + 0.03 * layer) * activity +
-              envelope * amount * 0.085;
-            x = 0.5 + Math.cos(a) * radius;
-            y = 0.5 + Math.sin(a) * radius;
-            break;
-          }
           case 'spiral': {
             const angle = TAU * (u * config.frequency + config.rotation * t);
             const radius = (0.025 + u * 0.40 + layer * 0.012) * activity +
               signal * amount * (0.045 + treble * 0.03);
             x = 0.5 + Math.cos(angle) * radius;
             y = 0.5 + Math.sin(angle) * radius;
-            break;
-          }
-          case 'lissajous': {
-            const a = TAU * (config.frequency * u + config.speed * t) + config.phase * Math.PI / 180;
-            const b = TAU * ((config.frequency + 1) * u - config.speed * t);
-            const size = (0.22 + layer * 0.008) * activity +
-              Math.min(0.20, amount * 0.17);
-            x = 0.5 + Math.sin(a) * size;
-            y = 0.5 + Math.sin(b) * size;
             break;
           }
           case 'bars': {
@@ -175,7 +154,7 @@ export class VisualizerService {
         points,
         layer,
         kind: isBars ? 'bar' : 'curve',
-        closed: config.geometry === 'circle' || config.geometry === 'lissajous'
+        closed: false
       });
     }
     return paths;
@@ -199,9 +178,9 @@ export class VisualizerService {
   }
 
   private normalizeConfig(config: VisualizerConfig): VisualizerConfig {
-    const allowed = ['wave', 'circle', 'spiral', 'bars', 'lissajous'];
+    const allowed = ['wave', 'spiral', 'bars'];
     const styles: VisualizerStyle[] = [
-      'silk', 'orbit', 'vortex', 'bars', 'constellation', 'fireflies'
+      'silk', 'vortex', 'bars', 'fireflies'
     ];
     return {
       ...config,
