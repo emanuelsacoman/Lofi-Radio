@@ -1,9 +1,9 @@
 /** Todos os parametros sao editaveis nos presets ou via updateParameters(). */
-export type VisualizerGeometry = 'wave' | 'spiral' | 'bars';
+export type VisualizerGeometry = 'wave' | 'bars';
 
 /** Layered Canvas art direction, separate from the mathematical audio geometry. */
 export type VisualizerStyle =
-  | 'silk' | 'vortex' | 'bars' | 'fireflies';
+  | 'silk' | 'bars' | 'fireflies';
 
 export interface VisualizerConfig {
   id: string;
