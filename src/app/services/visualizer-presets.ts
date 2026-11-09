@@ -17,14 +17,6 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     resolution: 280, barCount: 48, rotation: 0
   },
   {
-    id: 'orbit-bloom', name: 'Orbit', icon: 'radio_button_checked', geometry: 'circle', visualStyle: 'orbit',
-    amplitude: 55,
-    audioSensitivity: 1.45, frequency: 7, speed: 0.22, harmonics: 4, phase: 45,
-    color: 'theme', secondaryColor: 'accent',
-    lineWidth: 1.7, glow: 15, opacity: 0.78, layers: 4,
-    resolution: 420, barCount: 48, rotation: 0.08
-  },
-  {
     id: 'cosmic-spiral', name: 'Spiral', icon: 'cyclone', geometry: 'spiral', visualStyle: 'vortex',
     amplitude: 40,
     audioSensitivity: 1.4, frequency: 4.5, speed: 0.28, harmonics: 3, phase: 30,
@@ -39,14 +31,6 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     color: 'theme', secondaryColor: 'accentLight',
     lineWidth: 2.3, glow: 10, opacity: 0.85, layers: 2,
     resolution: 128, barCount: 54, rotation: 0
-  },
-  {
-    id: 'lissajous-dream', name: 'Lissajous', icon: 'all_inclusive', geometry: 'lissajous', visualStyle: 'constellation',
-    amplitude: 58,
-    audioSensitivity: 1.5, frequency: 3, speed: 0.18, harmonics: 3, phase: 90,
-    color: 'theme', secondaryColor: 'accent',
-    lineWidth: 1.4, glow: 16, opacity: 0.72, layers: 5,
-    resolution: 600, barCount: 48, rotation: 0.1
   },
   {
     id: 'moonlit-fireflies', name: 'Firefly Garden', icon: 'flare',
