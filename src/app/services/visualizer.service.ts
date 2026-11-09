@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { VisualizerConfig, VisualizerParameters, VisualizerStyle } from './interfaces/visualizer/visualizerconfig';
 import { VisualizerPath, VisualizerPoint } from './interfaces/visualizer/visualizerpoint';
-import { DEFAULT_VISUALIZER_ID, VISUALIZER_PRESETS } from './visualizer-presets';
+import { VISUALIZER_PRESETS } from './visualizer-presets';
 import { VisualizerAudioFrame } from './interfaces/visualizer/visualizer-audio-frame';
 
 const STORAGE_KEY = 'lofi.visualizer.preset.v1';
@@ -201,7 +201,7 @@ export class VisualizerService {
   private normalizeConfig(config: VisualizerConfig): VisualizerConfig {
     const allowed = ['wave', 'circle', 'spiral', 'bars', 'lissajous'];
     const styles: VisualizerStyle[] = [
-      'silk', 'orbit', 'vortex', 'bars', 'constellation', 'fireflies', 'meteor', 'lotus'
+      'silk', 'orbit', 'vortex', 'bars', 'constellation', 'fireflies'
     ];
     return {
       ...config,
@@ -232,8 +232,8 @@ export class VisualizerService {
     catch { /* Storage may be disabled by browser settings. */ }
     // A fresh visit starts Off. Sharing permission is never requested on load.
     if (!stored || stored === 'off') return null;
-    const preset = this.presets.find((item: VisualizerConfig) => item.id === (stored || DEFAULT_VISUALIZER_ID))
-      ?? this.presets[0];
+    // Removed presets must not silently switch the user to an unrelated effect.
+    const preset = this.presets.find((item: VisualizerConfig) => item.id === stored);
     return preset ? { ...preset } : null;
   }
 
