@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { VisualizerConfig, VisualizerParameters } from './interfaces/visualizer/visualizerconfig';
+import { VisualizerConfig, VisualizerParameters, VisualizerStyle } from './interfaces/visualizer/visualizerconfig';
 import { VisualizerPath, VisualizerPoint } from './interfaces/visualizer/visualizerpoint';
 import { DEFAULT_VISUALIZER_ID, VISUALIZER_PRESETS } from './visualizer-presets';
 import { VisualizerAudioFrame } from './interfaces/visualizer/visualizer-audio-frame';
@@ -200,9 +200,13 @@ export class VisualizerService {
 
   private normalizeConfig(config: VisualizerConfig): VisualizerConfig {
     const allowed = ['wave', 'circle', 'spiral', 'bars', 'lissajous'];
+    const styles: VisualizerStyle[] = [
+      'silk', 'orbit', 'vortex', 'bars', 'constellation', 'fireflies', 'meteor', 'lotus'
+    ];
     return {
       ...config,
       geometry: allowed.includes(config.geometry) ? config.geometry : 'wave',
+      visualStyle: styles.includes(config.visualStyle) ? config.visualStyle : 'silk',
       icon: typeof config.icon === 'string' && /^[a-z_]{1,40}$/.test(config.icon) ? config.icon : 'graphic_eq',
       amplitude: clamp(config.amplitude, 0, 100, 30),
       audioSensitivity: clamp(config.audioSensitivity, 0.2, 4, 1.5),
