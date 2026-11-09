@@ -13,6 +13,8 @@ import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
+import { VisualizerService } from 'src/app/services/visualizer.service';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
 
 type FloatingEmoji = {
   emoji: string;
@@ -148,6 +150,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
   themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
   selectedPalette = 'purple';
+  paletteExpanded = false;
+  visualizerExpanded = false;
   newThemeIds = new Set<string>();
   private themeSubscription?: Subscription;
   private readonly selectedThemeKey = 'selectedPalette';
@@ -168,12 +172,69 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private youtubeService: YoutubeService,
     private shareService: ShareService,
     private radioFavorites: RadioFavoritesService,
-    private profileVisits: ProfileVisitsService
+    private profileVisits: ProfileVisitsService,
+
+    private visualizerService: VisualizerService,
+    private visualizerAudio: VisualizerAudioService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
 
     this.loadStations();
+  }
+
+  /** Material-free menu toggles: click events update Angular-visible state. */
+  togglePalette(): void {
+    this.paletteExpanded = !this.paletteExpanded;
+  }
+
+  toggleVisualizers(): void {
+    this.visualizerExpanded = !this.visualizerExpanded;
+  }
+
+  // Preserve identities between change-detection passes. getPresets() makes new
+  // objects, which would cause *ngFor to replace buttons after pointerdown and
+  // before click (the static Off button was unaffected).
+  private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
+
+  get visualizerPresets(): ReturnType<VisualizerService['getPresets']> {
+    return this.cachedVisualizerPresets ??= this.visualizerService.getPresets();
+  }
+
+  trackVisualizerPreset(_index: number, preset: { id: string }): string {
+    return preset.id;
+  }
+
+  get selectedVisualizerId(): string {
+    return this.visualizerService.activePresetId ?? 'off';
+  }
+
+  selectVisualizer(id: string): void {
+    if (id === 'off') {
+      // Off also revokes any pending or established tab-sharing session.
+      this.visualizerAudio.stopCapture();
+      this.visualizerService.setPreset(null);
+      return;
+    }
+
+    // Only known effects may request a screen/tab capture permission.
+    if (!this.visualizerService.getPresets().some(preset => preset.id === id)) return;
+
+    // Call immediately inside the icon click, before state subscriptions
+    // run, so getDisplayMedia retains the browser's user activation.
+    if (!this.visualizerAudio.isActive && this.visualizerAudio.status !== 'requesting') {
+      void this.visualizerAudio.startCapture();
+    }
+
+    this.visualizerService.setPreset(id);
+  }
+
+  get audioCaptureStatus() {
+    return this.visualizerAudio.status;
+  }
+
+  get audioCaptureError(): string {
+    return this.visualizerAudio.errorMessage;
   }
 
   toggleList(): void {
@@ -450,6 +511,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.visualizerAudio.stopCapture();
     this.themeSubscription?.unsubscribe();
     this.isDestroyed = true;
     this.catalogSubscription?.unsubscribe();

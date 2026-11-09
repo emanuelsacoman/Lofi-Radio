@@ -32,6 +32,7 @@ import { VhsComponent } from './view/effect/vhs/vhs.component';
 import { ProfileVisitsChartComponent } from './view/adm/profile-visits-chart/profile-visits-chart.component';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
+import { VisualizerComponent } from './view/effect/visualizer/visualizer.component';
 
 registerLocaleData(localePt, 'pt-BR');
 
@@ -44,7 +45,8 @@ const client = createClient(environment.apikey);
     HomeComponent,
     LoginComponent,
     AdmComponent,
-    VhsComponent
+    VhsComponent,
+    VisualizerComponent
   ],
   imports: [
     ProfileVisitsChartComponent,
