@@ -44,14 +44,14 @@
                       </span>
                     </div>                    
                 </mat-expansion-panel>
-                <div class="visualizer-picker">
-                  <label for="visualizer-mode">Visualizer</label>
-                  <select id="visualizer-mode" [value]="selectedVisualizerId" (change)="selectVisualizer($any($event.target).value)">
-                    <option value="off">Off</option>
-                    <option *ngFor="let preset of visualizerPresets" [value]="preset.id">{{ preset.name }}</option>
-                  </select>
-                </div>
-            </mat-accordion> 
+              </mat-accordion> 
+              <div class="visualizer-picker">
+                <label for="visualizer-mode">Visualizer</label>
+                <select id="visualizer-mode" [value]="selectedVisualizerId" (change)="selectVisualizer($any($event.target).value)">
+                  <option value="off">Off</option>
+                  <option *ngFor="let preset of visualizerPresets" [value]="preset.id">{{ preset.name }}</option>
+                </select>
+              </div>
         </div>
         <nav class="adm" aria-label="Site controls">
             <button

@@ -100,6 +100,7 @@ body {
       left: -1rem;
       top: 10px;
       z-index: 4;
+      display: flex;
     }
 
     .adm {
