@@ -7,6 +7,17 @@ import {
 const BAND_COUNT = 64;
 const ZERO_FRAME = SILENT_AUDIO_FRAME;
 
+/** User-facing capture errors stay in English, matching the rest of the radio UI.
+ * Comparing these constants also avoids locale-dependent string matching. */
+const AUDIO_CAPTURE_MESSAGES = {
+  unsupported: 'This browser does not support tab audio capture. Use Chrome or Edge over HTTPS or localhost.',
+  invalidSurface: 'Select the Lofi Radio tab, not a window or your entire screen.',
+  noAudio: 'No audio was shared. Select the Lofi Radio tab and enable "Share tab audio".',
+  endedBeforeStart: 'Audio sharing ended before it could start.',
+  cancelled: 'Audio sharing was cancelled. Click again and share the Lofi Radio tab with audio.',
+  analysisFailed: 'Unable to analyze the shared audio. Check your permissions and try again.'
+} as const;
+
 function bounded(value: number): number {
   return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 }
@@ -55,7 +66,7 @@ export class VisualizerAudioService {
     if (this.isActive) return true;
     const mediaDevices = typeof navigator !== 'undefined' ? navigator.mediaDevices : undefined;
     if (!mediaDevices?.getDisplayMedia || typeof AudioContext === 'undefined') {
-      this.fail('Este navegador não suporta captura de áudio de abas. Use Chrome ou Edge em HTTPS/localhost.');
+      this.fail(AUDIO_CAPTURE_MESSAGES.unsupported);
       return false;
     }
 
@@ -83,10 +94,10 @@ export class VisualizerAudioService {
 
       const surface = stream.getVideoTracks()[0]?.getSettings().displaySurface;
       if (surface && surface !== 'browser') {
-        throw new Error('Selecione a aba do Lofi Radio, não uma janela ou a tela inteira.');
+        throw new Error(AUDIO_CAPTURE_MESSAGES.invalidSurface);
       }
       if (stream.getAudioTracks().length === 0) {
-        throw new Error('Nenhum áudio foi compartilhado. Selecione esta aba e habilite “Compartilhar áudio da guia”.');
+        throw new Error(AUDIO_CAPTURE_MESSAGES.noAudio);
       }
 
       const context = new AudioContext();
@@ -116,7 +127,7 @@ export class VisualizerAudioService {
       await context.resume();
       if (generation !== this.captureGeneration) return false;
       if (!stream.getAudioTracks().some(track => track.readyState === 'live')) {
-        throw new Error('A captura de áudio foi encerrada antes de começar.');
+        throw new Error(AUDIO_CAPTURE_MESSAGES.endedBeforeStart);
       }
       this.statusSubject.next('active');
       return true;
@@ -129,14 +140,15 @@ export class VisualizerAudioService {
       if (generation !== this.captureGeneration) return false;
       this.stopCapture();
       const message = error instanceof Error ? error.message : '';
-      if (message.includes('Selecione a aba') || message.includes('Nenhum áudio') ||
-          message.includes('captura de áudio foi encerrada')) {
+      if (message === AUDIO_CAPTURE_MESSAGES.invalidSurface ||
+          message === AUDIO_CAPTURE_MESSAGES.noAudio ||
+          message === AUDIO_CAPTURE_MESSAGES.endedBeforeStart) {
         this.fail(message);
       } else if (error instanceof DOMException &&
                  (error.name === 'NotAllowedError' || error.name === 'AbortError')) {
-        this.fail('Captura cancelada. Clique novamente e compartilhe a aba do Lofi Radio com áudio.');
+        this.fail(AUDIO_CAPTURE_MESSAGES.cancelled);
       } else {
-        this.fail('Não foi possível analisar o áudio compartilhado. Verifique as permissões e tente novamente.');
+        this.fail(AUDIO_CAPTURE_MESSAGES.analysisFailed);
       }
       return false;
     }
