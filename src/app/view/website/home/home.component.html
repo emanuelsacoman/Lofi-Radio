@@ -2,7 +2,7 @@
   <app-vhs></app-vhs>
   
     <main class="fadeIn">
-      <app-visualizer class="visualizer" [playing]="isPlaying"></app-visualizer>
+      <app-visualizer class="visualizer" [playing]="isPlaying" [palette]="selectedPalette"></app-visualizer>
         <p class="index">
             {{ totalVideos ? currentIndex + 1 : 0 }} / {{ totalVideos }}
         </p>
@@ -50,6 +50,23 @@
                     <option value="off">Off</option>
                     <option *ngFor="let preset of visualizerPresets" [value]="preset.id">{{ preset.name }}</option>
                   </select>
+                  <button
+                    type="button"
+                    class="visualizer-audio-button"
+                    [disabled]="audioCaptureStatus === 'requesting' || selectedVisualizerId === 'off'"
+                    (click)="toggleAudioCapture()">
+                    {{ audioCaptureStatus === 'active' ? 'Parar áudio real' :
+                       audioCaptureStatus === 'requesting' ? 'Escolhendo aba...' : 'Ativar áudio real' }}
+                  </button>
+                  <span class="visualizer-audio-status" role="status" *ngIf="audioCaptureStatus === 'active'">
+                    Reagindo ao áudio da aba
+                  </span>
+                  <small class="visualizer-audio-help" *ngIf="audioCaptureStatus !== 'active'">
+                    Selecione esta aba e marque "Compartilhar áudio da guia".
+                  </small>
+                  <small class="visualizer-audio-error" role="alert" *ngIf="audioCaptureStatus === 'error'">
+                    {{ audioCaptureError }}
+                  </small>
                 </div>
             </mat-accordion> 
         </div>

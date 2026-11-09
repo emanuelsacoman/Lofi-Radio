@@ -14,6 +14,7 @@ import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.se
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
 import { VisualizerService } from 'src/app/services/visualizer.service';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
 
 type FloatingEmoji = {
   emoji: string;
@@ -171,7 +172,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private radioFavorites: RadioFavoritesService,
     private profileVisits: ProfileVisitsService,
 
-    private visualizerService: VisualizerService
+    private visualizerService: VisualizerService,
+    private visualizerAudio: VisualizerAudioService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -188,7 +190,26 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectVisualizer(id: string): void {
+    if (id === 'off') this.visualizerAudio.stopCapture();
     this.visualizerService.setPreset(id === 'off' ? null : id);
+  }
+
+  get audioCaptureStatus() {
+    return this.visualizerAudio.status;
+  }
+
+  get audioCaptureError(): string {
+    return this.visualizerAudio.errorMessage;
+  }
+
+  toggleAudioCapture(): void {
+    if (this.visualizerAudio.status === 'requesting') return;
+    if (this.visualizerAudio.isActive) {
+      this.visualizerAudio.stopCapture();
+    } else {
+      // Call immediately from the user click to preserve browser activation.
+      void this.visualizerAudio.startCapture();
+    }
   }
 
   toggleList(): void {
@@ -465,6 +486,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.visualizerAudio.stopCapture();
     this.themeSubscription?.unsubscribe();
     this.isDestroyed = true;
     this.catalogSubscription?.unsubscribe();

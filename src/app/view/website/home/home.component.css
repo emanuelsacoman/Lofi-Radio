@@ -84,6 +84,26 @@ body {
       cursor: pointer;
     }
 
+    .visualizer-audio-button {
+      border: 1px solid var(--clr-accent);
+      background: var(--clr-background);
+      color: var(--clr-text);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      font: inherit;
+      max-width: 170px;
+    }
+    .visualizer-audio-button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .visualizer-audio-help, .visualizer-audio-error, .visualizer-audio-status {
+      display: block;
+      max-width: 172px;
+      line-height: 1.35;
+      font-size: 10px;
+    }
+    .visualizer-audio-error { color: #ffaaaa; }
+    .visualizer-audio-status { color: var(--clr-accent-light); }
+
     .index {
       color: var(--clr-secondary);
       font-size: var(--sz-text-index);

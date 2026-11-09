@@ -6,6 +6,10 @@ import { Subscription } from 'rxjs';
 import { VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerConfig } from 'src/app/services/interfaces/visualizer/visualizerconfig';
 import { VisualizerPath } from 'src/app/services/interfaces/visualizer/visualizerpoint';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
+import {
+  SILENT_AUDIO_FRAME, VisualizerAudioFrame
+} from 'src/app/services/interfaces/visualizer/visualizer-audio-frame';
 
 @Component({
   selector: 'app-visualizer',
@@ -15,11 +19,13 @@ import { VisualizerPath } from 'src/app/services/interfaces/visualizer/visualize
 })
 export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() playing = true;
+  @Input() palette = '';
   @ViewChild('canvas', { static: true }) canvasElement!: ElementRef<HTMLCanvasElement>;
 
   private ctx: CanvasRenderingContext2D | null = null;
   private config: VisualizerConfig | null = null;
   private subscription?: Subscription;
+  private audioSubscription?: Subscription;
   private resizeObserver?: ResizeObserver;
   private frameId: number | null = null;
   private lastFrame = 0;
@@ -31,7 +37,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   private readonly visibilityHandler = () => this.syncAnimation();
   private readonly motionHandler = () => this.syncAnimation();
 
-  constructor(private visualizer: VisualizerService, private zone: NgZone) {}
+  constructor(private visualizer: VisualizerService, private zone: NgZone, private audio: VisualizerAudioService) {}
 
   ngAfterViewInit(): void {
     this.ctx = this.canvasElement.nativeElement.getContext('2d', { alpha: true });
@@ -52,10 +58,11 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       this.config = config;
       this.syncAnimation();
     });
+    this.audioSubscription = this.audio.status$.subscribe(() => this.syncAnimation());
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['playing'] && this.ctx) this.syncAnimation();
+    if ((changes['playing'] || changes['palette']) && this.ctx) this.syncAnimation();
   }
 
   private readonly resize = (): void => {
@@ -85,7 +92,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.lastFrame = 0;
     if (!this.ctx || this.destroyed) return;
     this.render();
-    if (!this.config || !this.playing || document.hidden || this.reducedMotion?.matches) return;
+    if (!this.config || !this.playing || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
     this.zone.runOutsideAngular(() => {
       this.frameId = requestAnimationFrame(this.tick);
     });
@@ -93,31 +100,36 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
 
   private readonly tick = (timestamp: number): void => {
     this.frameId = null;
-    if (this.destroyed || !this.config || !this.playing || document.hidden || this.reducedMotion?.matches) return;
-    if (this.lastFrame) this.time += Math.min((timestamp - this.lastFrame) / 1000, 0.05);
+    if (this.destroyed || !this.config || !this.playing || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
+    const frame = this.audio.readFrame();
+    // No real signal means no prerecorded looping animation.
+    if (this.lastFrame) {
+      const dt = Math.min((timestamp - this.lastFrame) / 1000, 0.05);
+      this.time += dt * Math.min(3, frame.level * 1.7 + frame.bass * 1.1 + frame.beat * 0.6);
+    }
     this.lastFrame = timestamp;
-    this.render();
+    this.render(frame);
     this.frameId = requestAnimationFrame(this.tick);
   };
 
-  private render(): void {
+  private render(audio: VisualizerAudioFrame = SILENT_AUDIO_FRAME): void {
     if (!this.ctx || this.width <= 0 || this.height <= 0) return;
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
     const config = this.config;
     if (!config) return;
-    const paths = this.visualizer.calculatePaths(this.time);
+    const paths = this.visualizer.calculatePaths(this.time, undefined, audio);
     const colorA = this.color(config.color, '--clr-primary', '#aea4d3');
     const colorB = this.color(config.secondaryColor, '--clr-accent', '#805cb1');
     for (const path of paths) {
       const blend = paths.length <= 1 ? 0 : path.layer / (paths.length - 1);
       ctx.strokeStyle = blend < 0.5 ? colorA : colorB;
-      ctx.globalAlpha = Math.max(0.08, config.opacity * (1 - blend * 0.5));
-      ctx.lineWidth = config.lineWidth * (1 - blend * 0.35);
+      ctx.globalAlpha = Math.max(0.08, config.opacity * (1 - blend * 0.5) * (audio.source === 'tab' ? 0.35 + audio.level * 0.65 + audio.beat * 0.25 : 0.45));
+      ctx.lineWidth = config.lineWidth * (1 - blend * 0.35) * (1 + audio.beat * 0.65);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.shadowColor = ctx.strokeStyle;
-      ctx.shadowBlur = config.glow;
+      ctx.shadowBlur = config.glow * (1 + audio.beat * 1.2);
       if (path.kind === 'bar') this.drawBars(ctx, path, config.barCount);
       else this.drawCurve(ctx, path);
     }
@@ -150,16 +162,24 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   private color(value: string, cssVariable: string, fallback: string): string {
-    if (value !== 'theme' && value !== 'accent') return value;
-    const key = value === 'theme' ? '--clr-primary' : '--clr-accent';
-    return getComputedStyle(document.documentElement).getPropertyValue(key).trim()
-      || getComputedStyle(document.documentElement).getPropertyValue(cssVariable).trim()
-      || fallback;
+    if (value.startsWith('#')) return value;
+    const variables: Record<string, string> = {
+      theme: '--clr-primary',
+      secondary: '--clr-secondary',
+      accent: '--clr-accent',
+      accentLight: '--clr-accent-light',
+      text: '--clr-text'
+    };
+    const key = variables[value] ?? cssVariable;
+    const style = getComputedStyle(document.documentElement);
+    return style.getPropertyValue(key).trim()
+      || style.getPropertyValue(cssVariable).trim() || fallback;
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
     this.subscription?.unsubscribe();
+    this.audioSubscription?.unsubscribe();
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.resizeObserver?.disconnect();
     window.removeEventListener('resize', this.resize);

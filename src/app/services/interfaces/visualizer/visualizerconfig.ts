@@ -6,6 +6,7 @@ export interface VisualizerConfig {
   name: string;
   geometry: VisualizerGeometry;
   amplitude: number;     // 0..100: intensidade da deformacao
+  audioSensitivity: number; // 0.2..4: ganho das frequencias/da batida reais
   frequency: number;     // 0.25..12: repeticoes espaciais
   speed: number;         // 0..5: velocidade da simulacao (nao e audio real)
   harmonics: number;     // 1..12: ondas sobrepostas

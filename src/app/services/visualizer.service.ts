@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { VisualizerConfig, VisualizerParameters } from './interfaces/visualizer/visualizerconfig';
 import { VisualizerPath, VisualizerPoint } from './interfaces/visualizer/visualizerpoint';
 import { DEFAULT_VISUALIZER_ID, VISUALIZER_PRESETS } from './visualizer-presets';
+import { VisualizerAudioFrame } from './interfaces/visualizer/visualizer-audio-frame';
 
 const STORAGE_KEY = 'lofi.visualizer.preset.v1';
 const TAU = Math.PI * 2;
@@ -15,7 +16,7 @@ function clamp(value: number, min: number, max: number, fallback: number): numbe
 function validColor(color: string, fallback: string): string {
   if (typeof color !== 'string') return fallback;
   const value = color.trim();
-  return value === 'theme' || value === 'accent' || /^#[\da-fA-F]{3}(?:[\da-fA-F]{3})?$/.test(value)
+  return ['theme', 'accent', 'secondary', 'accentLight', 'text'].includes(value) || /^#[\da-fA-F]{3}(?:[\da-fA-F]{3})?$/.test(value)
     ? value : fallback;
 }
 
@@ -68,12 +69,23 @@ export class VisualizerService {
    * Deterministic math only: same config, t, and resolution => same points.
    * The caller owns the render loop and decides whether time advances.
    */
-  calculatePaths(timeSeconds: number, resolution?: number): VisualizerPath[] {
+  calculatePaths(timeSeconds: number, resolution?: number, audio?: VisualizerAudioFrame): VisualizerPath[] {
     const config = this.activeSubject.value;
     if (!config) return [];
     const t = Number.isFinite(timeSeconds) ? timeSeconds : 0;
     const count = clamp(resolution ?? config.resolution, 12, 768, config.resolution) | 0;
     const paths: VisualizerPath[] = [];
+    const hasAudio = audio?.source === 'tab';
+    const bass = hasAudio ? clamp(audio?.bass ?? 0, 0, 1, 0) : 0;
+    const mids = hasAudio ? clamp(audio?.mids ?? 0, 0, 1, 0) : 0;
+    const treble = hasAudio ? clamp(audio?.treble ?? 0, 0, 1, 0) : 0;
+    const beat = hasAudio ? clamp(audio?.beat ?? 0, 0, 1, 0) : 0;
+    const level = hasAudio ? clamp(audio?.level ?? 0, 0, 1, 0) : 0;
+    // Silence: resting geometry; live FFT: its amplitude is driven by audio.
+    const gain = hasAudio
+      ? Math.min(2.6, (0.06 + bass * 1.1 + mids * 0.45 + level * 0.75 + beat * 0.85)
+          * config.audioSensitivity)
+      : 0.08;
     for (let layer = 0; layer < config.layers; layer++) {
       const points: VisualizerPoint[] = [];
       const isBars = config.geometry === 'bars';
@@ -81,7 +93,7 @@ export class VisualizerService {
       for (let i = 0; i < steps; i++) {
         const u = isBars ? (i + 0.5) / steps : i / (steps - 1);
         const signal = this.wave(u, t, layer, config);
-        const amount = config.amplitude / 100;
+        const amount = config.amplitude / 100 * gain;
         const rotation = config.rotation * t + layer * 0.025;
         let x: number;
         let y: number;
@@ -90,7 +102,7 @@ export class VisualizerService {
             // Periodic integer lobes ensure that the seam is closed.
             const lobes = Math.max(1, Math.round(config.frequency));
             const a = TAU * u + rotation;
-            const envelope = Math.sin(TAU * lobes * u + t * config.speed * TAU + layer * 0.4);
+            const envelope = Math.sin(TAU * lobes * u + t * config.speed * TAU + layer * 0.4) * (1 + treble * 0.5);
             const radius = 0.25 + 0.03 * layer + envelope * amount * 0.085;
             x = 0.5 + Math.cos(a) * radius;
             y = 0.5 + Math.sin(a) * radius;
@@ -98,7 +110,7 @@ export class VisualizerService {
           }
           case 'spiral': {
             const angle = TAU * (u * config.frequency + config.rotation * t);
-            const radius = 0.025 + u * 0.40 + signal * amount * 0.045 + layer * 0.012;
+            const radius = 0.025 + u * 0.40 + signal * amount * (0.045 + treble * 0.03) + layer * 0.012;
             x = 0.5 + Math.cos(angle) * radius;
             y = 0.5 + Math.sin(angle) * radius;
             break;
@@ -106,16 +118,24 @@ export class VisualizerService {
           case 'lissajous': {
             const a = TAU * (config.frequency * u + config.speed * t) + config.phase * Math.PI / 180;
             const b = TAU * ((config.frequency + 1) * u - config.speed * t);
-            const size = 0.22 + amount * 0.17 + layer * 0.008;
+            const size = 0.22 + Math.min(0.20, amount * 0.17) + layer * 0.008;
             x = 0.5 + Math.sin(a) * size;
             y = 0.5 + Math.sin(b) * size;
             break;
           }
-          case 'bars':
+          case 'bars': {
             x = u;
-            // Bar height encodes a simulated envelope, not YouTube audio spectrum.
-            y = 0.5 - Math.min(0.40, (0.03 + amount * (0.12 + 0.28 * Math.abs(signal))) * (1 - layer * 0.12));
+            const spectrum = hasAudio && audio?.spectrum?.length
+              ? clamp(audio.spectrum[Math.min(audio.spectrum.length - 1, Math.floor(u * audio.spectrum.length))], 0, 1, 0)
+              : 0;
+            const intensity = spectrum * config.audioSensitivity;
+            const height = hasAudio
+              ? Math.min(0.43, 0.006 + Math.pow(intensity, 0.85) *
+                  (config.amplitude / 100) * 0.42 + beat * 0.035)
+              : 0.008;
+            y = 0.5 - height * (1 - layer * 0.13);
             break;
+          }
           case 'wave':
           default:
             x = u;
@@ -135,8 +155,8 @@ export class VisualizerService {
   }
 
   /** Compatibility with the original prototype API. */
-  calculatePoints(timeSeconds: number, resolution = 128): VisualizerPoint[] {
-    return this.calculatePaths(timeSeconds, resolution)[0]?.points ?? [];
+  calculatePoints(timeSeconds: number, resolution = 128, audio?: VisualizerAudioFrame): VisualizerPoint[] {
+    return this.calculatePaths(timeSeconds, resolution, audio)[0]?.points ?? [];
   }
 
   private wave(u: number, t: number, layer: number, config: VisualizerConfig): number {
@@ -157,6 +177,7 @@ export class VisualizerService {
       ...config,
       geometry: allowed.includes(config.geometry) ? config.geometry : 'wave',
       amplitude: clamp(config.amplitude, 0, 100, 30),
+      audioSensitivity: clamp(config.audioSensitivity, 0.2, 4, 1.5),
       frequency: clamp(config.frequency, 0.25, 12, 3),
       speed: clamp(config.speed, 0, 5, 0.2),
       harmonics: Math.round(clamp(config.harmonics, 1, 12, 2)),
