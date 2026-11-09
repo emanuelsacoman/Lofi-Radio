@@ -183,6 +183,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadStations();
   }
 
+  /** Material-free menu toggles: click events update Angular-visible state. */
+  togglePalette(): void {
+    this.paletteExpanded = !this.paletteExpanded;
+  }
+
+  toggleVisualizers(): void {
+    this.visualizerExpanded = !this.visualizerExpanded;
+  }
+
   get visualizerPresets() {
     return this.visualizerService.getPresets();
   }

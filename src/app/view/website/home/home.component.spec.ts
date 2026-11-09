@@ -76,18 +76,31 @@ describe('HomeComponent non-verbal radio feedback', () => {
       expect(component.visualizerExpanded).toBeFalse();
     });
 
-    it('keeps menu state independent of preset selection', () => {
-      component.paletteExpanded = true;
+    it('opens and closes Palette independently of Visualizers', () => {
+      const capture = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      component.togglePalette();
+      expect(component.paletteExpanded).toBeTrue();
       expect(component.visualizerExpanded).toBeFalse();
+      expect(capture).not.toHaveBeenCalled();
 
-      component.visualizerExpanded = true;
-      component.paletteExpanded = false;
+      component.toggleVisualizers();
+      expect(component.paletteExpanded).toBeTrue();
       expect(component.visualizerExpanded).toBeTrue();
+      expect(capture).not.toHaveBeenCalled();
 
+      component.togglePalette();
+      expect(component.paletteExpanded).toBeFalse();
+      expect(component.visualizerExpanded).toBeTrue();
+    });
+
+    it('keeps the visualizer menu open while selecting a preset', () => {
+      component.toggleVisualizers();
       spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+
       component.selectVisualizer('pulse-bars');
       expect(component.visualizerExpanded).toBeTrue();
       expect(component.paletteExpanded).toBeFalse();
+      expect(visualizerService.activePresetId).toBe('pulse-bars');
     });
   });
 

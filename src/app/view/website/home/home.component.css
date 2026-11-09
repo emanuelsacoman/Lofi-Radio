@@ -78,15 +78,17 @@ body {
     }
 
     .aside {
-      /* Absolute positioning prevents a menu's height/width from
-         shifting the adjacent control when expanded. */
-      position: absolute;
+      /* Keep the menu triggers above the main content and overlapping
+         UI. The element's clickable footprint remains just the toolbar. */
+      position: fixed;
       top: 10px;
       left: 0;
       width: calc(20px + var(--header-icon-size) * 2 + var(--header-icon-gap));
       height: var(--header-icon-size);
-      z-index: 4;
+      z-index: 10000;
+      isolation: isolate;
       overflow: visible;
+      pointer-events: none;
     }
 
     /* Both triggers use 44px hit areas and the same 16px spacing as .adm.
@@ -97,6 +99,7 @@ body {
       width: var(--header-icon-size);
       height: var(--header-icon-size);
       overflow: visible;
+      pointer-events: none;
     }
 
     .visual-control--palette { left: 10px; }
@@ -115,6 +118,8 @@ body {
       background: transparent;
       color: var(--clr-primary);
       cursor: pointer;
+      z-index: 1;
+      pointer-events: auto;
       transition: filter 180ms ease;
     }
 
@@ -165,22 +170,15 @@ body {
       overflow-x: hidden;
       scrollbar-width: none;
       background: transparent;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-7px);
-      pointer-events: none;
-      transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      animation: appearance-menu-open 180ms ease-out both;
     }
     .visual-control__menu::-webkit-scrollbar { display: none; }
 
-    .visual-control__menu.is-open {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-      pointer-events: auto;
-      transition: opacity 180ms ease, transform 180ms ease, visibility 0s;
-    }
-
+    /* The menu only exists while open (*ngIf). No hidden/inert node remains
+       in the DOM to unexpectedly intercept or disable pointer events. */
     .visual-control__item {
       position: relative;
       display: flex;
@@ -258,6 +256,9 @@ body {
       .visual-control__swatch,
       .visual-control__effect {
         transition: none;
+      }
+      .visual-control__menu {
+        animation: none;
       }
     }
 
@@ -1007,6 +1008,11 @@ span {
 
 .fadeIn {
   animation: fadeIn 0.2s ease-in forwards;
+}
+
+@keyframes appearance-menu-open {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {

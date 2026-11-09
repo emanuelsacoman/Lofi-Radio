@@ -88,8 +88,10 @@ O cabeçalho e as opções de cada coluna compartilham **exatamente a mesma larg
 A abertura usa uma transição curta de opacidade e `translateY`, sem alterar
 as coordenadas da outra coluna. A preferência por movimento reduzido é respeitada.
 
-As duas colunas têm tooltips, estados acessíveis (`aria-expanded`,
-`aria-pressed`, `aria-controls`) e as opções fechadas ficam inertes.
+As duas colunas têm tooltips e estados acessíveis (`aria-expanded`,
+`aria-pressed`, `aria-controls`). Os menus são criados com `*ngIf`
+somente durante a expansão, evitando que elementos ocultos com `inert`
+ou `pointer-events: none` interfiram nos cliques.
 Os estados `paletteExpanded` e `visualizerExpanded` são independentes no
 `HomeComponent`; expandir um não expande nem reposiciona o outro.
 
@@ -104,3 +106,12 @@ de áudio, o Canvas, os presets e a lógica de silêncio permanecem inalterados.
 
 O indicador de compartilhamento pertence ao navegador e permanece visível
 durante a captura autorizada.
+
+## Correção de interação dos ícones
+
+- Os botões Palette e Visualizers agora chamam métodos de alternância explícitos no HomeComponent.
+- O painel é inserido/removido com `*ngIf`, em vez de sempre permanecer no DOM invisível com `inert`.
+- A área de controles fica em `position: fixed`, acima do conteúdo de fundo, com cliques habilitados somente nos botões e menus.
+- Uma animação de entrada de 180ms substitui a combinação de visibilidade e transições de saída.
+- Mantidos os ícones, os tooltips, as posições e o espaçamento de 60px entre os centros dos gatilhos.
+- Abrir qualquer menu **não** pede compartilhamento de áudio; isso permanece exclusivo do clique em um preset.

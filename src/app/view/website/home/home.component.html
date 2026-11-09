@@ -18,17 +18,15 @@
               [attr.aria-expanded]="paletteExpanded"
               aria-controls="palette-options"
               aria-label="Toggle color palette"
-              (click)="paletteExpanded = !paletteExpanded">
+              (click)="togglePalette()">
               <mat-icon class="visual-control__icon" aria-hidden="true">palette</mat-icon>
               <mat-icon *ngIf="hasNewThemes" class="visual-control__notice" aria-hidden="true">new_releases</mat-icon>
             </button>
 
             <div
+              *ngIf="paletteExpanded"
               id="palette-options"
               class="visual-control__menu"
-              [class.is-open]="paletteExpanded"
-              [attr.aria-hidden]="!paletteExpanded"
-              [attr.inert]="paletteExpanded ? null : ''"
               role="group"
               aria-label="Select color palette">
               <span class="visual-control__item" *ngFor="let theme of themeOptions">
@@ -57,7 +55,7 @@
               [attr.aria-expanded]="visualizerExpanded"
               aria-controls="visualizer-options"
               aria-label="Toggle visualizers"
-              (click)="visualizerExpanded = !visualizerExpanded">
+              (click)="toggleVisualizers()">
               <mat-icon class="visual-control__icon" aria-hidden="true">equalizer</mat-icon>
               <mat-icon
                 *ngIf="audioCaptureStatus === 'active'"
@@ -70,11 +68,9 @@
             </button>
 
             <div
+              *ngIf="visualizerExpanded"
               id="visualizer-options"
               class="visual-control__menu"
-              [class.is-open]="visualizerExpanded"
-              [attr.aria-hidden]="!visualizerExpanded"
-              [attr.inert]="visualizerExpanded ? null : ''"
               role="group"
               aria-label="Select visualizer">
               <button
