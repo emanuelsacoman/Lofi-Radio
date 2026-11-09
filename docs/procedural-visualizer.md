@@ -75,3 +75,21 @@ Não há deploy nesta branch. Valide a captura na interface real do navegador.
 - Todos os presets usam um limiar de ruido e uma atividade normalizada de audio para diminuir geometria e opacidade; sem audio ficam invisiveis.
 - O decaimento do detector de batidas, isoladamente, nao gera movimento no silencio.
 - Para testar: pare/retome a live, silencie o audio da live e observe a borda inferior. A captura da aba deve estar ativa.
+
+## Seletor de visualizadores (ícones)
+
+O seletor utiliza um segundo `mat-expansion-panel` junto à paleta de cores.
+Todos os presets têm `icon` (nome de Material Icon) configurável no arquivo
+`src/app/services/visualizer-presets.ts`. Há também um botão com ícone de
+visibilidade desativada para desligar o visualizador.
+
+A janela de compartilhamento de áudio **não** aparece ao abrir o painel,
+carregar a página ou restaurar o preset salvo. Ela só é solicitada depois de
+um clique explícito no ícone de um efeito que ainda não tenha uma captura
+ativa. Trocar de efeito com áudio compartilhado reutiliza a captura existente.
+Clicar no ícone de desligar encerra o compartilhamento, incluindo capturas
+que ainda estejam aguardando a permissão. Se o usuário cancelar o diálogo,
+o botão do efeito pode ser clicado novamente para tentar outra vez.
+
+O navegador continua podendo exibir seu indicador de compartilhamento enquanto
+a análise do áudio estiver ativa; a aplicação não pode escondê-lo.

@@ -11,6 +11,8 @@ describe('HomeComponent non-verbal radio feedback', () => {
   const playerTimeoutMs = 12_000;
 
   let component: HomeComponent;
+  let visualizerService: VisualizerService;
+  let visualizerAudio: VisualizerAudioService;
   let changeDetector: jasmine.SpyObj<{ detectChanges: () => void }>;
   let firebase: jasmine.SpyObj<{
     obterTodosChip: () => unknown;
@@ -37,6 +39,9 @@ describe('HomeComponent non-verbal radio feedback', () => {
     firebase.obterTodosTemas.and.returnValue(NEVER);
     youtube.getVideoDetailsBatch.and.returnValue(of([]));
 
+    visualizerService = new VisualizerService();
+    visualizerAudio = new VisualizerAudioService();
+
     component = new HomeComponent(
       title,
       meta,
@@ -51,8 +56,8 @@ describe('HomeComponent non-verbal radio feedback', () => {
       share,
       new RadioFavoritesService(),
       jasmine.createSpyObj('ProfileVisitsService', { registerVisit: Promise.resolve() }),
-      new VisualizerService(),
-      new VisualizerAudioService()
+      visualizerService,
+      visualizerAudio
     );
 
     component.isOnline = true;
@@ -62,6 +67,70 @@ describe('HomeComponent non-verbal radio feedback', () => {
     component.ngOnDestroy();
     localStorage.clear();
     jasmine.clock().uninstall();
+  });
+
+
+  describe('visualizer icon selection and audio consent', () => {
+    it('never requests sharing just by initializing the page', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('requests tab audio only after selecting a valid effect icon', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+
+      component.selectVisualizer('orbit-bloom');
+
+      expect(visualizerService.activePresetId).toBe('orbit-bloom');
+      expect(request).toHaveBeenCalledTimes(1);
+    });
+
+    it('reuses active sharing when the user switches effects', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      spyOnProperty(visualizerAudio, 'isActive', 'get').and.returnValue(true);
+
+      component.selectVisualizer('aurora-wave');
+      component.selectVisualizer('pulse-bars');
+
+      expect(visualizerService.activePresetId).toBe('pulse-bars');
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('does not open another permission dialog while one is pending', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      spyOnProperty(visualizerAudio, 'status', 'get').and.returnValue('requesting');
+
+      component.selectVisualizer('aurora-wave');
+
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('does not request capture for unknown presets', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      component.selectVisualizer('unknown-effect');
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('turning Off ends sharing and clears the selected visualizer', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      const stop = spyOn(visualizerAudio, 'stopCapture').and.callThrough();
+
+      component.selectVisualizer('pulse-bars');
+      component.selectVisualizer('off');
+
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(stop).toHaveBeenCalledTimes(1);
+      expect(visualizerService.activeConfig).toBeNull();
+    });
+
+    it('allows the user to retry an effect icon after denying permission', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(false));
+
+      component.selectVisualizer('aurora-wave');
+      component.selectVisualizer('aurora-wave');
+
+      expect(request).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('uses the play control itself as non-verbal loading feedback', () => {

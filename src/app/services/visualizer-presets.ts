@@ -9,7 +9,7 @@ export const DEFAULT_VISUALIZER_ID = 'aurora-wave';
 
 export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
   {
-    id: 'aurora-wave', name: 'Aurora Waves', geometry: 'wave',
+    id: 'aurora-wave', name: 'Aurora Waves', icon: 'show_chart', geometry: 'wave',
     amplitude: 45,
     audioSensitivity: 1.7, frequency: 3.2, speed: 0.35, harmonics: 4, phase: 0,
     color: 'theme', secondaryColor: 'accent',
@@ -17,7 +17,7 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     resolution: 280, barCount: 48, rotation: 0
   },
   {
-    id: 'orbit-bloom', name: 'Orbit Bloom', geometry: 'circle',
+    id: 'orbit-bloom', name: 'Orbit Bloom', icon: 'radio_button_checked', geometry: 'circle',
     amplitude: 55,
     audioSensitivity: 1.45, frequency: 7, speed: 0.22, harmonics: 4, phase: 45,
     color: 'theme', secondaryColor: 'accent',
@@ -25,7 +25,7 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     resolution: 420, barCount: 48, rotation: 0.08
   },
   {
-    id: 'cosmic-spiral', name: 'Cosmic Spiral', geometry: 'spiral',
+    id: 'cosmic-spiral', name: 'Cosmic Spiral', icon: 'cyclone', geometry: 'spiral',
     amplitude: 40,
     audioSensitivity: 1.4, frequency: 4.5, speed: 0.28, harmonics: 3, phase: 30,
     color: 'accent', secondaryColor: 'secondary',
@@ -33,7 +33,7 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     resolution: 500, barCount: 48, rotation: 0.12
   },
   {
-    id: 'pulse-bars', name: 'Pulse Bars', geometry: 'bars',
+    id: 'pulse-bars', name: 'Pulse Bars', icon: 'graphic_eq', geometry: 'bars',
     amplitude: 75,
     audioSensitivity: 2.1, frequency: 5, speed: 0.54, harmonics: 5, phase: 0,
     color: 'theme', secondaryColor: 'accentLight',
@@ -41,7 +41,7 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     resolution: 128, barCount: 54, rotation: 0
   },
   {
-    id: 'lissajous-dream', name: 'Lissajous Dream', geometry: 'lissajous',
+    id: 'lissajous-dream', name: 'Lissajous Dream', icon: 'all_inclusive', geometry: 'lissajous',
     amplitude: 58,
     audioSensitivity: 1.5, frequency: 3, speed: 0.18, harmonics: 3, phase: 90,
     color: 'theme', secondaryColor: 'accent',

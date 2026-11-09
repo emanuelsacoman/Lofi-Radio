@@ -4,6 +4,7 @@ export type VisualizerGeometry = 'wave' | 'circle' | 'spiral' | 'bars' | 'lissaj
 export interface VisualizerConfig {
   id: string;
   name: string;
+  icon: string;         // nome de ícone Material exibido no seletor
   geometry: VisualizerGeometry;
   amplitude: number;     // 0..100: intensidade da deformacao
   audioSensitivity: number; // 0.2..4: ganho das frequencias/da batida reais

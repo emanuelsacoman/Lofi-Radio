@@ -203,6 +203,7 @@ export class VisualizerService {
     return {
       ...config,
       geometry: allowed.includes(config.geometry) ? config.geometry : 'wave',
+      icon: typeof config.icon === 'string' && /^[a-z_]{1,40}$/.test(config.icon) ? config.icon : 'graphic_eq',
       amplitude: clamp(config.amplitude, 0, 100, 30),
       audioSensitivity: clamp(config.audioSensitivity, 0.2, 4, 1.5),
       frequency: clamp(config.frequency, 0.25, 12, 3),
@@ -225,7 +226,8 @@ export class VisualizerService {
     let stored: string | null = null;
     try { stored = typeof localStorage === 'undefined' ? null : localStorage.getItem(STORAGE_KEY); }
     catch { /* Storage may be disabled by browser settings. */ }
-    if (stored === 'off') return null;
+    // A fresh visit starts Off. Sharing permission is never requested on load.
+    if (!stored || stored === 'off') return null;
     const preset = this.presets.find((item: VisualizerConfig) => item.id === (stored || DEFAULT_VISUALIZER_ID))
       ?? this.presets[0];
     return preset ? { ...preset } : null;

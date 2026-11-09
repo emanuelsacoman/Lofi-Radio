@@ -190,8 +190,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectVisualizer(id: string): void {
-    if (id === 'off') this.visualizerAudio.stopCapture();
-    this.visualizerService.setPreset(id === 'off' ? null : id);
+    if (id === 'off') {
+      // Off also revokes any pending or established tab-sharing session.
+      this.visualizerAudio.stopCapture();
+      this.visualizerService.setPreset(null);
+      return;
+    }
+
+    if (!this.visualizerService.setPreset(id)) return;
+
+    // Only a click on a visualizer icon can open the browser permission
+    // dialog. Opening the panel or restoring a preset never requests audio.
+    if (!this.visualizerAudio.isActive && this.visualizerAudio.status !== 'requesting') {
+      void this.visualizerAudio.startCapture();
+    }
   }
 
   get audioCaptureStatus() {
@@ -200,16 +212,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get audioCaptureError(): string {
     return this.visualizerAudio.errorMessage;
-  }
-
-  toggleAudioCapture(): void {
-    if (this.visualizerAudio.status === 'requesting') return;
-    if (this.visualizerAudio.isActive) {
-      this.visualizerAudio.stopCapture();
-    } else {
-      // Call immediately from the user click to preserve browser activation.
-      void this.visualizerAudio.startCapture();
-    }
   }
 
   toggleList(): void {

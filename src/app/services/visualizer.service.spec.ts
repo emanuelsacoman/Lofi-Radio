@@ -10,6 +10,11 @@ describe('VisualizerService procedural engine', () => {
 
   afterEach(() => localStorage.clear());
 
+  it('starts Off on the first visit without automatically selecting a preset', () => {
+    expect(service.activePresetId).toBeNull();
+    expect(service.calculatePaths(1)).toEqual([]);
+  });
+
   it('offers five configurable presets and a single active configuration', () => {
     expect(service.getPresets().length).toBe(5);
     expect(service.setPreset('orbit-bloom')).toBeTrue();
@@ -169,5 +174,15 @@ describe('VisualizerService procedural engine', () => {
     expect(service.getAudioActivity(silentWithBeat)).toBe(0);
     expect(service.getAudioActivity()).toBe(0);
   });
+
+  it('exposes an accessible Material icon for each configurable preset', () => {
+    for (const preset of service.getPresets()) {
+      expect(preset.icon).toMatch(/^[a-z_]+$/);
+    }
+    service.setPreset('pulse-bars');
+    service.updateParameters({ icon: 'INVALID ICON' });
+    expect(service.activeConfig?.icon).toBe('graphic_eq');
+  });
+
 
 });
