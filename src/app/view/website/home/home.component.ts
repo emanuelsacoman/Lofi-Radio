@@ -192,8 +192,17 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.visualizerExpanded = !this.visualizerExpanded;
   }
 
-  get visualizerPresets() {
-    return this.visualizerService.getPresets();
+  // Preserve identities between change-detection passes. getPresets() makes new
+  // objects, which would cause *ngFor to replace buttons after pointerdown and
+  // before click (the static Off button was unaffected).
+  private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
+
+  get visualizerPresets(): ReturnType<VisualizerService['getPresets']> {
+    return this.cachedVisualizerPresets ??= this.visualizerService.getPresets();
+  }
+
+  trackVisualizerPreset(_index: number, preset: { id: string }): string {
+    return preset.id;
   }
 
   get selectedVisualizerId(): string {
