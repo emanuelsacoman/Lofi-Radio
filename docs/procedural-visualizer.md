@@ -67,3 +67,11 @@ npm run test:radio
 \`\`\`
 
 Não há deploy nesta branch. Valide a captura na interface real do navegador.
+
+## Comportamento no silencio e posicao das barras
+
+- Pulse Bars agora usa a base do Canvas (y=1): cada barra parte da borda inferior e cresce para cima.
+- Sem frequencias detectaveis, a altura de cada barra e exatamente zero.
+- Todos os presets usam um limiar de ruido e uma atividade normalizada de audio para diminuir geometria e opacidade; sem audio ficam invisiveis.
+- O decaimento do detector de batidas, isoladamente, nao gera movimento no silencio.
+- Para testar: pare/retome a live, silencie o audio da live e observe a borda inferior. A captura da aba deve estar ativa.

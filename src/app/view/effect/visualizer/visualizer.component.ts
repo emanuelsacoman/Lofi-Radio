@@ -117,14 +117,18 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
     const config = this.config;
-    if (!config) return;
+    if (!config || !this.playing) return;
+    const activity = this.visualizer.getAudioActivity(audio);
+    // Every preset disappears when there is no actual audio energy.
+    if (activity <= 0) return;
     const paths = this.visualizer.calculatePaths(this.time, undefined, audio);
     const colorA = this.color(config.color, '--clr-primary', '#aea4d3');
     const colorB = this.color(config.secondaryColor, '--clr-accent', '#805cb1');
     for (const path of paths) {
       const blend = paths.length <= 1 ? 0 : path.layer / (paths.length - 1);
       ctx.strokeStyle = blend < 0.5 ? colorA : colorB;
-      ctx.globalAlpha = Math.max(0.08, config.opacity * (1 - blend * 0.5) * (audio.source === 'tab' ? 0.35 + audio.level * 0.65 + audio.beat * 0.25 : 0.45));
+      ctx.globalAlpha = Math.min(1, config.opacity * (1 - blend * 0.5) *
+        activity * (0.65 + audio.level * 0.35 + audio.beat * 0.2));
       ctx.lineWidth = config.lineWidth * (1 - blend * 0.35) * (1 + audio.beat * 0.65);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -155,7 +159,8 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     for (const point of path.points) {
       const x = point.x * this.width;
       const y = point.y * this.height;
-      ctx.moveTo(x, this.height / 2 - (y - 0.5) * this.height);
+      // A bar starts at the bottom and only grows upwards.
+      ctx.moveTo(x, this.height);
       ctx.lineTo(x, y);
     }
     ctx.stroke();

@@ -66,6 +66,27 @@ export class VisualizerService {
   }
 
   /**
+   * Measures actual spectral activity, ignoring beat decay in periods of silence.
+   * Zero activity means no captured sound (or just analyser noise).
+   */
+  getAudioActivity(audio?: VisualizerAudioFrame): number {
+    if (audio?.source !== 'tab') return 0;
+    const level = clamp(audio.level, 0, 1, 0);
+    const bass = clamp(audio.bass, 0, 1, 0);
+    const mids = clamp(audio.mids, 0, 1, 0);
+    const treble = clamp(audio.treble, 0, 1, 0);
+    let spectrumPeak = 0;
+    for (const bin of audio.spectrum) {
+      spectrumPeak = Math.max(spectrumPeak, clamp(bin, 0, 1, 0));
+    }
+    const energy = Math.max(
+      level * 1.5, bass * 0.9, mids * 0.9, treble * 0.8, spectrumPeak * 0.7
+    );
+    // Remove the noise floor before scaling to a visibility factor.
+    return clamp((energy - 0.025) / 0.5, 0, 1, 0);
+  }
+
+  /**
    * Deterministic math only: same config, t, and resolution => same points.
    * The caller owns the render loop and decides whether time advances.
    */
@@ -81,11 +102,10 @@ export class VisualizerService {
     const treble = hasAudio ? clamp(audio?.treble ?? 0, 0, 1, 0) : 0;
     const beat = hasAudio ? clamp(audio?.beat ?? 0, 0, 1, 0) : 0;
     const level = hasAudio ? clamp(audio?.level ?? 0, 0, 1, 0) : 0;
-    // Silence: resting geometry; live FFT: its amplitude is driven by audio.
-    const gain = hasAudio
-      ? Math.min(2.6, (0.06 + bass * 1.1 + mids * 0.45 + level * 0.75 + beat * 0.85)
-          * config.audioSensitivity)
-      : 0.08;
+    const activity = this.getAudioActivity(audio);
+    // Quiet audio yields zero deformation; no synthetic motion during silence.
+    const gain = Math.min(2.6, (bass * 1.1 + mids * 0.45 + level * 0.75 +
+      beat * 0.85) * config.audioSensitivity) * activity;
     for (let layer = 0; layer < config.layers; layer++) {
       const points: VisualizerPoint[] = [];
       const isBars = config.geometry === 'bars';
@@ -103,14 +123,16 @@ export class VisualizerService {
             const lobes = Math.max(1, Math.round(config.frequency));
             const a = TAU * u + rotation;
             const envelope = Math.sin(TAU * lobes * u + t * config.speed * TAU + layer * 0.4) * (1 + treble * 0.5);
-            const radius = 0.25 + 0.03 * layer + envelope * amount * 0.085;
+            const radius = (0.25 + 0.03 * layer) * activity +
+              envelope * amount * 0.085;
             x = 0.5 + Math.cos(a) * radius;
             y = 0.5 + Math.sin(a) * radius;
             break;
           }
           case 'spiral': {
             const angle = TAU * (u * config.frequency + config.rotation * t);
-            const radius = 0.025 + u * 0.40 + signal * amount * (0.045 + treble * 0.03) + layer * 0.012;
+            const radius = (0.025 + u * 0.40 + layer * 0.012) * activity +
+              signal * amount * (0.045 + treble * 0.03);
             x = 0.5 + Math.cos(angle) * radius;
             y = 0.5 + Math.sin(angle) * radius;
             break;
@@ -118,7 +140,8 @@ export class VisualizerService {
           case 'lissajous': {
             const a = TAU * (config.frequency * u + config.speed * t) + config.phase * Math.PI / 180;
             const b = TAU * ((config.frequency + 1) * u - config.speed * t);
-            const size = 0.22 + Math.min(0.20, amount * 0.17) + layer * 0.008;
+            const size = (0.22 + layer * 0.008) * activity +
+              Math.min(0.20, amount * 0.17);
             x = 0.5 + Math.sin(a) * size;
             y = 0.5 + Math.sin(b) * size;
             break;
@@ -128,18 +151,22 @@ export class VisualizerService {
             const spectrum = hasAudio && audio?.spectrum?.length
               ? clamp(audio.spectrum[Math.min(audio.spectrum.length - 1, Math.floor(u * audio.spectrum.length))], 0, 1, 0)
               : 0;
-            const intensity = spectrum * config.audioSensitivity;
+            // Bars originate at y=1 (bottom of viewport) and rise with
+            // their own FFT bands. Silence yields exactly zero height.
+            const intensity = Math.max(0, spectrum - 0.025) * config.audioSensitivity;
             const height = hasAudio
-              ? Math.min(0.43, 0.006 + Math.pow(intensity, 0.85) *
-                  (config.amplitude / 100) * 0.42 + beat * 0.035)
-              : 0.008;
-            y = 0.5 - height * (1 - layer * 0.13);
+              ? Math.min(0.88, (Math.pow(intensity, 0.85) * 0.75 +
+                  beat * spectrum * 0.10) * (config.amplitude / 100) *
+                  (1 - layer * 0.13) * activity)
+              : 0;
+            y = 1 - height;
             break;
           }
           case 'wave':
           default:
             x = u;
-            y = 0.5 + (signal * amount * 0.28 + layer * 0.025 - (config.layers - 1) * 0.0125)
+            y = 0.5 + (signal * amount * 0.28 +
+              (layer * 0.025 - (config.layers - 1) * 0.0125) * activity)
               * Math.sin(Math.PI * u);
         }
         points.push({ x, y });

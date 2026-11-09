@@ -46,12 +46,16 @@ describe('VisualizerService procedural engine', () => {
     expect(service.calculatePaths(2, 100)).toEqual(service.calculatePaths(2, 100));
   });
 
-  it('changes when parameters or time change', () => {
+  it('changes with parameters or time while real audio is present', () => {
     service.setPreset('aurora-wave');
-    const before = service.calculatePoints(1);
+    const live = {
+      source: 'tab' as const, level: 0.65, bass: 0.6, mids: 0.4,
+      treble: 0.3, beat: 0.3, spectrum: new Array(64).fill(0.5)
+    };
+    const before = service.calculatePoints(1, 128, live);
     service.updateParameters({ amplitude: 95, frequency: 7 });
-    expect(service.calculatePoints(1)).not.toEqual(before);
-    expect(service.calculatePoints(2)).not.toEqual(service.calculatePoints(1));
+    expect(service.calculatePoints(1, 128, live)).not.toEqual(before);
+    expect(service.calculatePoints(2, 128, live)).not.toEqual(service.calculatePoints(1, 128, live));
   });
 
   it('clamps invalid numeric parameters and restores a preset', () => {
@@ -108,6 +112,62 @@ describe('VisualizerService procedural engine', () => {
       expect(valid).toContain(preset.secondaryColor);
       expect(preset.audioSensitivity).toBeGreaterThan(0);
     });
+  });
+
+  it('places every bar at the very bottom when the tab is silent', () => {
+    service.setPreset('pulse-bars');
+    const silence = {
+      source: 'tab' as const, level: 0, bass: 0, mids: 0, treble: 0, beat: 0.8,
+      spectrum: new Array(64).fill(0)
+    };
+    expect(service.getAudioActivity(silence)).toBe(0);
+    const paths = service.calculatePaths(5, undefined, silence);
+    for (const path of paths) {
+      expect(path.kind).toBe('bar');
+      for (const point of path.points) expect(point.y).toBe(1);
+    }
+  });
+
+  it('raises the bars from the bottom when their frequency bands have audio', () => {
+    service.setPreset('pulse-bars');
+    const live = {
+      source: 'tab' as const, level: 0.6, bass: 0.5, mids: 0.4, treble: 0.2, beat: 1,
+      spectrum: new Array(64).fill(0.7)
+    };
+    const bars = service.calculatePaths(2, undefined, live)[0].points;
+    expect(bars.every(point => point.y >= 0 && point.y < 1)).toBeTrue();
+  });
+
+  it('collapses all non-bar shapes in silence and expands with sound', () => {
+    const silent = {
+      source: 'tab' as const, level: 0, bass: 0, mids: 0, treble: 0, beat: 0,
+      spectrum: new Array(64).fill(0)
+    };
+    const loud = {
+      source: 'tab' as const, level: 0.8, bass: 0.6, mids: 0.5, treble: 0.3, beat: 1,
+      spectrum: new Array(64).fill(0.6)
+    };
+    for (const preset of service.getPresets().filter(p => p.geometry !== 'bars')) {
+      service.setPreset(preset.id);
+      const idle = service.calculatePaths(1, undefined, silent)[0].points;
+      const active = service.calculatePaths(1, undefined, loud)[0].points;
+      if (preset.geometry !== 'wave') {
+        expect(idle.every(p => Math.abs(p.x - 0.5) < 0.000001 &&
+          Math.abs(p.y - 0.5) < 0.000001)).toBeTrue();
+      } else {
+        expect(idle.every(p => Math.abs(p.y - 0.5) < 0.000001)).toBeTrue();
+      }
+      expect(active).not.toEqual(idle);
+    }
+  });
+
+  it('does not use lingering beat decay as proof of audible sound', () => {
+    const silentWithBeat = {
+      source: 'tab' as const, level: 0, bass: 0, mids: 0, treble: 0,
+      beat: 1, spectrum: new Array(64).fill(0)
+    };
+    expect(service.getAudioActivity(silentWithBeat)).toBe(0);
+    expect(service.getAudioActivity()).toBe(0);
   });
 
 });
