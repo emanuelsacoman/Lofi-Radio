@@ -180,7 +180,6 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
 
     const paths = this.visualizer.calculatePaths(this.time, undefined, audio);
-    const minSide = Math.min(this.width, this.height);
 
     ctx.globalCompositeOperation = 'lighter';
     if (style === 'silk') {
@@ -204,17 +203,11 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
 
     switch (style) {
-      case 'orbit':
-        this.drawOrbitLights(ctx, audio, activity, main, accent, minSide);
-        break;
       case 'vortex':
         this.drawVortexDust(ctx, audio, activity, main, accent);
         break;
       case 'bars':
         this.drawSpectrumSparks(ctx, paths[0], audio, activity, accent);
-        break;
-      case 'constellation':
-        this.drawConstellation(ctx, paths[0], audio, activity, main, accent);
         break;
       default:
         // Silk already has three translucent aurora curtains.
@@ -276,33 +269,6 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     ctx.fill();
   }
 
-  private drawOrbitLights(
-    ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
-    activity: number, main: string, accent: string, side: number
-  ): void {
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-    const radius = side * (0.22 + audio.bass * 0.025) * activity;
-    if (typeof ctx.arc === 'function') {
-      for (let ring = 0; ring < 3; ring++) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * (0.7 + ring * 0.25), 0, TAU);
-        ctx.strokeStyle = ring % 2 ? accent : main;
-        ctx.globalAlpha = (0.06 + audio.bass * 0.07) * activity;
-        ctx.lineWidth = 1.2;
-        ctx.shadowBlur = 15;
-        ctx.stroke();
-      }
-    }
-    for (let i = 0; i < 20; i++) {
-      const angle = i * TAU / 20 + this.time * (0.06 + (i % 3) * 0.012);
-      const r = radius * (0.8 + (i % 4) * 0.1);
-      this.drawOrb(ctx, cx + Math.cos(angle) * r, cy + Math.sin(angle) * r,
-        1.1 + audio.treble * 2.6 + (i % 3) * 0.4,
-        i % 2 ? accent : main, activity * (0.26 + audio.treble * 0.45), 9);
-    }
-  }
-
   private drawVortexDust(
     ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
     activity: number, main: string, accent: string
@@ -338,21 +304,6 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       this.drawOrb(ctx, point.x * this.width, point.y * this.height,
         1 + audio.beat * 2 + bin * 2, accent,
         activity * bin * (0.36 + audio.beat * 0.35), 13);
-    }
-  }
-
-  private drawConstellation(
-    ctx: CanvasRenderingContext2D, path: VisualizerPath | undefined,
-    audio: VisualizerAudioFrame, activity: number, main: string, accent: string
-  ): void {
-    if (!path) return;
-    const step = this.width < 640 ? 25 : 16;
-    for (let i = 0; i < path.points.length; i += step) {
-      const p = path.points[i];
-      this.drawOrb(ctx, p.x * this.width, p.y * this.height,
-        1 + audio.treble * 2.5 + (i % 5) * 0.18,
-        i % 3 === 0 ? accent : main,
-        activity * (0.26 + audio.treble * 0.62), 12);
     }
   }
 
