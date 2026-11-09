@@ -34,28 +34,45 @@ const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 18 }, (_,
   };
 });
 
-/** Cheap, deterministic music-to-light modulation. Beat comes from the analyser's
- * decay envelope; without genuine tab audio there is no light or movement. */
+/** Deterministic asynchronous flashes: fixed-size fireflies spend most of
+ * their time dark and briefly light up on individual staggered schedules.
+ * Actual shared audio controls brightness, while the existing analyser still
+ * controls whether any firefly may appear at all. No per-frame allocations. */
 export function fireflyAudioResponse(
-  audio: VisualizerAudioFrame, spectrumBand: number, activity: number
-): { scale: number; alpha: number; expansion: number } {
-  const bounded = (n: number): number => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
-  if (audio.source !== 'tab' || activity <= 0) {
-    return { scale: 0, alpha: 0, expansion: 0 };
-  }
-  const beat = bounded(audio.beat);
-  const bass = Math.sqrt(bounded(audio.bass));
-  const level = Math.sqrt(bounded(audio.level));
-  const mids = Math.sqrt(bounded(audio.mids));
-  const sparkle = Math.sqrt(bounded(bounded(audio.treble) * 0.5 + bounded(spectrumBand) * 0.5));
-  const pulse = bounded(0.42 * bass + 0.33 * level + 0.18 * mids + 0.58 * beat);
+  audio: VisualizerAudioFrame,
+  spectrumBand: number,
+  activity: number,
+  seconds: number,
+  phase: number,
+  speed: number
+): { alpha: number } {
+  const clamp = (n: number): number =>
+    Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
+  if (audio.source !== 'tab' || activity <= 0) return { alpha: 0 };
 
-  return {
-    // Visible swell on bass transients, with independent twinkles per FFT bin.
-    scale: 0.78 + 0.95 * pulse + 0.42 * sparkle,
-    alpha: bounded(bounded(activity) * (0.22 + 0.45 * pulse + 0.30 * sparkle)),
-    expansion: 0.075 * pulse + 0.12 * beat
+  // Each seeded firefly has a different period and offset. Most of the cycle
+  // remains dark; a few emit a smaller second flash as real fireflies do.
+  const period = 2.4 + clamp(speed / 1.5) * 2.2;
+  const cycle = fraction(Math.max(0, seconds) / period + phase / TAU);
+  const flash = (start: number, duration: number): number => {
+    const progress = (cycle - start) / duration;
+    if (progress <= 0 || progress >= 1) return 0;
+    return Math.pow(Math.sin(Math.PI * progress), 2);
   };
+  const first = flash(0.04, 0.14);
+  const doubleFlash = phase > Math.PI ? flash(0.25, 0.11) * 0.65 : 0;
+  const blink = Math.max(first, doubleFlash);
+
+  // Low-end transients brighten an occurring flash, high bands make some
+  // individuals more luminous. Neither resizes or moves the lights.
+  const energy = clamp(
+    0.33 * clamp(audio.bass) +
+    0.24 * clamp(audio.level) +
+    0.20 * clamp(audio.treble) +
+    0.15 * clamp(spectrumBand) +
+    0.20 * clamp(audio.beat)
+  );
+  return { alpha: clamp(clamp(activity) * blink * (0.56 + 0.44 * energy)) };
 }
 
 @Component({
@@ -171,7 +188,11 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     // No real signal means no prerecorded looping animation.
     if (this.lastFrame) {
       const dt = Math.min((timestamp - this.lastFrame) / 1000, 0.05);
-      this.time += dt * Math.min(3, frame.level * 1.7 + frame.bass * 1.1 + frame.beat * 0.6);
+      // Vagalumes mantêm seu relógio natural; música dá leve aceleração aos
+      // ciclos de piscada, sem zoom e sem deslocamentos bruscos por batida.
+      this.time += this.config.visualStyle === 'fireflies'
+        ? dt * (0.90 + Math.min(0.35, frame.level * 0.25 + frame.treble * 0.18))
+        : dt * Math.min(3, frame.level * 1.7 + frame.bass * 1.1 + frame.beat * 0.6);
     }
     this.lastFrame = timestamp;
     this.render(frame);
@@ -347,14 +368,17 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       const seed = ATMOSPHERE[i];
       const driftX = Math.sin(seed.phase + this.time * seed.speed * 0.17) * 0.025;
       const driftY = Math.cos(seed.phase + this.time * seed.speed * 0.12) * 0.03;
-      // Spread the sound across fireflies: each reacts to a different FFT band.
+      // Fixed size and gentle wandering; the music affects only how the
+      // light blinks. Each firefly has its own period, phase and FFT band.
       const bandIndex = audio.spectrum.length ? (i * 7 + 3) % audio.spectrum.length : 0;
-      const reaction = fireflyAudioResponse(audio, audio.spectrum[bandIndex] ?? 0, activity);
-      const x = (seed.x + driftX + (seed.x - 0.5) * reaction.expansion) * this.width;
-      const y = (seed.y + driftY + (seed.y - 0.5) * reaction.expansion) * this.height;
-      const shimmer = 0.85 + 0.15 * Math.sin(this.time * (0.35 + seed.speed) + seed.phase);
-      const size = (13 + seed.size * 4) * reaction.scale;
-      ctx.globalAlpha = reaction.alpha * shimmer;
+      const reaction = fireflyAudioResponse(
+        audio, audio.spectrum[bandIndex] ?? 0, activity,
+        this.time, seed.phase, seed.speed
+      );
+      const x = (seed.x + driftX) * this.width;
+      const y = (seed.y + driftY) * this.height;
+      const size = 13 + seed.size * 4;
+      ctx.globalAlpha = reaction.alpha;
       ctx.drawImage(i % 3 === 0 ? sprites.main : sprites.accent,
         x - size / 2, y - size / 2, size, size);
     }
