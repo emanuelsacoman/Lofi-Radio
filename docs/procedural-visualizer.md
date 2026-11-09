@@ -75,20 +75,26 @@ Não há deploy nesta branch. Valide a captura na interface real do navegador.
 - O decaimento do detector de batidas, isoladamente, nao gera movimento no silencio.
 - Para testar: pare/retome a live, silencie o audio da live e observe a borda inferior. A captura da aba deve estar ativa.
 
-## Interface restaurada
+## Visualizer icon selector
 
-Os controles de paleta e seleção foram restaurados **somente na interface**
-para o layout do primeiro commit da branch ChatGPT (`cc7d9b67`):
+A paleta continua utilizando seu `mat-accordion` original. Ao lado dela,
+o usuário agora encontra um **segundo accordion independente**, contendo:
 
-- Painel original de paletas do Lofi Radio, com seus swatches e tooltips.
-- Seletor compacto de presets (`select`) ao lado da paleta, sem segundo
-  painel expansível ou coluna de ícones.
-- Foram revertidas apenas as regras de apresentação desses controles e a
-  substituição global introduzida para os dois painéis.
+- Ícone `equalizer` que abre e fecha as opções;
+- Botão `Off` (`visibility_off`) para desativar e encerrar a captura;
+- Cinco botões com ícones definidos em `VISUALIZER_PRESETS`: Waveform, Orbit,
+  Spiral, Equalizer e Lissajous;
+- `matTooltip` e rótulos acessíveis em todos os botões;
+- Indicadores de permissão em andamento ou erro da captura de áudio.
 
-Permanece implementado o motor procedural, a captura autorizada de áudio
-real via Web Audio API, a análise de frequências, a paleta no Canvas,
-os cinco presets, a lógica de silêncio e as barras ancoradas na base da tela.
+O CSS `display: flex` introduzido pelo usuário em `.aside` foi preservado.
+Os dois accordions são irmãos (não compartilham o estado de expansão).
+Apenas o corpo do accordion do Visualizer recebe padding específico em
+`src/styles.css`; o funcionamento e o estilo original da Palette não mudam.
 
-O navegador continua mostrando o aviso de compartilhamento enquanto
-a captura estiver ativa; a aplicação não pode ocultá-lo.
+A captura da aba continua sendo solicitada apenas após clicar no ícone de
+um preset, reaproveitando `HomeComponent.selectVisualizer()`. Abrir o painel
+não solicita permissão. A opção Off interrompe a captura.
+
+As geometrias matemáticas, o analisador de áudio do YouTube com permissão,
+as cores da paleta, as regras de silêncio e o Canvas permanecem inalterados.

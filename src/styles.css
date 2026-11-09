@@ -4,3 +4,8 @@
 }
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Visualizer-only body padding. The Palette retains its original Material styles. */
+.visualizer-accordion .mat-expansion-panel-body {
+  padding: 0 10px 10px;
+}

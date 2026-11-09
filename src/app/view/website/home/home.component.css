@@ -62,26 +62,110 @@ body {
       pointer-events: none;
     }
 
-    .visualizer-picker {
+    /* The Palette and Visualizers are separate accordions: expanding either
+       one must not move the other header or change its width. */
+    .visualizer-accordion {
+      display: flex;
+      flex: 0 0 60px;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .visualizer-accordion .visualizer-panel {
+      flex: 0 0 60px;
+      width: 60px;
+      margin: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .visualizer-accordion .visualizer-panel.mat-expansion-panel-spacing {
+      margin: 0;
+    }
+
+    .visualizer-accordion .visualizer-panel mat-expansion-panel-header {
+      width: 60px;
+      padding: 0;
+      margin: 0;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .visualizer-options {
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      padding: 5px 6px;
-      position: relative;
-      z-index: 5;
-      color: var(--clr-primary);
-      font-size: 10px;
-      background: color-mix(in srgb, var(--clr-background) 70%, transparent);
-      border-radius: 8px;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      padding: 0;
+      gap: 6px;
     }
-    .visualizer-picker select {
-      max-width: 170px;
-      background: var(--clr-background);
-      color: var(--clr-text);
-      border: 1px solid var(--clr-accent);
+
+    .visualizer-option {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      box-sizing: border-box;
+      width: var(--sz-icons-player);
+      height: var(--sz-icons-player);
+      margin: 5px;
+      padding: 0;
+      border: 1px solid transparent;
       border-radius: 5px;
-      padding: 4px;
+      background: var(--clr-secondary);
+      color: var(--clr-text);
       cursor: pointer;
+      transition: filter 0.2s ease, background-color 0.2s ease;
+    }
+
+    .visualizer-option mat-icon {
+      display: block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      font-size: 24px;
+    }
+
+    .visualizer-option:hover {
+      filter: brightness(1.2);
+    }
+
+    .visualizer-option.is-selected {
+      border-color: var(--clr-accent-light);
+      background: var(--clr-accent);
+      color: var(--clr-background);
+    }
+
+    .visualizer-option:focus-visible {
+      outline: 2px solid var(--clr-primary);
+      outline-offset: 3px;
+    }
+
+    .visualizer-audio-indicator {
+      position: absolute;
+      top: 2px;
+      right: 1px;
+      width: 10px !important;
+      height: 10px !important;
+      line-height: 10px;
+      font-size: 10px !important;
+      color: var(--clr-accent-light) !important;
+      pointer-events: none;
+    }
+
+    .visualizer-state-icon {
+      display: block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      font-size: 24px;
+      color: var(--clr-accent-light);
+    }
+
+    .visualizer-error-icon {
+      color: var(--clr-accent);
     }
 
     .index {
@@ -101,6 +185,8 @@ body {
       top: 10px;
       z-index: 4;
       display: flex;
+      align-items: flex-start;
+      gap: 8px;
     }
 
     .adm {

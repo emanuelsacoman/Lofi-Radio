@@ -45,13 +45,65 @@
                     </div>                    
                 </mat-expansion-panel>
               </mat-accordion> 
-              <div class="visualizer-picker">
-                <label for="visualizer-mode">Visualizer</label>
-                <select id="visualizer-mode" [value]="selectedVisualizerId" (change)="selectVisualizer($any($event.target).value)">
-                  <option value="off">Off</option>
-                  <option *ngFor="let preset of visualizerPresets" [value]="preset.id">{{ preset.name }}</option>
-                </select>
-              </div>
+              <mat-accordion class="visualizer-accordion">
+                <mat-expansion-panel class="transparent-panel visualizer-panel" hideToggle>
+                  <mat-expansion-panel-header
+                    collapsedHeight="44px"
+                    expandedHeight="44px"
+                    matTooltip="Visualizers"
+                    matTooltipShowDelay="500"
+                    matTooltipPosition="right"
+                    aria-label="Toggle visualizers">
+                    <mat-panel-title class="theme-panel-title">
+                      <mat-icon class="theme-palette-icon" aria-hidden="true">equalizer</mat-icon>
+                      <mat-icon
+                        *ngIf="audioCaptureStatus === 'active'"
+                        class="visualizer-audio-indicator"
+                        aria-hidden="true">fiber_manual_record</mat-icon>
+                    </mat-panel-title>
+                  </mat-expansion-panel-header>
+
+                  <div class="visualizer-options" role="group" aria-label="Choose a visualizer">
+                    <button
+                      type="button"
+                      class="visualizer-option"
+                      [class.is-selected]="selectedVisualizerId === 'off'"
+                      [attr.aria-pressed]="selectedVisualizerId === 'off'"
+                      aria-label="Off: stop visualizer and audio sharing"
+                      matTooltip="Off"
+                      matTooltipPosition="right"
+                      (click)="selectVisualizer('off')">
+                      <mat-icon aria-hidden="true">visibility_off</mat-icon>
+                    </button>
+
+                    <button
+                      *ngFor="let preset of visualizerPresets"
+                      type="button"
+                      class="visualizer-option"
+                      [class.is-selected]="selectedVisualizerId === preset.id"
+                      [attr.aria-pressed]="selectedVisualizerId === preset.id"
+                      [attr.aria-label]="'Select ' + preset.name"
+                      [matTooltip]="preset.name"
+                      matTooltipPosition="right"
+                      (click)="selectVisualizer(preset.id)">
+                      <mat-icon aria-hidden="true">{{ preset.icon }}</mat-icon>
+                    </button>
+
+                    <mat-icon
+                      *ngIf="audioCaptureStatus === 'requesting'"
+                      class="visualizer-state-icon"
+                      role="img"
+                      aria-label="Waiting for tab audio permission"
+                      matTooltip="Choose this tab and share its audio">hourglass_empty</mat-icon>
+                    <mat-icon
+                      *ngIf="audioCaptureStatus === 'error'"
+                      class="visualizer-state-icon visualizer-error-icon"
+                      role="img"
+                      [attr.aria-label]="audioCaptureError"
+                      [matTooltip]="audioCaptureError">error_outline</mat-icon>
+                  </div>
+                </mat-expansion-panel>
+              </mat-accordion>
         </div>
         <nav class="adm" aria-label="Site controls">
             <button
