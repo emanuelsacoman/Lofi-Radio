@@ -235,3 +235,33 @@ assíncronas de tamanho fixo.
 
 Testes: picos vs pausas, fase entre partículas, segundo pisque,
 intensidade da música, silêncio e invariância do tamanho dos sprites.
+
+
+### V2.5 — Firefly Garden / Living Lanterns
+
+A cena foi redesenhada para transmitir um pequeno jardim vivo, não um equalizador
+disfarçado de partículas:
+
+- **Voo orgânico:** cada vaga-lume segue uma trajetória suave de duas frequências
+  sobrepostas, com velocidade e fase individuais. Não há saltos, zoom nem expansão
+  sincronizada em batidas.
+- **Profundidade de campo:** cada inseto nasce com tamanho e luminosidade próprios;
+  os mais distantes são discretos, os próximos têm brilho mais pronunciado. O
+  tamanho permanece fixo durante a música.
+- **Conversa luminosa:** quando um novo ataque de grave é detectado, até quatro
+  vagalumes respondem em sequência, com atrasos de 150 ms. Os outros continuam
+  piscando de maneira independente; nenhum pulso acende toda a cena.
+- **Pisques naturais:** piscadas breves com pausas longas e ocasionais pisques
+  duplos. A música altera a intensidade das luzes, sem substituir os ciclos
+  individuais nem produzir iluminação quando não existe sinal real.
+- **Textura refinada:** núcleo de luz claro e halo suave nas cores da paleta,
+  renderizados previamente apenas quando as cores mudam.
+- **Desenho econômico:** vagalumes apagados não chamam `drawImage`. A cena
+  mantém 18 sementes no desktop, 11 no mobile, limite de 24 FPS e até
+  1,4 MP de framebuffer. Não foram incluídas sombras Canvas por partícula,
+  novos pacotes ou permissões.
+
+Os testes cobrem determinismo e continuidade das trajetórias, intervalos de
+resposta ao beat, invariância do tamanho, cache de sprites e silêncio absoluto.
+Esses testes verificam comportamento; desempenho percebido e qualidade visual
+devem ser conferidos no navegador com áudio real.
