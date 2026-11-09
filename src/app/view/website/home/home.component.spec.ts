@@ -127,9 +127,9 @@ describe('HomeComponent non-verbal radio feedback', () => {
     it('requests tab audio only after selecting a valid effect icon', () => {
       const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
 
-      component.selectVisualizer('cosmic-spiral');
+      component.selectVisualizer('moonlit-fireflies');
 
-      expect(visualizerService.activePresetId).toBe('cosmic-spiral');
+      expect(visualizerService.activePresetId).toBe('moonlit-fireflies');
       expect(request).toHaveBeenCalledTimes(1);
     });
 
