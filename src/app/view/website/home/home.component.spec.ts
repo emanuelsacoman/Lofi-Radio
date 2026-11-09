@@ -71,6 +71,20 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
 
   describe('independent appearance menus', () => {
+    it('keeps effect button identities stable across change detection', () => {
+      const getPresets = spyOn(visualizerService, 'getPresets').and.callThrough();
+      const presets = component.visualizerPresets;
+      const firstPreset = presets[0];
+
+      component.toggleVisualizers();
+      component.togglePalette();
+
+      expect(component.visualizerPresets).toBe(presets);
+      expect(component.visualizerPresets[0]).toBe(firstPreset);
+      expect(component.trackVisualizerPreset(0, firstPreset)).toBe(firstPreset.id);
+      expect(getPresets).toHaveBeenCalledTimes(1);
+    });
+
     it('starts with both menus closed', () => {
       expect(component.paletteExpanded).toBeFalse();
       expect(component.visualizerExpanded).toBeFalse();
