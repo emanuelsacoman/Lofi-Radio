@@ -17,7 +17,7 @@ O visualizador agora pode reagir ao áudio REAL da live selecionada:
 1. Abra o Lofi Radio em localhost ou HTTPS.
 2. Inicie uma live no player YouTube.
 3. Clique no ícone **Visualizers** ao lado do ícone Palette para abrir as opções.
-4. Clique no ícone de um dos quatro presets (incluindo Firefly Garden).
+4. Clique no ícone de um dos três presets (incluindo Firefly Garden).
 5. O navegador solicita imediatamente o compartilhamento. Escolha **a aba do Lofi Radio** e habilite **Compartilhar áudio da guia**.
 6. Para trocar de efeito, escolha outro preset. Para encerrar a captura, selecione **Off**.
 7. Se a permissão for cancelada, selecione **Off** e depois o preset desejado para tentar novamente.
@@ -97,7 +97,7 @@ Os estados `paletteExpanded` e `visualizerExpanded` são independentes no
 
 O menu Palette mantém as mesmas cores carregadas do Firebase, indicação
 de novos temas e persistência da seleção. O menu Visualizers preserva
-as quatro opções, o botão Off e o indicador de captura.
+as três opções, o botão Off e o indicador de captura.
 
 **A captura de áudio é solicitada somente após o usuário clicar no ícone de
 um visualizador**, usando o mesmo `selectVisualizer()` já existente; a
@@ -146,12 +146,11 @@ console.log({
 Se não forem, haverá outra camada cobrindo o controle.
 
 
-## V2 — Atmosferas cinematográficas (4 estilos)
+## V2 — Atmosferas cinematográficas (3 estilos)
 
 | Preset | Direção de arte | O que reage ao áudio |
 | --- | --- | --- |
 | Waveform / Silk | Cortinas translúcidas de aurora e ondas brilhantes | Graves modulam ondulações e faixas |
-| Spiral / Vortex | Poeira estelar girando em camadas | Médios e transientes revelam partículas |
 | Equalizer / Sparks | Barras espectrais com pontos brilhantes nas cristas | Cada banda FFT controla sua própria altura |
 | Firefly Garden | Vagalumes suaves em sprites luminosos reutilizados | Agudos acendem partículas; silêncio apaga tudo |
 
@@ -173,7 +172,7 @@ npx ng test --watch=false --include=src/app/services/visualizer.service.spec.ts 
 npm run test:radio
 \`\`\`
 
-Revisar manualmente no Chrome/Edge: alternar os quatro efeitos, escolher esta aba
+Revisar manualmente no Chrome/Edge: alternar os três efeitos, escolher esta aba
 com áudio, trocar a paleta durante a reprodução, testar Off, silêncio, tela
 estreita e preferência por movimento reduzido. Nenhuma alteração de deploy.
 
@@ -203,6 +202,28 @@ mas não são uma medição de tempo real em todos os dispositivos.
 ### V2.2 — Catálogo simplificado
 
 Orbit e Lissajous foram removidos dos presets, da matemática que não possuía
-mais consumidores e das rotinas de desenho exclusivas. Restam Waveform, Spiral,
-Equalizer e Firefly Garden, além de Off. Seleções antigas armazenadas para os
+mais consumidores e das rotinas de desenho exclusivas. Naquela etapa restavam Waveform, Spiral, Equalizer e Firefly Garden, além de Off. Seleções antigas armazenadas para os
 efeitos removidos são tratadas como Off; não iniciam captura de áudio.
+
+
+### V2.3 — Firefly Garden mais reativo, sem aumentar a carga gráfica
+
+O preset Spiral foi removido do catálogo e as rotinas exclusivas de geometria
+espiral e partículas de vórtice foram eliminadas. Restam **Waveform, Equalizer
+e Firefly Garden**, além de Off. Seleções antigas de Spiral são tratadas como Off.
+
+No Firefly, cada vagalume agora recebe uma banda espectral diferente e reage a:
+- **Graves e intensidade (RMS):** aumentam o tamanho e o brilho em tempo real.
+- **Batidas detectadas:** fazem os vagalumes pulsarem e se afastarem
+  momentaneamente do centro; a suavização é a do próprio detector de batidas.
+- **Agudos e bandas FFT:** geram cintilações de intensidades diferentes entre
+  os vagalumes, sem ruído aleatório artificial.
+
+Continuamos com **18 sprites desktop / 11 mobile, um drawImage por vagalume
+e 24 FPS**, sem sombras blur por partícula ou novos efeitos pesados.
+A função pura \`fireflyAudioResponse()\` permite testar intensidade, expansão
+e brilho para áudio fraco, forte, batidas, silêncio e ausência de captura.
+
+Os valores são mais contrastantes que os anteriores; a responsividade real
+continua dependendo do sinal capturado pelo navegador, não de uma animação
+independente da música.
