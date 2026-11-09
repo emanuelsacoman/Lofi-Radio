@@ -17,14 +17,14 @@ describe('VisualizerService procedural engine', () => {
 
   it('has English names for every visualizer icon', () => {
     expect(service.getPresets().map(preset => preset.name)).toEqual([
-      'Waveform', 'Spiral', 'Equalizer', 'Firefly Garden'
+      'Waveform', 'Equalizer', 'Firefly Garden'
     ]);
   });
 
-  it('offers four configurable presets and a single active configuration', () => {
-    expect(service.getPresets().length).toBe(4);
-    expect(service.setPreset('cosmic-spiral')).toBeTrue();
-    expect(service.activeConfig?.geometry).toBe('spiral');
+  it('offers three configurable presets and a single active configuration', () => {
+    expect(service.getPresets().length).toBe(3);
+    expect(service.setPreset('aurora-wave')).toBeTrue();
+    expect(service.activeConfig?.geometry).toBe('wave');
     expect(service.setPreset('pulse-bars')).toBeTrue();
     expect(service.activeConfig?.geometry).toBe('bars');
     expect(service.setPreset('missing')).toBeFalse();
@@ -33,7 +33,7 @@ describe('VisualizerService procedural engine', () => {
 
   it('keeps each artistic style distinct while preserving its audio geometry', () => {
     const presets = service.getPresets();
-    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(4);
+    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(3);
     for (const preset of presets) {
       expect(service.setPreset(preset.id)).toBeTrue();
       expect(service.activeConfig?.visualStyle).toBe(preset.visualStyle);
@@ -48,7 +48,7 @@ describe('VisualizerService procedural engine', () => {
   });
 
   it('rejects removed visualizers and starts Off when a removed selection was stored', () => {
-    const removed = ['neon-meteor-rain', 'lotus-dream', 'orbit-bloom', 'lissajous-dream'];
+    const removed = ['neon-meteor-rain', 'lotus-dream', 'orbit-bloom', 'lissajous-dream', 'cosmic-spiral'];
     expect(service.getPresets().some(p => removed.includes(p.id))).toBeFalse();
     for (const id of removed) {
       expect(service.setPreset(id)).toBeFalse();
