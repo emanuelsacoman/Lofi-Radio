@@ -67,34 +67,49 @@ describe('VisualizerComponent', () => {
     expect(ctx.stroke).not.toHaveBeenCalled();
   });
 
-  it('draws distinct atmospheres for the three new presets without needing new browser permissions', () => {
+  it('renders Firefly with cached glow sprites and without blurred strokes', () => {
     const ctx = jasmine.createSpyObj<CanvasRenderingContext2D>(
       'CanvasRenderingContext2D',
       ['clearRect', 'beginPath', 'moveTo', 'lineTo', 'closePath',
-       'stroke', 'arc', 'fill', 'createLinearGradient']
+        'stroke', 'arc', 'fill', 'drawImage']
     );
-    const gradient = jasmine.createSpyObj<CanvasGradient>('CanvasGradient', ['addColorStop']);
-    ctx.createLinearGradient.and.returnValue(gradient);
     (component as any).ctx = ctx;
     (component as any).width = 1280;
     (component as any).height = 720;
-    const realAudio = {
+    const audio = {
       source: 'tab' as const,
-      level: 0.75, bass: 0.8, mids: 0.65, treble: 0.6, beat: 0.9,
-      spectrum: new Array(64).fill(0.8)
+      level: 0.7, bass: 0.6, mids: 0.5, treble: 0.8, beat: 0.9,
+      spectrum: new Array(64).fill(0.7)
     };
+    expect(service.setPreset('moonlit-fireflies')).toBeTrue();
+    (component as any).render(audio);
 
-    for (const id of ['moonlit-fireflies', 'neon-meteor-rain', 'lotus-dream']) {
-      expect(service.setPreset(id)).toBeTrue();
-      ctx.fill.calls.reset();
-      ctx.stroke.calls.reset();
-      (component as any).render(realAudio);
-      expect(ctx.stroke.calls.count()).toBeGreaterThan(0);
-      expect(ctx.fill.calls.count()).toBeGreaterThan(0);
-      expect(ctx.globalCompositeOperation).toBe('source-over');
-      expect(ctx.globalAlpha).toBe(1);
-      expect(ctx.shadowBlur).toBe(0);
-    }
+    expect(ctx.drawImage).toHaveBeenCalledTimes(18);
+    expect(ctx.stroke).not.toHaveBeenCalled();
+    expect(ctx.fill).not.toHaveBeenCalled();
+    expect(ctx.shadowBlur).toBe(0);
+    expect(ctx.globalCompositeOperation).toBe('source-over');
+
+    const cachedSprites = (component as any).fireflySprites;
+    expect(cachedSprites).toBeTruthy();
+    (component as any).render(audio);
+    expect(ctx.drawImage).toHaveBeenCalledTimes(36);
+    expect((component as any).fireflySprites).toBe(cachedSprites);
+  });
+
+  it('renders fewer Firefly sprites on narrow screens', () => {
+    const ctx = jasmine.createSpyObj<CanvasRenderingContext2D>(
+      'CanvasRenderingContext2D', ['clearRect', 'drawImage']
+    );
+    (component as any).ctx = ctx;
+    (component as any).width = 390;
+    (component as any).height = 700;
+    service.setPreset('moonlit-fireflies');
+    (component as any).render({
+      source: 'tab', level: 0.7, bass: 0.4, mids: 0.5, treble: 0.4, beat: 0.5,
+      spectrum: new Array(64).fill(0.5)
+    });
+    expect(ctx.drawImage).toHaveBeenCalledTimes(11);
   });
 
   it('keeps every atmosphere completely dark in genuine silence, even with beat decay', () => {
