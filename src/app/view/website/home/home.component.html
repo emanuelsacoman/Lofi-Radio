@@ -8,25 +8,23 @@
         </p>
           
         <div class="aside">
-            <mat-accordion>
-                <mat-expansion-panel class="transparent-panel" hideToggle>
+            <mat-accordion class="home-settings-accordion" [multi]="true">
+                <mat-expansion-panel class="transparent-panel palette-panel" hideToggle>
                     <mat-expansion-panel-header 
                         collapsedHeight="44px"
                         expandedHeight="44px"
-                        matTooltip="Palette" 
+                        matTooltip="Color palette" 
                         matTooltipShowDelay="500" 
                         matTooltipPosition="right" 
-                        aria-label="Expand Palette Colors" 
-                        role="button" 
-                        tabindex="0">
+                        aria-label="Toggle color palette">
                         <mat-panel-title class="theme-panel-title">
-                            <mat-icon class="theme-palette-icon" aria-label="Palette">palette</mat-icon>
-                            <mat-icon *ngIf="hasNewThemes" class="theme-new-warning" aria-hidden="true">
+                            <mat-icon class="theme-palette-icon" matTooltip="Color palette" aria-label="Color palette">palette</mat-icon>
+                            <mat-icon *ngIf="hasNewThemes" class="theme-new-warning" matTooltip="New palettes available" aria-hidden="true">
                               new_releases
                             </mat-icon>
                         </mat-panel-title>
                     </mat-expansion-panel-header>
-                    <div class="theme-buttons" aria-label="Selecionar tema">
+                    <div class="theme-buttons" role="group" aria-label="Select a color palette">
                       <span class="theme-option" *ngFor="let theme of themeOptions">
                         <button
                           class="colors"
@@ -35,7 +33,7 @@
                           (click)="setTheme(theme.id)"
                           (mouseenter)="markThemeAsSeen(theme.id)"
                           (focus)="markThemeAsSeen(theme.id)"
-                          [attr.aria-label]="'Tema ' + theme.name + (isThemeNew(theme.id) ? ', novo' : '')"
+                          [attr.aria-label]="'Palette ' + theme.name + (isThemeNew(theme.id) ? ', new' : '')"
                           [attr.aria-pressed]="selectedPalette === theme.id"
                           [matTooltip]="theme.name"
                           matTooltipPosition="right"
@@ -48,16 +46,22 @@
                   <mat-expansion-panel-header
                     collapsedHeight="44px"
                     expandedHeight="44px"
-                    matTooltip="Visualizers"
+                    [matTooltip]="audioCaptureStatus === 'error' ? audioCaptureError : 'Visualizers'"
                     matTooltipShowDelay="500"
                     matTooltipPosition="right"
                     aria-label="Choose visualizer">
                     <mat-panel-title class="theme-panel-title">
-                      <mat-icon class="theme-palette-icon" aria-hidden="true">equalizer</mat-icon>
+                      <mat-icon class="theme-palette-icon" matTooltip="Visualizers" aria-label="Visualizers">equalizer</mat-icon>
                       <mat-icon
                         *ngIf="audioCaptureStatus === 'active'"
                         class="visualizer-capture-indicator"
-                        aria-hidden="true">fiber_manual_record</mat-icon>
+                        matTooltip="Tab audio sharing active"
+                        aria-label="Tab audio sharing active">fiber_manual_record</mat-icon>
+                      <mat-icon
+                        *ngIf="audioCaptureStatus === 'error'"
+                        class="visualizer-capture-indicator visualizer-capture-error"
+                        [matTooltip]="audioCaptureError"
+                        [attr.aria-label]="audioCaptureError">error_outline</mat-icon>
                     </mat-panel-title>
                   </mat-expansion-panel-header>
                   <div class="visualizer-options" role="group" aria-label="Visualizer styles">

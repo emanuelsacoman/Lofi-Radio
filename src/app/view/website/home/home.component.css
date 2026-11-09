@@ -136,10 +136,11 @@ body {
     .transparent-panel {
       background: transparent;
       box-shadow: none;
-      align-self: flex-start;
-      flex: 0 0 68px;
-      width: 68px;
-      overflow: visible;
+      align-self: start;
+      width: 60px;
+      min-width: 60px;
+      border-radius: 8px;
+      /* Leave expansion/collapse animations to Angular Material. */
     }
 
     /* Identical expansion-panel pattern used by the color palette. */
@@ -152,17 +153,22 @@ body {
       line-height: 9px;
       font-size: 9px;
       color: var(--clr-accent-light);
-      pointer-events: none;
+      pointer-events: auto;
+    }
+
+    .visualizer-capture-error {
+      color: var(--clr-accent) !important;
+      font-size: 12px !important;
     }
 
     .visualizer-options {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       width: 100%;
-      gap: var(--gap-normal);
-      padding: 0;
+      gap: 8px;
+      padding: 4px 0 8px;
     }
 
     .visualizer-choice {
@@ -173,7 +179,7 @@ body {
       height: var(--sz-icons-player);
       min-width: 30px;
       min-height: 30px;
-      margin: 5px;
+      margin: 0;
       padding: 0;
       border: 1px solid transparent;
       border-radius: 5px;
@@ -222,29 +228,31 @@ body {
       color: var(--clr-accent);
     }
 
-    :is(mat-accordion) {
-      display: flex;
-      /* Fixed top alignment: expanding one panel must not move the other. */
-      align-items: flex-start;
-      justify-content: flex-start;
+    .home-settings-accordion {
+      display: grid;
+      grid-template-columns: repeat(2, 60px);
+      column-gap: 8px;
+      align-items: start;
+      justify-items: stretch;
+      width: max-content;
       padding: 0;
     }
 
     .transparent-panel mat-expansion-panel-header {
+      box-sizing: border-box;
+      justify-content: center;
+      width: 60px;
       padding: 0;
-      /* Center each 44px trigger inside its own stable 68px column. */
-      margin-left: 12px;
+      margin: 0;
       background: transparent;
-      overflow: visible;
-      transition: all 0.2s ease;
-      z-index: 99;
+      transition: background-color 160ms ease, filter 160ms ease;
     }
 
     .transparent-panel mat-expansion-panel-header:hover {
       filter: drop-shadow(0 0 0.5rem var(--clr-accent));
     }
 
-    .transparent-panel mat-expansion-panel-header:hover mat-icon {
+    .transparent-panel mat-expansion-panel-header:hover .theme-palette-icon {
       transform: scale(1.1);
     }
 
@@ -283,7 +291,7 @@ body {
       color: var(--clr-accent);
       font-size: 15px;
       line-height: 15px;
-      pointer-events: none;
+      pointer-events: auto;
       transform: rotate(-25deg);
       transform-origin: center;
       animation: pulses 2s infinite ease-in-out;
@@ -302,7 +310,7 @@ body {
     .theme-buttons .colors {
       height: var(--sz-icons-player);
       width: var(--sz-icons-player);
-      margin: 5px;
+      margin: 0;
       border-radius: 5px;
       display: inline-block;
       cursor: pointer;
@@ -725,18 +733,14 @@ body {
     }
 
     .theme-buttons {
-      opacity: 1;
       display: flex;
       flex-direction: column;
-      z-index: 98;
-
-      gap: var(--gap-normal);
-      justify-content: center;
       align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
       width: 100%;
-      height: 100%;
-      animation: fadeOut 1s ease alternate;
-      transition: all 0.2s ease;
+      padding: 4px 0 8px;
+      /* Material animates the panel; don't animate its content separately. */
     }
 
     .footer {

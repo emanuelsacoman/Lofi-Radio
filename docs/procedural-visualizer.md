@@ -101,3 +101,13 @@ a análise do áudio estiver ativa; a aplicação não pode escondê-lo.
 - The canvas is fixed to the viewport and layered above the page background, with player/controls above it.
 - Render follows the energy of captured tab audio directly, not a possibly delayed YouTube `isPlaying` flag. With no audio energy, all modes remain hidden.
 - The Web Audio analyser connects through a gain-zero output for processing without echo or duplicate playback.
+
+## 2026-11-09: UI and tab permission fix
+
+- Material's `mat-accordion` explicitly uses `[multi]="true"`, allowing the Palette and Visualizers panels to open independently.
+- Both panels now occupy fixed 60px columns in a top-aligned CSS grid; expanding either one does not move the other header.
+- The settings panel body padding override lives in the global `src/styles.css`, scoped to `.home-settings-accordion`, because Angular Material renders the internal body.
+- The stray `fadeOut` animation and 100%-height palette list were removed. Angular Material now owns the expand/collapse timing.
+- Each palette and visualizer selection has a tooltip; the panel headers and sharing/status indicators are also labeled.
+- On preset selection, the `startCapture()` browser request runs before the preset state is published to subscribers. A canceled/denied request can be retried by clicking the same preset again.
+- No audio capture happens just by opening either panel. The user must explicitly choose a visualizer and permit tab audio.

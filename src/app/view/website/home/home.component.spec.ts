@@ -85,6 +85,24 @@ describe('HomeComponent non-verbal radio feedback', () => {
       expect(request).toHaveBeenCalledTimes(1);
     });
 
+    it('requests tab capture before changing the selected preset', () => {
+      const operations: string[] = [];
+      spyOn(visualizerAudio, 'startCapture').and.callFake(() => {
+        operations.push('request-audio');
+        return Promise.resolve(true);
+      });
+      const setPreset = visualizerService.setPreset.bind(visualizerService);
+      spyOn(visualizerService, 'setPreset').and.callFake(id => {
+        operations.push('set-preset');
+        return setPreset(id);
+      });
+
+      component.selectVisualizer('pulse-bars');
+
+      expect(operations).toEqual(['request-audio', 'set-preset']);
+      expect(visualizerService.activePresetId).toBe('pulse-bars');
+    });
+
     it('reuses active sharing when the user switches effects', () => {
       const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
       spyOnProperty(visualizerAudio, 'isActive', 'get').and.returnValue(true);

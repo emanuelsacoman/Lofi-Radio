@@ -197,13 +197,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.visualizerService.setPreset(id)) return;
+    // Only known effects may request a screen/tab capture permission.
+    if (!this.visualizerService.getPresets().some(preset => preset.id === id)) return;
 
-    // Only a click on a visualizer icon can open the browser permission
-    // dialog. Opening the panel or restoring a preset never requests audio.
+    // Call immediately inside the icon click, before state subscriptions
+    // run, so getDisplayMedia retains the browser's user activation.
     if (!this.visualizerAudio.isActive && this.visualizerAudio.status !== 'requesting') {
       void this.visualizerAudio.startCapture();
     }
+
+    this.visualizerService.setPreset(id);
   }
 
   get audioCaptureStatus() {
