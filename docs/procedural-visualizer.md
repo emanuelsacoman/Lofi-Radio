@@ -212,18 +212,26 @@ O preset Spiral foi removido do catálogo e as rotinas exclusivas de geometria
 espiral e partículas de vórtice foram eliminadas. Restam **Waveform, Equalizer
 e Firefly Garden**, além de Off. Seleções antigas de Spiral são tratadas como Off.
 
-No Firefly, cada vagalume agora recebe uma banda espectral diferente e reage a:
-- **Graves e intensidade (RMS):** aumentam o tamanho e o brilho em tempo real.
-- **Batidas detectadas:** fazem os vagalumes pulsarem e se afastarem
-  momentaneamente do centro; a suavização é a do próprio detector de batidas.
-- **Agudos e bandas FFT:** geram cintilações de intensidades diferentes entre
-  os vagalumes, sem ruído aleatório artificial.
+A V2.3 experimentou aumentar tamanho e afastar partículas em batidas.
+Esse comportamento de zoom foi **substituído na V2.4**, abaixo, por piscadas
+assíncronas de tamanho fixo.
 
-Continuamos com **18 sprites desktop / 11 mobile, um drawImage por vagalume
-e 24 FPS**, sem sombras blur por partícula ou novos efeitos pesados.
-A função pura \`fireflyAudioResponse()\` permite testar intensidade, expansão
-e brilho para áudio fraco, forte, batidas, silêncio e ausência de captura.
 
-Os valores são mais contrastantes que os anteriores; a responsividade real
-continua dependendo do sinal capturado pelo navegador, não de uma animação
-independente da música.
+### V2.4 — Vagalumes naturais: pisques individuais, sem zoom
+
+- Cada vagalume conserva seu **tamanho fixo**. O posicionamento apenas
+  flutua suavemente como antes; nenhum grave nem batida expande o conjunto.
+- Os 18 seeds existentes usam fases e períodos próprios (~2,4–4,6 s);
+  uma luz fica apagada a maior parte do tempo, aparece brevemente com
+  entrada/saída suave e alguns indivíduos exibem um segundo pisque.
+- **Música real** modula o brilho da piscada, variando por graves,
+  intensidade RMS, agudos, batidas e banda FFT individual. Áudio mais intenso
+  gera piscadas mais vívidas e acelera discretamente o relógio, sem acender
+  todas as partículas ao mesmo tempo.
+- Sem sinal espectral real ou sem captura, o canvas continua apagado,
+  mesmo quando o envelope de batida ainda decai.
+- **Performance preservada:** sprites de brilho cacheados, 18 partículas no
+  desktop / 11 mobile, 24 FPS e nenhuma sombra extra por partícula.
+
+Testes: picos vs pausas, fase entre partículas, segundo pisque,
+intensidade da música, silêncio e invariância do tamanho dos sprites.
