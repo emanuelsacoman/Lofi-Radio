@@ -17,7 +17,7 @@ O visualizador agora pode reagir ao áudio REAL da live selecionada:
 1. Abra o Lofi Radio em localhost ou HTTPS.
 2. Inicie uma live no player YouTube.
 3. Clique no ícone **Visualizers** ao lado do ícone Palette para abrir as opções.
-4. Clique no ícone de um dos oito presets (incluindo Firefly Garden, Meteor Shower e Lotus Dream).
+4. Clique no ícone de um dos seis presets (incluindo Firefly Garden).
 5. O navegador solicita imediatamente o compartilhamento. Escolha **a aba do Lofi Radio** e habilite **Compartilhar áudio da guia**.
 6. Para trocar de efeito, escolha outro preset. Para encerrar a captura, selecione **Off**.
 7. Se a permissão for cancelada, selecione **Off** e depois o preset desejado para tentar novamente.
@@ -97,7 +97,7 @@ Os estados `paletteExpanded` e `visualizerExpanded` são independentes no
 
 O menu Palette mantém as mesmas cores carregadas do Firebase, indicação
 de novos temas e persistência da seleção. O menu Visualizers preserva
-as oito opções, o botão Off e o indicador de captura.
+as seis opções, o botão Off e o indicador de captura.
 
 **A captura de áudio é solicitada somente após o usuário clicar no ícone de
 um visualizador**, usando o mesmo `selectVisualizer()` já existente; a
@@ -146,7 +146,7 @@ console.log({
 Se não forem, haverá outra camada cobrindo o controle.
 
 
-## V2 — Atmosferas cinematográficas (8 estilos)
+## V2 — Atmosferas cinematográficas (6 estilos)
 
 | Preset | Direção de arte | O que reage ao áudio |
 | --- | --- | --- |
@@ -155,9 +155,7 @@ Se não forem, haverá outra camada cobrindo o controle.
 | Spiral / Vortex | Poeira estelar girando em camadas | Médios e transientes revelam partículas |
 | Equalizer / Sparks | Barras espectrais com pontos brilhantes nas cristas | Cada banda FFT controla sua própria altura |
 | Lissajous / Constellation | Traçados orbitais e pontos de constelação | Agudos fazem estrelas cintilar |
-| Firefly Garden | Vagalumes flutuando sobre véus suaves | Agudos acendem partículas; silêncio apaga tudo |
-| Meteor Shower | Rastros diagonais e chuva de energia | Bandas FFT regulam brilho e comprimento |
-| Lotus Dream | Rosácea geométrica com pétalas luminosas | Graves abrem o mandala; batidas intensificam brilho |
+| Firefly Garden | Vagalumes suaves em sprites luminosos reutilizados | Agudos acendem partículas; silêncio apaga tudo |
 
 ### Contratos preservados
 
@@ -165,7 +163,7 @@ Se não forem, haverá outra camada cobrindo o controle.
 - **Sem movimento falso:** não há partículas, faixas ou petalas visíveis sem atividade espectral real, mesmo que o envelope do beat ainda esteja decaindo.
 - **Sem regressão dos menus:** lista de presets com identidade estável e \`trackBy\`; Palette e Visualizers continuam independentes e com tooltips.
 - **Acessibilidade:** \`prefers-reduced-motion\` desativa o loop de animação, mas mostra um snapshot estático quando há áudio disponível.
-- **Performance:** animação limitada a ~45 FPS, framebuffer limitado a ~4,5 MP, partículas procedurais determinísticas e contagem reduzida em telas pequenas. Canvas 2D único e sem novas dependências.
+- **Performance:** demais efeitos limitados a ~45 FPS e até ~4,5 MP; Firefly limitado a 24 FPS, até ~1,4 MP e somente 11 partículas no mobile ou 18 no desktop. O brilho do Firefly é pré-renderizado em sprites de 40×40 e reutilizado até que a paleta mude. Canvas 2D único, sem novas dependências.
 - **Temas:** todos os efeitos utilizam tokens da paleta selecionada; não adicionam cores fixas ao catálogo.
 
 ### Validação recomendada
@@ -177,6 +175,28 @@ npx ng test --watch=false --include=src/app/services/visualizer.service.spec.ts 
 npm run test:radio
 \`\`\`
 
-Revisar manualmente no Chrome/Edge: alternar os oito efeitos, escolher esta aba
+Revisar manualmente no Chrome/Edge: alternar os seis efeitos, escolher esta aba
 com áudio, trocar a paleta durante a reprodução, testar Off, silêncio, tela
 estreita e preferência por movimento reduzido. Nenhuma alteração de deploy.
+
+
+### V2.1 — Redução de custo do Firefly Garden
+
+Os efeitos Meteor Shower e Lotus Dream foram removidos do catálogo, renderizador e tipos.
+A lista possui agora seis presets. Uma seleção antiga de qualquer preset removido
+no \`localStorage\` volta para Off, sem compartilhar áudio ou selecionar outro efeito.
+
+Antes, o Firefly renderizava até **58 círculos com \`shadowBlur\` individual por quadro**,
+mais véus de aurora e duas curvas matemáticas. Agora:
+- Usa somente 18 sprites no desktop ou 11 no mobile; cada sprite é renderizado apenas
+  uma vez por paleta (\`createRadialGradient\`) e reutilizado com \`drawImage\`.
+- Não cria curvas, véus de aurora nem sombras por partícula.
+- Desenha em \`source-over\`, não \`lighter\` em toda a superfície.
+- Limita a atualização a 24 FPS e o framebuffer a 1,4 MP com escala máxima de 1×.
+- Mantém o mesmo mecanismo de áudio real, a mesma política de silêncio e suporte às
+  cores da paleta; retorna aos limites normais de resolução nos outros efeitos.
+- Libera o cache ao destruir o componente.
+
+**Validação de performance:** confirmar FPS e CPU/GPU via Performance do DevTools em
+notebook e mobile, com áudio compartilhado e em silêncio. Os limites reduzem trabalho,
+mas não são uma medição de tempo real em todos os dispositivos.
