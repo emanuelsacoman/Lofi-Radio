@@ -21,7 +21,7 @@ function validColor(color: string, fallback: string): string {
 
 @Injectable({ providedIn: 'root' })
 export class VisualizerService {
-  private readonly presets = VISUALIZER_PRESETS.map(preset => this.normalizeConfig(preset));
+  private readonly presets: VisualizerConfig[] = VISUALIZER_PRESETS.map((preset: VisualizerConfig) => this.normalizeConfig(preset));
   private readonly activeSubject = new BehaviorSubject<VisualizerConfig | null>(this.restorePreset());
 
   readonly activeConfig$ = this.activeSubject.asObservable();
@@ -36,7 +36,7 @@ export class VisualizerService {
   }
 
   getPresets(): VisualizerConfig[] {
-    return this.presets.map(preset => ({ ...preset }));
+    return this.presets.map((preset: VisualizerConfig) => ({ ...preset }));
   }
 
   setPreset(id: string | null): boolean {
@@ -46,7 +46,7 @@ export class VisualizerService {
       return true;
     }
 
-    const preset = this.presets.find(item => item.id === id);
+    const preset = this.presets.find((item: VisualizerConfig) => item.id === id);
     if (!preset) return false;
     this.activeSubject.next({ ...preset });
     this.persist(id);
@@ -178,7 +178,7 @@ export class VisualizerService {
     try { stored = typeof localStorage === 'undefined' ? null : localStorage.getItem(STORAGE_KEY); }
     catch { /* Storage may be disabled by browser settings. */ }
     if (stored === 'off') return null;
-    const preset = this.presets.find(item => item.id === (stored || DEFAULT_VISUALIZER_ID))
+    const preset = this.presets.find((item: VisualizerConfig) => item.id === (stored || DEFAULT_VISUALIZER_ID))
       ?? this.presets[0];
     return preset ? { ...preset } : null;
   }

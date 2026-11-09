@@ -1,62 +1,53 @@
-# Lofi Radio — Procedural Visualizer
+# Lofi Radio — Visualizador procedural
 
-Branch: feature/audio-visualizer. Angular 16 + Canvas 2D. Sem bibliotecas de renderizacao adicionais.
+Branch: `feature/chatgpt-visualizer` (versão experimental gerada pelo ChatGPT).
 
-## Onde configurar
+## Arquivos essenciais
 
-Edite \`src/app/services/visualizer-presets.ts\`. Cada entrada no array
-\`VISUALIZER_PRESETS\` e uma variacao independente do mesmo motor matematico.
+- `src/app/services/visualizer.service.ts`: estado e cálculos matemáticos.
+- `src/app/services/visualizer-presets.ts`: presets e cores configuráveis.
+- `src/app/services/interfaces/visualizer/visualizerconfig.ts`: contratos TypeScript.
+- `src/app/view/effect/visualizer/visualizer.component.ts`: renderização Canvas 2D.
 
-- \`geometry\`: wave, circle, spiral, bars, lissajous.
-- \`amplitude\`: 0-100, intensidade.
-- \`frequency\`: 0.25-12, repeticoes no espaco.
-- \`speed\`: 0-5, ciclos simulados por segundo.
-- \`harmonics\`: 1-12, ondas compostas.
-- \`phase\`: -360..360 graus.
-- \`color\`, \`secondaryColor\`: hexadecimal, \`theme\` ou \`accent\`.
-- \`lineWidth\`: 0.5-10 pixels.
-- \`glow\`: 0-40 pixels.
-- \`opacity\`: 0-1.
-- \`layers\`: 1-8 curvas.
-- \`resolution\`: 48-768 pontos por curva.
-- \`barCount\`: 12-96 barras.
-- \`rotation\`: -5..5 rad/s (para orbitas e espirais).
+### Se o build mostrar `Cannot find module './visualizer-presets'`
 
-A selecao de preset e persistida em \`localStorage\` com chave
-\`lofi.visualizer.preset.v1\`; a opcao Off desativa a renderizacao.
-A edicao de parametros em runtime e feita via \`VisualizerService.updateParameters\`.
-Para restaurar os valores de fabrica, use \`resetParameters()\`.
+O arquivo de presets está versionado nesta branch. Se não estiver no seu
+computador, confira a branch ativa e restaure o arquivo a partir do remoto:
 
-## Arquitetura
+```bash
+git status --short
+git fetch origin
+git switch feature/chatgpt-visualizer
+git pull --ff-only origin feature/chatgpt-visualizer
+git restore --source=origin/feature/chatgpt-visualizer -- src/app/services/visualizer-presets.ts
+npm run build
+```
 
-\`VisualizerService\`: guarda a unica configuracao ativa, valida parametros,
-calcula \`VisualizerPath[]\` em coordenadas normalizadas; nao conhece Canvas.
+O `git restore` acima substitui **somente** a cópia local do arquivo informado.
+Se você já tiver edições locais nesse arquivo, faça backup antes do restore.
+Não use `git reset --hard` para corrigir a ausência de um único arquivo.
 
-\`VisualizerComponent\`: converte coordenadas normalizadas em pixels; trata
-resize/DPR, cancelamento de \`requestAnimationFrame\`, troca de preset,
-visibilidade da pagina, prefers-reduced-motion e destruicao.
+## Ajustando os visuais
 
-\`HomeComponent\`: passa o estado \`isPlaying\` e disponibiliza seletor.
+Edite `VISUALIZER_PRESETS` no arquivo `visualizer-presets.ts`.
+Cada objeto define geometria (`wave`, `circle`, `spiral`, `bars`, `lissajous`),
+amplitude, frequência, velocidade, harmônicos, fase, camadas, resolução,
+espessura, brilho, opacidade e cores (`theme`, `accent` ou hexadecimal).
 
-## Novo preset
+A seleção é persistida em `localStorage` na chave
+`lofi.visualizer.preset.v1`; a opção `Off` interrompe a renderização.
 
-Copie uma entrada de \`VISUALIZER_PRESETS\`, altere \`id\` (unico), \`name\` e
-os parametros. Nao e necessario criar outro componente Canvas.
+## Limitações
 
-## Limites
+O player usa o iframe do YouTube, que não disponibiliza amostras brutas ou FFT.
+Os padrões desta versão são simulados, **não** sincronizados à batida real.
 
-O YouTube Player usa iframe. Nao ha acesso a FFT/amostras do audio do
-YouTube pela API do iframe; os efeitos sao proceduralmente simulados.
-Nao confundir o visualizador com um analisador real de frequencias.
-A primeira versao pausa o tempo visual quando o player nao reproduz.
+## Verificações
 
-## Testes locais
-
-\`\`\`bash
-npm ci
+```bash
 npm run build
 npx ng test --watch=false --include=src/app/services/visualizer.service.spec.ts
 npm run test:radio
-\`\`\`
+```
 
-Nenhum deploy e realizado por esta entrega.
+Nenhum deploy é realizado por esta entrega.
