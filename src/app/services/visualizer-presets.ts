@@ -53,23 +53,7 @@ export const VISUALIZER_PRESETS: ReadonlyArray<VisualizerConfig> = [
     geometry: 'wave', visualStyle: 'fireflies',
     amplitude: 24, audioSensitivity: 1.25, frequency: 2.2, speed: 0.16,
     harmonics: 2, phase: 0, color: 'accentLight', secondaryColor: 'theme',
-    lineWidth: 1.1, glow: 28, opacity: 0.7, layers: 2,
-    resolution: 160, barCount: 32, rotation: 0
-  },
-  {
-    id: 'neon-meteor-rain', name: 'Meteor Shower', icon: 'auto_awesome',
-    geometry: 'bars', visualStyle: 'meteor',
-    amplitude: 82, audioSensitivity: 1.65, frequency: 4.2, speed: 0.48,
-    harmonics: 3, phase: 0, color: 'accent', secondaryColor: 'accentLight',
-    lineWidth: 1.8, glow: 20, opacity: 0.8, layers: 2,
-    resolution: 128, barCount: 40, rotation: 0
-  },
-  {
-    id: 'lotus-dream', name: 'Lotus Dream', icon: 'filter_vintage',
-    geometry: 'circle', visualStyle: 'lotus',
-    amplitude: 46, audioSensitivity: 1.35, frequency: 8, speed: 0.16,
-    harmonics: 4, phase: 0, color: 'theme', secondaryColor: 'accentLight',
-    lineWidth: 1.55, glow: 20, opacity: 0.8, layers: 5,
-    resolution: 320, barCount: 48, rotation: 0.03
+    lineWidth: 1.1, glow: 0, opacity: 0.7, layers: 1,
+    resolution: 48, barCount: 16, rotation: 0
   }
 ];
