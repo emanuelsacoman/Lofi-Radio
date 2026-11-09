@@ -17,7 +17,7 @@ O visualizador agora pode reagir ao áudio REAL da live selecionada:
 1. Abra o Lofi Radio em localhost ou HTTPS.
 2. Inicie uma live no player YouTube.
 3. Clique no ícone **Visualizers** ao lado do ícone Palette para abrir as opções.
-4. Clique no ícone de um dos seis presets (incluindo Firefly Garden).
+4. Clique no ícone de um dos quatro presets (incluindo Firefly Garden).
 5. O navegador solicita imediatamente o compartilhamento. Escolha **a aba do Lofi Radio** e habilite **Compartilhar áudio da guia**.
 6. Para trocar de efeito, escolha outro preset. Para encerrar a captura, selecione **Off**.
 7. Se a permissão for cancelada, selecione **Off** e depois o preset desejado para tentar novamente.
@@ -97,7 +97,7 @@ Os estados `paletteExpanded` e `visualizerExpanded` são independentes no
 
 O menu Palette mantém as mesmas cores carregadas do Firebase, indicação
 de novos temas e persistência da seleção. O menu Visualizers preserva
-as seis opções, o botão Off e o indicador de captura.
+as quatro opções, o botão Off e o indicador de captura.
 
 **A captura de áudio é solicitada somente após o usuário clicar no ícone de
 um visualizador**, usando o mesmo `selectVisualizer()` já existente; a
@@ -146,15 +146,13 @@ console.log({
 Se não forem, haverá outra camada cobrindo o controle.
 
 
-## V2 — Atmosferas cinematográficas (6 estilos)
+## V2 — Atmosferas cinematográficas (4 estilos)
 
 | Preset | Direção de arte | O que reage ao áudio |
 | --- | --- | --- |
 | Waveform / Silk | Cortinas translúcidas de aurora e ondas brilhantes | Graves modulam ondulações e faixas |
-| Orbit / Halo | Anéis concêntricos com satélites luminosos | Graves expandem raios; agudos iluminam satélites |
 | Spiral / Vortex | Poeira estelar girando em camadas | Médios e transientes revelam partículas |
 | Equalizer / Sparks | Barras espectrais com pontos brilhantes nas cristas | Cada banda FFT controla sua própria altura |
-| Lissajous / Constellation | Traçados orbitais e pontos de constelação | Agudos fazem estrelas cintilar |
 | Firefly Garden | Vagalumes suaves em sprites luminosos reutilizados | Agudos acendem partículas; silêncio apaga tudo |
 
 ### Contratos preservados
@@ -175,7 +173,7 @@ npx ng test --watch=false --include=src/app/services/visualizer.service.spec.ts 
 npm run test:radio
 \`\`\`
 
-Revisar manualmente no Chrome/Edge: alternar os seis efeitos, escolher esta aba
+Revisar manualmente no Chrome/Edge: alternar os quatro efeitos, escolher esta aba
 com áudio, trocar a paleta durante a reprodução, testar Off, silêncio, tela
 estreita e preferência por movimento reduzido. Nenhuma alteração de deploy.
 
@@ -200,3 +198,11 @@ mais véus de aurora e duas curvas matemáticas. Agora:
 **Validação de performance:** confirmar FPS e CPU/GPU via Performance do DevTools em
 notebook e mobile, com áudio compartilhado e em silêncio. Os limites reduzem trabalho,
 mas não são uma medição de tempo real em todos os dispositivos.
+
+
+### V2.2 — Catálogo simplificado
+
+Orbit e Lissajous foram removidos dos presets, da matemática que não possuía
+mais consumidores e das rotinas de desenho exclusivas. Restam Waveform, Spiral,
+Equalizer e Firefly Garden, além de Off. Seleções antigas armazenadas para os
+efeitos removidos são tratadas como Off; não iniciam captura de áudio.
