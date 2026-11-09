@@ -17,18 +17,35 @@ describe('VisualizerService procedural engine', () => {
 
   it('has English names for every visualizer icon', () => {
     expect(service.getPresets().map(preset => preset.name)).toEqual([
-      'Waveform', 'Orbit', 'Spiral', 'Equalizer', 'Lissajous'
+      'Waveform', 'Orbit', 'Spiral', 'Equalizer', 'Lissajous',
+      'Firefly Garden', 'Meteor Shower', 'Lotus Dream'
     ]);
   });
 
-  it('offers five configurable presets and a single active configuration', () => {
-    expect(service.getPresets().length).toBe(5);
+  it('offers eight configurable presets and a single active configuration', () => {
+    expect(service.getPresets().length).toBe(8);
     expect(service.setPreset('orbit-bloom')).toBeTrue();
     expect(service.activeConfig?.geometry).toBe('circle');
     expect(service.setPreset('pulse-bars')).toBeTrue();
     expect(service.activeConfig?.geometry).toBe('bars');
     expect(service.setPreset('missing')).toBeFalse();
     expect(service.activeConfig?.id).toBe('pulse-bars');
+  });
+
+  it('keeps each artistic style distinct while preserving its audio geometry', () => {
+    const presets = service.getPresets();
+    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(8);
+    for (const preset of presets) {
+      expect(service.setPreset(preset.id)).toBeTrue();
+      expect(service.activeConfig?.visualStyle).toBe(preset.visualStyle);
+      expect(service.calculatePaths(1, 64).length).toBe(preset.layers);
+    }
+  });
+
+  it('normalizes an unsupported visual style', () => {
+    service.setPreset('lotus-dream');
+    service.updateParameters({ visualStyle: 'invalid' as any });
+    expect(service.activeConfig?.visualStyle).toBe('silk');
   });
 
   it('disables rendering and remembers the off selection', () => {
