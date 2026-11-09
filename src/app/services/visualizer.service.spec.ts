@@ -17,15 +17,14 @@ describe('VisualizerService procedural engine', () => {
 
   it('has English names for every visualizer icon', () => {
     expect(service.getPresets().map(preset => preset.name)).toEqual([
-      'Waveform', 'Orbit', 'Spiral', 'Equalizer', 'Lissajous',
-      'Firefly Garden'
+      'Waveform', 'Spiral', 'Equalizer', 'Firefly Garden'
     ]);
   });
 
-  it('offers six configurable presets and a single active configuration', () => {
-    expect(service.getPresets().length).toBe(6);
-    expect(service.setPreset('orbit-bloom')).toBeTrue();
-    expect(service.activeConfig?.geometry).toBe('circle');
+  it('offers four configurable presets and a single active configuration', () => {
+    expect(service.getPresets().length).toBe(4);
+    expect(service.setPreset('cosmic-spiral')).toBeTrue();
+    expect(service.activeConfig?.geometry).toBe('spiral');
     expect(service.setPreset('pulse-bars')).toBeTrue();
     expect(service.activeConfig?.geometry).toBe('bars');
     expect(service.setPreset('missing')).toBeFalse();
@@ -34,7 +33,7 @@ describe('VisualizerService procedural engine', () => {
 
   it('keeps each artistic style distinct while preserving its audio geometry', () => {
     const presets = service.getPresets();
-    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(6);
+    expect(new Set(presets.map(preset => preset.visualStyle)).size).toBe(4);
     for (const preset of presets) {
       expect(service.setPreset(preset.id)).toBeTrue();
       expect(service.activeConfig?.visualStyle).toBe(preset.visualStyle);
@@ -49,11 +48,13 @@ describe('VisualizerService procedural engine', () => {
   });
 
   it('rejects removed visualizers and starts Off when a removed selection was stored', () => {
-    expect(service.getPresets().some(p => p.id === 'neon-meteor-rain' || p.id === 'lotus-dream')).toBeFalse();
-    expect(service.setPreset('neon-meteor-rain')).toBeFalse();
-    expect(service.setPreset('lotus-dream')).toBeFalse();
-    localStorage.setItem('lofi.visualizer.preset.v1', 'lotus-dream');
-    expect(new VisualizerService().activePresetId).toBeNull();
+    const removed = ['neon-meteor-rain', 'lotus-dream', 'orbit-bloom', 'lissajous-dream'];
+    expect(service.getPresets().some(p => removed.includes(p.id))).toBeFalse();
+    for (const id of removed) {
+      expect(service.setPreset(id)).toBeFalse();
+      localStorage.setItem('lofi.visualizer.preset.v1', id);
+      expect(new VisualizerService().activePresetId).toBeNull();
+    }
   });
 
   it('disables rendering and remembers the off selection', () => {
@@ -103,13 +104,6 @@ describe('VisualizerService procedural engine', () => {
     expect(service.activeConfig?.speed).toBe(0);
     service.resetParameters();
     expect(service.activeConfig?.layers).toBe(4);
-  });
-
-  it('keeps a circular seam closed', () => {
-    service.setPreset('orbit-bloom');
-    const curve = service.calculatePaths(1)[0].points;
-    expect(curve[0].x).toBeCloseTo(curve[curve.length - 1].x, 8);
-    expect(curve[0].y).toBeCloseTo(curve[curve.length - 1].y, 8);
   });
 
   it('does not expose mutable preset references', () => {
