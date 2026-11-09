@@ -23,7 +23,7 @@ interface AtmosphereSeed {
 
 const TAU = Math.PI * 2;
 const fraction = (value: number): number => value - Math.floor(value);
-const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 72 }, (_, i) => {
+const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 18 }, (_, i) => {
   const seed = i + 1;
   return {
     x: fraction(Math.sin(seed * 127.1) * 43758.5453),
@@ -33,6 +33,30 @@ const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 72 }, (_,
     size: 0.6 + fraction(Math.sin(seed * 45.2) * 43758.5453) * 1.8
   };
 });
+
+/** Cheap, deterministic music-to-light modulation. Beat comes from the analyser's
+ * decay envelope; without genuine tab audio there is no light or movement. */
+export function fireflyAudioResponse(
+  audio: VisualizerAudioFrame, spectrumBand: number, activity: number
+): { scale: number; alpha: number; expansion: number } {
+  const bounded = (n: number): number => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
+  if (audio.source !== 'tab' || activity <= 0) {
+    return { scale: 0, alpha: 0, expansion: 0 };
+  }
+  const beat = bounded(audio.beat);
+  const bass = Math.sqrt(bounded(audio.bass));
+  const level = Math.sqrt(bounded(audio.level));
+  const mids = Math.sqrt(bounded(audio.mids));
+  const sparkle = Math.sqrt(bounded(bounded(audio.treble) * 0.5 + bounded(spectrumBand) * 0.5));
+  const pulse = bounded(0.42 * bass + 0.33 * level + 0.18 * mids + 0.58 * beat);
+
+  return {
+    // Visible swell on bass transients, with independent twinkles per FFT bin.
+    scale: 0.78 + 0.95 * pulse + 0.42 * sparkle,
+    alpha: bounded(bounded(activity) * (0.22 + 0.45 * pulse + 0.30 * sparkle)),
+    expansion: 0.075 * pulse + 0.12 * beat
+  };
+}
 
 @Component({
   selector: 'app-visualizer',
@@ -203,9 +227,6 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
 
     switch (style) {
-      case 'vortex':
-        this.drawVortexDust(ctx, audio, activity, main, accent);
-        break;
       case 'bars':
         this.drawSpectrumSparks(ctx, paths[0], audio, activity, accent);
         break;
@@ -269,27 +290,6 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     ctx.fill();
   }
 
-  private drawVortexDust(
-    ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
-    activity: number, main: string, accent: string
-  ): void {
-    const side = Math.min(this.width, this.height);
-    const count = this.width < 640 ? 34 : 66;
-    for (let i = 0; i < count; i++) {
-      const seed = ATMOSPHERE[i];
-      const depth = Math.sqrt(seed.y);
-      const angle = seed.phase + this.time * (0.12 + seed.speed * 0.10) + depth * TAU;
-      const radius = side * (0.035 + depth * 0.46) * activity;
-      this.drawOrb(ctx,
-        this.width / 2 + Math.cos(angle) * radius,
-        this.height / 2 + Math.sin(angle) * radius,
-        seed.size * (0.6 + audio.treble * 0.75),
-        i % 4 === 0 ? accent : main,
-        activity * (0.10 + audio.mids * 0.33) * (1 - depth * 0.4),
-        10 + audio.beat * 12);
-    }
-  }
-
   private drawSpectrumSparks(
     ctx: CanvasRenderingContext2D, path: VisualizerPath | undefined,
     audio: VisualizerAudioFrame, activity: number, accent: string
@@ -347,12 +347,14 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       const seed = ATMOSPHERE[i];
       const driftX = Math.sin(seed.phase + this.time * seed.speed * 0.17) * 0.025;
       const driftY = Math.cos(seed.phase + this.time * seed.speed * 0.12) * 0.03;
-      const x = (seed.x + driftX) * this.width;
-      const y = (seed.y + driftY) * this.height;
-      const shimmer = 0.5 + 0.5 * Math.sin(this.time * (0.35 + seed.speed) + seed.phase);
-      const size = (13 + seed.size * 4) * (1 + audio.treble * 0.22);
-      ctx.globalAlpha = Math.min(1, activity *
-        (0.26 + shimmer * 0.45 + audio.beat * 0.12));
+      // Spread the sound across fireflies: each reacts to a different FFT band.
+      const bandIndex = audio.spectrum.length ? (i * 7 + 3) % audio.spectrum.length : 0;
+      const reaction = fireflyAudioResponse(audio, audio.spectrum[bandIndex] ?? 0, activity);
+      const x = (seed.x + driftX + (seed.x - 0.5) * reaction.expansion) * this.width;
+      const y = (seed.y + driftY + (seed.y - 0.5) * reaction.expansion) * this.height;
+      const shimmer = 0.85 + 0.15 * Math.sin(this.time * (0.35 + seed.speed) + seed.phase);
+      const size = (13 + seed.size * 4) * reaction.scale;
+      ctx.globalAlpha = reaction.alpha * shimmer;
       ctx.drawImage(i % 3 === 0 ? sprites.main : sprites.accent,
         x - size / 2, y - size / 2, size, size);
     }
