@@ -19,6 +19,7 @@ interface AtmosphereSeed {
   phase: number;
   speed: number;
   size: number;
+  depth: number;
 }
 
 const TAU = Math.PI * 2;
@@ -30,7 +31,8 @@ const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 18 }, (_,
     y: fraction(Math.sin(seed * 311.7) * 43758.5453),
     phase: fraction(Math.sin(seed * 74.7) * 43758.5453) * TAU,
     speed: 0.5 + fraction(Math.sin(seed * 91.3) * 43758.5453),
-    size: 0.6 + fraction(Math.sin(seed * 45.2) * 43758.5453) * 1.8
+    size: 0.6 + fraction(Math.sin(seed * 45.2) * 43758.5453) * 1.8,
+    depth: 0.55 + fraction(Math.sin(seed * 25.9) * 43758.5453) * 0.45
   };
 });
 
@@ -42,6 +44,32 @@ function fireflyFlash(cycle: number, start: number, duration: number): number {
   return intensity * intensity;
 }
 
+/** A gentle, bounded flight path made of different frequencies.
+ * It is not driven by the beat: fireflies wander naturally at constant size. */
+export function fireflyFlight(seed: AtmosphereSeed, seconds: number): { x: number; y: number } {
+  const t = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+  const drift = t * seed.speed * seed.depth;
+  const x = 0.10 + seed.x * 0.80
+    + 0.028 * Math.sin(seed.phase + drift * 0.20)
+    + 0.012 * Math.sin(seed.phase * 1.7 - drift * 0.47);
+  const y = 0.15 + seed.y * 0.69
+    + 0.027 * Math.cos(seed.phase * 0.8 + drift * 0.16)
+    + 0.013 * Math.sin(seed.phase * 1.3 + drift * 0.35);
+  return { x, y };
+}
+
+/** A brief, staggered answer to a real detected beat. Four lights answer in
+ * sequence instead of the entire garden flashing in sync. */
+export function fireflyEcho(secondsSinceBeat: number, index: number): number {
+  if (index % 5 !== 0 || !Number.isFinite(secondsSinceBeat)) return 0;
+  const delay = Math.floor(index / 5) * 0.15;
+  const elapsed = secondsSinceBeat - delay;
+  if (elapsed <= 0 || elapsed >= 0.31) return 0;
+  const intensity = Math.sin(Math.PI * elapsed / 0.31);
+  return intensity * intensity * 0.78;
+}
+
+
 /** Deterministic asynchronous flashes: fixed-size fireflies spend most of
  * their time dark and briefly light up on individual staggered schedules.
  * Actual shared audio controls brightness, while the existing analyser still
@@ -52,7 +80,8 @@ export function fireflyAudioResponse(
   activity: number,
   seconds: number,
   phase: number,
-  speed: number
+  speed: number,
+  echo = 0
 ): { alpha: number } {
   const clamp = (n: number): number =>
     Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0));
@@ -64,10 +93,10 @@ export function fireflyAudioResponse(
   const cycle = fraction(Math.max(0, seconds) / period + phase / TAU);
   const first = fireflyFlash(cycle, 0.04, 0.14);
   const doubleFlash = phase > Math.PI ? fireflyFlash(cycle, 0.25, 0.11) * 0.65 : 0;
-  const blink = Math.max(first, doubleFlash);
+  const blink = Math.max(first, doubleFlash, Math.max(0, Math.min(1, echo)));
 
-  // Low-end transients brighten an occurring flash, high bands make some
-  // individuals more luminous. Neither resizes or moves the lights.
+  // Music colors an individual flash; a detected beat invites a short,
+  // staggered answer. Neither music nor a flash can resize the light.
   const energy = clamp(
     0.33 * clamp(audio.bass) +
     0.24 * clamp(audio.level) +
@@ -103,6 +132,8 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   private reducedMotion: MediaQueryList | null = null;
   // Tiny pre-rendered light textures. Rebuild only when the palette changes.
   private fireflySprites: { key: string; main: HTMLCanvasElement; accent: HTMLCanvasElement } | null = null;
+  private fireflyPreviousBeat = 0;
+  private fireflyLastBeatAt = -Infinity;
   private readonly visibilityHandler = () => this.syncAnimation();
   private readonly motionHandler = () => this.syncAnimation();
 
@@ -126,6 +157,10 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.subscription = this.visualizer.activeConfig$.subscribe(config => {
       const wasFirefly = this.config?.visualStyle === 'fireflies';
       this.config = config;
+      if (wasFirefly !== (config?.visualStyle === 'fireflies')) {
+        this.fireflyPreviousBeat = 0;
+        this.fireflyLastBeatAt = -Infinity;
+      }
       // Firefly uses a smaller framebuffer; restore normal resolution on exit.
       if (wasFirefly !== (config?.visualStyle === 'fireflies')) this.resize();
       this.syncAnimation();
@@ -339,10 +374,13 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     sprite.height = 40;
     const paint = sprite.getContext('2d');
     if (!paint) return null;
+    // Tiny ivory-white core surrounded by a soft theme-colored halo.
+    // Rendered only on palette changes, never per frame.
     const glow = paint.createRadialGradient(20, 20, 0, 20, 20, 20);
-    glow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-    glow.addColorStop(0.12, color);
-    glow.addColorStop(0.32, color);
+    glow.addColorStop(0, 'rgba(255, 255, 245, 1)');
+    glow.addColorStop(0.065, 'rgba(255, 255, 245, 0.94)');
+    glow.addColorStop(0.16, color);
+    glow.addColorStop(0.39, color);
     glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     paint.fillStyle = glow;
     paint.fillRect(0, 0, 40, 40);
@@ -366,22 +404,34 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     ctx.globalCompositeOperation = 'source-over';
     ctx.shadowBlur = 0;
     const count = this.width < 640 ? 11 : 18;
-    // Stable seeds keep the composition calm while motion stays audio-driven.
+
+    // A real new onset starts one tiny conversation between four of the
+    // fireflies. ReadFrame's beat envelope decays, so detect a rising edge.
+    if (audio.beat > 0.88 && audio.beat > this.fireflyPreviousBeat + 0.10 &&
+        this.time - this.fireflyLastBeatAt > 0.32) {
+      this.fireflyLastBeatAt = this.time;
+    }
+    this.fireflyPreviousBeat = audio.beat;
+
     for (let i = 0; i < count; i++) {
       const seed = ATMOSPHERE[i];
-      const driftX = Math.sin(seed.phase + this.time * seed.speed * 0.17) * 0.025;
-      const driftY = Math.cos(seed.phase + this.time * seed.speed * 0.12) * 0.03;
-      // Fixed size and gentle wandering; the music affects only how the
-      // light blinks. Each firefly has its own period, phase and FFT band.
+      const position = fireflyFlight(seed, this.time);
       const bandIndex = audio.spectrum.length ? (i * 7 + 3) % audio.spectrum.length : 0;
+      const echo = fireflyEcho(this.time - this.fireflyLastBeatAt, i);
       const reaction = fireflyAudioResponse(
         audio, audio.spectrum[bandIndex] ?? 0, activity,
-        this.time, seed.phase, seed.speed
+        this.time, seed.phase, seed.speed, echo
       );
-      const x = (seed.x + driftX) * this.width;
-      const y = (seed.y + driftY) * this.height;
-      const size = 13 + seed.size * 4;
-      ctx.globalAlpha = reaction.alpha;
+      // An unlit insect requires no draw call. The scene often renders only
+      // 2–5 glows even though 18 different insects can take turns blinking.
+      const alpha = reaction.alpha * (0.60 + seed.depth * 0.40);
+      if (alpha < 0.01) continue;
+
+      const x = position.x * this.width;
+      const y = position.y * this.height;
+      // Per-seed depth establishes the size, NEVER amplitude or the beat.
+      const size = 10 + seed.size * 3.1 + seed.depth * 5;
+      ctx.globalAlpha = alpha;
       ctx.drawImage(i % 3 === 0 ? sprites.main : sprites.accent,
         x - size / 2, y - size / 2, size, size);
     }
@@ -432,6 +482,8 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.subscription?.unsubscribe();
     this.audioSubscription?.unsubscribe();
     this.fireflySprites = null;
+    this.fireflyPreviousBeat = 0;
+    this.fireflyLastBeatAt = -Infinity;
     if (this.frameId !== null) cancelAnimationFrame(this.frameId);
     this.resizeObserver?.disconnect();
     window.removeEventListener('resize', this.resize);
