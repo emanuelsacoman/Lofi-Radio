@@ -263,6 +263,16 @@ body {
       z-index: 99;
     }
 
+    /* In the flex sidebar, the original percentage offset misaligns the
+       Palette header with its swatches. Center the header in its own panel,
+       without changing the neighboring Visualizer accordion. */
+    .aside > mat-accordion:first-child .transparent-panel mat-expansion-panel-header {
+      margin-left: 0;
+      width: 100%;
+      box-sizing: border-box;
+      justify-content: center;
+    }
+
     .transparent-panel mat-expansion-panel-header:hover {
       filter: drop-shadow(0 0 0.5rem var(--clr-accent));
     }
