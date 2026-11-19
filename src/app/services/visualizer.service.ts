@@ -1,57 +1,20 @@
-<<<<<<< Updated upstream
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-=======
 import { Injectable, OnDestroy, Optional } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { VisualizerConfig, VisualizerParameters, VisualizerStyle } from './interfaces/visualizer/visualizerconfig';
 import { VisualizerPath, VisualizerPoint } from './interfaces/visualizer/visualizerpoint';
-import { VisualizerAudioFrame } from './interfaces/visualizer/visualizer-audio-frame';
 import { VisualizerCatalogService } from './visualizer-catalog.service';
 import { normalizeVisualizerCustomization } from './visualizer-customization';
+import { VisualizerAudioFrame } from './interfaces/visualizer/visualizer-audio-frame';
 
 export type VisualizerCatalogStatus = 'loading' | 'ready' | 'error';
->>>>>>> Stashed changes
+const STORAGE_KEY = 'lofi.visualizer.preset.v1';
+const TAU = Math.PI * 2;
 
-import { VisualizerConfig } from './interfaces/visualizer/visualizerconfig';
-import { VisualizerPoint } from './interfaces/visualizer/visualizerpoint';
+function clamp(value: number, min: number, max: number, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(max, Math.max(min, value)) : fallback;
+}
 
-type VisualizerParameters = Partial<
-  Pick<
-    VisualizerConfig,
-    | 'geometry'
-    | 'amplitude'
-    | 'frequency'
-    | 'speed'
-    | 'harmonics'
-    | 'phase'
-    | 'color'
-  >
->;
-
-<<<<<<< Updated upstream
-@Injectable({
-  providedIn: 'root'
-})
-export class VisualizerService {
-
-  private readonly presets: VisualizerConfig[] = [
-    {
-      id: 'default-wave',
-      name: 'Default Wave',
-      geometry: 'wave',
-      amplitude: 30,
-      frequency: 3,
-      speed: 0.2,
-      harmonics: 2,
-      phase: 0,
-      color: '#aea4d3'
-    }
-  ];
-
-  private readonly activeSubject =
-    new BehaviorSubject<VisualizerConfig | null>(null);
-=======
 function validColor(color: string, fallback: string): string {
   if (typeof color !== 'string') return fallback;
   const value = color.trim();
@@ -67,7 +30,6 @@ export class VisualizerService implements OnDestroy {
   private readonly presetsSubject = new BehaviorSubject<VisualizerConfig[]>(this.getPresets());
   private readonly catalogStatusSubject = new BehaviorSubject<VisualizerCatalogStatus>('loading');
   private catalogSubscription?: Subscription;
->>>>>>> Stashed changes
 
   readonly activeConfig$ = this.activeSubject.asObservable();
   readonly presets$ = this.presetsSubject.asObservable();
@@ -90,7 +52,6 @@ export class VisualizerService implements OnDestroy {
         this.catalogStatusSubject.next('ready');
       },
       error: () => {
-        // The database is the only catalog. Never invent local replacements.
         this.presets = [];
         this.presetsSubject.next([]);
         this.setPreset(null);
@@ -104,104 +65,74 @@ export class VisualizerService implements OnDestroy {
     return config ? { ...config } : null;
   }
 
+  get activePresetId(): string | null {
+    return this.activeSubject.value?.id ?? null;
+  }
+
   getPresets(): VisualizerConfig[] {
-    return this.presets.map(preset => ({ ...preset }));
+    return this.presets.map((preset: VisualizerConfig) => ({ ...preset }));
   }
 
   setPreset(id: string | null): boolean {
     if (id === null) {
       this.pendingPresetId = null;
       this.activeSubject.next(null);
+      this.persist(null);
       return true;
     }
 
-    const preset = this.presets.find(
-      item => item.id === id
-    );
-
+    const preset = this.presets.find((item: VisualizerConfig) => item.id === id);
     if (!preset) return false;
-<<<<<<< Updated upstream
-
-=======
     this.pendingPresetId = null;
->>>>>>> Stashed changes
     this.activeSubject.next({ ...preset });
+    this.persist(id);
     return true;
   }
 
   updateParameters(patch: VisualizerParameters): void {
     const current = this.activeSubject.value;
-
     if (!current) return;
-
-    const updated = this.normalizeConfig({
-      ...current,
-      ...patch
-    });
-
-    this.activeSubject.next(updated);
+    this.activeSubject.next(this.normalizeConfig({ ...current, ...patch }));
   }
 
-  calculatePoints(
-    timeSeconds: number,
-    resolution = 128
-  ): VisualizerPoint[] {
+  resetParameters(): void {
+    const id = this.activePresetId;
+    if (id) this.setPreset(id);
+  }
 
-    const config = this.activeSubject.value;
-
-    if (!config) return [];
-<<<<<<< Updated upstream
-
-    const count = Number.isFinite(resolution)
-      ? Math.max(2, Math.min(2048, Math.floor(resolution)))
-      : 128;
-
-    const time = Number.isFinite(timeSeconds)
-      ? timeSeconds
-      : 0;
-
-    const points: VisualizerPoint[] = [];
-
-    for (let i = 0; i < count; i++) {
-      const progress = i / (count - 1);
-
-      points.push(
-        this.calculatePoint(progress, time, config)
-      );
+  /**
+   * Measures actual spectral activity, ignoring beat decay in periods of silence.
+   * Zero activity means no captured sound (or just analyser noise).
+   */
+  getAudioActivity(audio?: VisualizerAudioFrame): number {
+    if (audio?.source !== 'tab') return 0;
+    const level = clamp(audio.level, 0, 1, 0);
+    const bass = clamp(audio.bass, 0, 1, 0);
+    const mids = clamp(audio.mids, 0, 1, 0);
+    const treble = clamp(audio.treble, 0, 1, 0);
+    let spectrumPeak = 0;
+    for (const bin of audio.spectrum) {
+      spectrumPeak = Math.max(spectrumPeak, clamp(bin, 0, 1, 0));
     }
-
-    return points;
+    const energy = Math.max(
+      level * 1.5, bass * 0.9, mids * 0.9, treble * 0.8, spectrumPeak * 0.7
+    );
+    // Remove the noise floor before scaling to a visibility factor.
+    return clamp((energy - 0.025) / 0.5, 0, 1, 0);
   }
 
-  private calculatePoint(
-    progress: number,
-    time: number,
-    config: VisualizerConfig
-  ): VisualizerPoint {
-
-    const signal = this.calculateWave(progress, time, config);
-    const amplitude = config.amplitude / 100;
-    const angle = progress * Math.PI * 2;
-
-    switch (config.geometry) {
-
-      case 'circle': {
-        const radius = 0.25 + signal * amplitude * 0.14;
-
-        return {
-          x: 0.5 + Math.cos(angle) * radius,
-          y: 0.5 + Math.sin(angle) * radius
-        };
-=======
+  /**
+   * Deterministic math only: same config, t, and resolution => same points.
+   * The caller owns the render loop and decides whether time advances.
+   */
+  calculatePaths(timeSeconds: number, resolution?: number, audio?: VisualizerAudioFrame): VisualizerPath[] {
+    const config = this.activeSubject.value;
+    if (!config) return [];
     return this.calculatePathsForConfig(config, timeSeconds, resolution, audio);
   }
 
-  /** Pure renderer entry point for the studio: never selects or persists a preset. */
-  calculatePathsForConfig(
-    config: VisualizerConfig, timeSeconds: number, resolution?: number, audio?: VisualizerAudioFrame
-  ): VisualizerPath[] {
-    // A form can emit incomplete or out-of-range numbers while typing. Bound
-    // every loop here as well as at the UI boundary so this public API is safe.
+  /** Pure renderer entry point for Studio previews; no player selection changes. */
+  calculatePathsForConfig(config: VisualizerConfig, timeSeconds: number, resolution?: number, audio?: VisualizerAudioFrame): VisualizerPath[] {
     config = this.normalizeConfig(config);
     const t = Number.isFinite(timeSeconds) ? timeSeconds : 0;
     const count = clamp(resolution ?? config.resolution, 12, 768, config.resolution) | 0;
@@ -250,60 +181,22 @@ export class VisualizerService implements OnDestroy {
               * Math.sin(Math.PI * u);
         }
         points.push({ x, y });
->>>>>>> Stashed changes
       }
-
-      case 'spiral': {
-        const turns = Math.max(1, config.frequency);
-        const spiralAngle = progress * Math.PI * 2 * turns;
-
-        const radius = Math.max(
-          0,
-          0.04 + progress * 0.36 + signal * amplitude * 0.05
-        );
-
-        return {
-          x: 0.5 + Math.cos(spiralAngle) * radius,
-          y: 0.5 + Math.sin(spiralAngle) * radius
-        };
-      }
-
-      case 'wave':
-      default:
-        return {
-          x: progress,
-          y: 0.5 +
-            signal *
-            amplitude *
-            0.4 *
-            Math.sin(Math.PI * progress)
-        };
+      paths.push({
+        points,
+        layer,
+        kind: isBars ? 'bar' : 'curve',
+        closed: false
+      });
     }
+    return paths;
   }
 
-  private calculateWave(
-    progress: number,
-    time: number,
-    config: VisualizerConfig
-  ): number {
+  /** Compatibility with the original prototype API. */
+  calculatePoints(timeSeconds: number, resolution = 128, audio?: VisualizerAudioFrame): VisualizerPoint[] {
+    return this.calculatePaths(timeSeconds, resolution, audio)[0]?.points ?? [];
+  }
 
-<<<<<<< Updated upstream
-    const phase = config.phase * Math.PI / 180;
-
-    const baseAngle =
-      Math.PI * 2 *
-      (config.frequency * progress - config.speed * time)
-      + phase;
-
-    let result = 0;
-    let totalWeight = 0;
-
-    for (let n = 1; n <= config.harmonics; n++) {
-      const weight = 1 / n;
-
-      result += Math.sin(baseAngle * n) * weight;
-      totalWeight += weight;
-=======
   private wave(u: number, t: number, layer: number, config: VisualizerConfig): number {
     let signal = 0;
     let total = 0;
@@ -314,47 +207,15 @@ export class VisualizerService implements OnDestroy {
       let sample: number;
       switch (config.waveShape) {
         case 'triangle': sample = 2 / Math.PI * Math.asin(Math.sin(angle)); break;
-        case 'sawtooth': {
-          const cycles = angle / TAU;
-          sample = 2 * (cycles - Math.floor(cycles + 0.5));
-          break;
-        }
+        case 'sawtooth': { const cycles = angle / TAU; sample = 2 * (cycles - Math.floor(cycles + 0.5)); break; }
         default: sample = Math.sin(angle);
       }
       signal += sample * weight;
       total += weight;
->>>>>>> Stashed changes
     }
-
-    return result / totalWeight;
+    return total ? signal / total : 0;
   }
 
-<<<<<<< Updated upstream
-  private normalizeConfig(
-    config: VisualizerConfig
-  ): VisualizerConfig {
-
-    const clamp = (
-      value: number,
-      min: number,
-      max: number,
-      fallback: number
-    ) =>
-      Number.isFinite(value)
-        ? Math.max(min, Math.min(max, value))
-        : fallback;
-
-    return {
-      ...config,
-
-      geometry: (
-        ['wave', 'circle', 'spiral'] as string[]
-      ).includes(config.geometry)
-        ? config.geometry
-        : 'wave',
-
-=======
-  /** Returns a bounded copy without modifying either the draft or active preset. */
   normalizeConfig(config: VisualizerConfig): VisualizerConfig {
     const allowed = ['wave', 'bars'];
     const styles: VisualizerStyle[] = [
@@ -366,24 +227,23 @@ export class VisualizerService implements OnDestroy {
       geometry: allowed.includes(config.geometry) ? config.geometry : 'wave',
       visualStyle: styles.includes(config.visualStyle) ? config.visualStyle : 'silk',
       icon: typeof config.icon === 'string' && /^[a-z_]{1,40}$/.test(config.icon) ? config.icon : 'graphic_eq',
->>>>>>> Stashed changes
       amplitude: clamp(config.amplitude, 0, 100, 30),
-      frequency: clamp(config.frequency, 0.1, 12, 3),
+      audioSensitivity: clamp(config.audioSensitivity, 0.2, 4, 1.5),
+      frequency: clamp(config.frequency, 0.25, 12, 3),
       speed: clamp(config.speed, 0, 5, 0.2),
-      harmonics: Math.round(
-        clamp(config.harmonics, 1, 12, 2)
-      ),
+      harmonics: Math.round(clamp(config.harmonics, 1, 12, 2)),
       phase: clamp(config.phase, -360, 360, 0),
-
-      color: typeof config.color === 'string'
-        && config.color.trim()
-          ? config.color.trim()
-          : '#aea4d3'
+      color: validColor(config.color, 'theme'),
+      secondaryColor: validColor(config.secondaryColor, 'accent'),
+      lineWidth: clamp(config.lineWidth, 0.5, 10, 2),
+      glow: clamp(config.glow, 0, 40, 10),
+      opacity: clamp(config.opacity, 0, 1, 0.8),
+      layers: Math.round(clamp(config.layers, 1, 8, 3)),
+      resolution: Math.round(clamp(config.resolution, 48, 768, 256)),
+      barCount: Math.round(clamp(config.barCount, 12, 96, 48)),
+      rotation: clamp(config.rotation, -5, 5, 0)
     };
   }
-<<<<<<< Updated upstream
-}
-=======
 
   private restorePreset(): VisualizerConfig | null {
     let stored: string | null = null;
@@ -391,41 +251,35 @@ export class VisualizerService implements OnDestroy {
     catch { /* Storage may be disabled by browser settings. */ }
     // A fresh visit starts Off. Sharing permission is never requested on load.
     if (!stored || stored === 'off') return null;
-    // A stored ID never supplies a local visual: wait for its published document.
     this.pendingPresetId = stored;
     return null;
   }
 
   private mergeCatalog(documents: VisualizerConfig[]): void {
     const previous = this.activeSubject.value;
-    const previousDefinition = this.presets.find(preset => preset.id === previous?.id);
+    const previousDefinition = this.presets.find(p => p.id === previous?.id);
     const merged = new Map<string, VisualizerConfig>();
-    for (const document of documents) {
-      merged.set(document.id, this.normalizeConfig(document));
-    }
+    for (const document of documents) merged.set(document.id, this.normalizeConfig(document));
     this.presets = Array.from(merged.values());
     this.presetsSubject.next(this.getPresets());
-
     const selectedId = previous?.id ?? this.pendingPresetId;
     if (!selectedId) return;
-    const selected = this.presets.find(preset => preset.id === selectedId);
+    const selected = this.presets.find(p => p.id === selectedId);
     if (selected) {
       this.pendingPresetId = null;
-      // Keep local fine-tuning unless the saved preset actually changed.
       if (!previous || JSON.stringify(previousDefinition) !== JSON.stringify(selected)) {
         this.activeSubject.next({ ...selected });
       }
     } else if (previous) {
-      // Deleting/unpublishing an active custom preset turns the effect off.
       this.setPreset(null);
     }
   }
 
   ngOnDestroy(): void {
     this.catalogSubscription?.unsubscribe();
+    this.activeSubject.complete();
     this.presetsSubject.complete();
     this.catalogStatusSubject.complete();
-    this.activeSubject.complete();
   }
 
   private persist(id: string | null): void {
@@ -434,4 +288,3 @@ export class VisualizerService implements OnDestroy {
     } catch { /* Keep visualizer usable without persistent storage. */ }
   }
 }
->>>>>>> Stashed changes

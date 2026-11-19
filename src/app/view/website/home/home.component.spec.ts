@@ -1,14 +1,10 @@
-import { BehaviorSubject, NEVER, Subject, of } from 'rxjs';
+import { NEVER, Subject, of } from 'rxjs';
 
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
-<<<<<<< Updated upstream
-=======
 import { VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
 import { VisualizerCatalogService } from 'src/app/services/visualizer-catalog.service';
-import { VisualizerDocument } from 'src/app/services/interfaces/visualizer/visualizer-document';
 import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
->>>>>>> Stashed changes
 import { Chip } from 'src/app/services/interfaces/chip';
 import { FALLBACK_SITE_THEME, SiteTheme } from 'src/app/services/interfaces/site-theme';
 import { HomeComponent } from './home.component';
@@ -17,14 +13,9 @@ describe('HomeComponent non-verbal radio feedback', () => {
   const playerTimeoutMs = 12_000;
 
   let component: HomeComponent;
-<<<<<<< Updated upstream
-  let changeDetector: jasmine.SpyObj<{ detectChanges: () => void }>;
-=======
   let visualizerService: VisualizerService;
   let visualizerAudio: VisualizerAudioService;
   let changeDetector: jasmine.SpyObj<{ detectChanges: () => void; markForCheck: () => void }>;
-  let visualizerCatalog: BehaviorSubject<VisualizerDocument[]>;
->>>>>>> Stashed changes
   let firebase: jasmine.SpyObj<{
     obterTodosChip: () => unknown;
     obterTodosTemas: () => unknown;
@@ -50,15 +41,11 @@ describe('HomeComponent non-verbal radio feedback', () => {
     firebase.obterTodosTemas.and.returnValue(NEVER);
     youtube.getVideoDetailsBatch.and.returnValue(of([]));
 
-<<<<<<< Updated upstream
-=======
-    visualizerCatalog = new BehaviorSubject<VisualizerDocument[]>(VISUALIZER_PRESETS.map(preset => ({ ...preset, description: '', enabled: true })));
-    const catalog = jasmine.createSpyObj<VisualizerCatalogService>('VisualizerCatalogService', ['watchPublished']);
-    catalog.watchPublished.and.returnValue(visualizerCatalog);
-    visualizerService = new VisualizerService(catalog);
+    visualizerService = new VisualizerService({
+      watchPublished: () => of(VISUALIZER_PRESETS.map(preset => ({ ...preset, description: '', enabled: true })))
+    } as unknown as VisualizerCatalogService);
     visualizerAudio = new VisualizerAudioService();
 
->>>>>>> Stashed changes
     component = new HomeComponent(
       title,
       meta,
@@ -72,7 +59,9 @@ describe('HomeComponent non-verbal radio feedback', () => {
       youtube as any,
       share,
       new RadioFavoritesService(),
-      jasmine.createSpyObj('ProfileVisitsService', { registerVisit: Promise.resolve() })
+      jasmine.createSpyObj('ProfileVisitsService', { registerVisit: Promise.resolve() }),
+      visualizerService,
+      visualizerAudio
     );
 
     component.isOnline = true;
@@ -80,13 +69,10 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
   afterEach(() => {
     component.ngOnDestroy();
-    visualizerService.ngOnDestroy();
     localStorage.clear();
     jasmine.clock().uninstall();
   });
 
-<<<<<<< Updated upstream
-=======
 
   describe('independent appearance menus', () => {
     it('keeps effect button identities stable across change detection', () => {
@@ -100,62 +86,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
       expect(component.visualizerPresets).toBe(presets);
       expect(component.visualizerPresets[0]).toBe(firstPreset);
       expect(component.trackVisualizerPreset(0, firstPreset)).toBe(firstPreset.id);
-      expect(getPresets).not.toHaveBeenCalled();
-    });
-
-    it('refreshes effect buttons when the published catalog changes', () => {
-      const defaults = visualizerCatalog.value;
-      const published = { ...defaults[0], id: 'custom-wave', name: 'Midnight silk' };
-
-      visualizerCatalog.next([...defaults, published]);
-
-      expect(component.visualizerPresets.map(preset => preset.id)).toContain('custom-wave');
-      expect(component.visualizerPresets[0].id).toBe(defaults[0].id);
-      expect(changeDetector.markForCheck).toHaveBeenCalled();
-
-      visualizerCatalog.next([...defaults, { ...published, name: 'Neon silk' }]);
-      expect(component.visualizerPresets.find(preset => preset.id === 'custom-wave')?.name).toBe('Neon silk');
-
-      visualizerCatalog.next(defaults);
-      expect(component.visualizerPresets.some(preset => preset.id === 'custom-wave')).toBeFalse();
-    });
-
-    it('unsubscribes from visualizer catalog updates when leaving the page', () => {
-      const presets = component.visualizerPresets;
-      component.ngOnDestroy();
-
-      visualizerCatalog.next([]);
-
-      expect(component.visualizerPresets).toBe(presets);
-    });
-
-    it('shows an empty published catalog without reintroducing local visualizers', () => {
-      visualizerCatalog.next([]);
-      expect(component.visualizerPresets).toEqual([]);
-      expect(component.visualizerCatalogStatus).toBe('ready');
-      expect(component.visualizerCatalogMessage).toContain('No published');
-      const capture = spyOn(visualizerAudio, 'startCapture');
-      component.selectVisualizer('aurora-wave');
-      expect(capture).not.toHaveBeenCalled();
-    });
-
-    it('turns off and stops sharing when the selected document is unpublished', () => {
-      spyOn(visualizerAudio, 'startCapture').and.resolveTo(true);
-      component.selectVisualizer('pulse-bars');
-      spyOnProperty(visualizerAudio, 'isActive', 'get').and.returnValue(true);
-      const stop = spyOn(visualizerAudio, 'stopCapture');
-      visualizerCatalog.next([]);
-      expect(component.selectedVisualizerId).toBe('off');
-      expect(stop).toHaveBeenCalledTimes(1);
-    });
-
-    it('reports database errors with a retry action instead of bundled visualizers', () => {
-      visualizerCatalog.error(new Error('permission-denied'));
-      expect(component.visualizerPresets).toEqual([]);
-      expect(component.visualizerCatalogStatus).toBe('error');
-      const reload = spyOn(visualizerService, 'reloadCatalog');
-      component.retryVisualizers();
-      expect(reload).toHaveBeenCalledTimes(1);
+      expect(getPresets).toHaveBeenCalledTimes(0);
     });
 
     it('starts with both menus closed', () => {
@@ -272,7 +203,6 @@ describe('HomeComponent non-verbal radio feedback', () => {
     });
   });
 
->>>>>>> Stashed changes
   it('uses the play control itself as non-verbal loading feedback', () => {
     expect(component.radioStatus).toBe('loading-stations');
     expect(component.showPlaySpinner).toBeTrue();

@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import {
+  AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input,
+  NgZone, OnChanges, OnDestroy, SimpleChanges, ViewChild
+} from '@angular/core';
+import { Subscription } from 'rxjs';
 import { VisualizerService } from 'src/app/services/visualizer.service';
-<<<<<<< Updated upstream
-=======
 import { VisualizerConfig } from 'src/app/services/interfaces/visualizer/visualizerconfig';
 import { VisualizerPath } from 'src/app/services/interfaces/visualizer/visualizerpoint';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
@@ -104,20 +106,12 @@ export function fireflyAudioResponse(
   );
   return { alpha: clamp(clamp(activity) * blink * (0.56 + 0.44 * energy)) };
 }
->>>>>>> Stashed changes
 
 @Component({
   selector: 'app-visualizer',
   templateUrl: './visualizer.component.html',
   styleUrls: ['./visualizer.component.css'],
 })
-<<<<<<< Updated upstream
-export class VisualizerComponent {
-  
-  constructor(private visualizerService: VisualizerService) {}
-
-  
-=======
 export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() playing = true;
   @Input() palette = '';
@@ -584,5 +578,4 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     document.removeEventListener('visibilitychange', this.visibilityHandler);
     this.reducedMotion?.removeEventListener?.('change', this.motionHandler);
   }
->>>>>>> Stashed changes
 }

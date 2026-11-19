@@ -16,15 +16,6 @@ describe('VisualizerService', () => {
   }
 
   beforeEach(() => {
-<<<<<<< Updated upstream
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(VisualizerService);
-  });
-
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-=======
     localStorage.clear();
     const updates = new Subject<VisualizerDocument[]>();
     service = new VisualizerService(catalogFrom(updates));
@@ -374,5 +365,4 @@ describe('VisualizerService', () => {
   });
 
 
->>>>>>> Stashed changes
 });

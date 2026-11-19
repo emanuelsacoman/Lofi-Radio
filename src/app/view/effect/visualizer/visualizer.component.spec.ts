@@ -3,40 +3,32 @@ import { of } from 'rxjs';
 import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
 import { VisualizerConfig } from 'src/app/services/interfaces/visualizer/visualizerconfig';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-<<<<<<< Updated upstream
-
-import { VisualizerComponent } from './visualizer.component';
-=======
 import { VisualizerComponent, fireflyAudioResponse, fireflyFlight, fireflyEcho } from './visualizer.component';
 import { VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerCatalogService } from 'src/app/services/visualizer-catalog.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
->>>>>>> Stashed changes
 
 describe('VisualizerComponent', () => {
   let component: VisualizerComponent;
   let fixture: ComponentFixture<VisualizerComponent>;
+  let service: VisualizerService;
 
   beforeEach(() => {
-<<<<<<< Updated upstream
-    TestBed.configureTestingModule({
-      declarations: [VisualizerComponent]
-=======
     localStorage.clear();
     TestBed.configureTestingModule({
       declarations: [VisualizerComponent],
       providers: [{ provide: VisualizerCatalogService, useValue: { watchPublished: () => of(VISUALIZER_PRESETS) } }]
->>>>>>> Stashed changes
     });
     fixture = TestBed.createComponent(VisualizerComponent);
     component = fixture.componentInstance;
+    service = TestBed.inject(VisualizerService);
     fixture.detectChanges();
   });
 
+  afterEach(() => { fixture.destroy(); localStorage.clear(); });
+
   it('should create', () => {
     expect(component).toBeTruthy();
-<<<<<<< Updated upstream
-=======
     expect(fixture.nativeElement.querySelector('canvas')).toBeTruthy();
   });
 
@@ -346,7 +338,6 @@ describe('VisualizerComponent', () => {
   it('accepts switching the active preset off', () => {
     expect(service.setPreset(null)).toBeTrue();
     expect(service.calculatePaths(1)).toEqual([]);
->>>>>>> Stashed changes
   });
 
   it('positions, rotates, scales and mirrors each frame without accumulating transforms', () => {

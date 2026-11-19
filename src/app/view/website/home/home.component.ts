@@ -13,12 +13,8 @@ import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
-<<<<<<< Updated upstream
-import { VisualizerService } from 'src/app/services/visualizer.service';
-=======
 import { VisualizerCatalogStatus, VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
->>>>>>> Stashed changes
 
 type FloatingEmoji = {
   emoji: string;
@@ -154,12 +150,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
   themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
   selectedPalette = 'purple';
-<<<<<<< Updated upstream
-=======
   paletteExpanded = false;
   visualizerExpanded = false;
   visualizerCatalogStatus: VisualizerCatalogStatus = 'loading';
->>>>>>> Stashed changes
   newThemeIds = new Set<string>();
   private themeSubscription?: Subscription;
   private readonly selectedThemeKey = 'selectedPalette';
@@ -182,15 +175,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private radioFavorites: RadioFavoritesService,
     private profileVisits: ProfileVisitsService,
 
-    private visualizerService: VisualizerService
+    private visualizerService: VisualizerService,
+    private visualizerAudio: VisualizerAudioService
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
 
     this.loadStations();
     this.subscriptions.add(this.visualizerService.presets$.subscribe(presets => {
-      // Replace only when the catalog changes, preserving button identity during
-      // pointer interactions while reflecting published edits from Firebase.
       this.cachedVisualizerPresets = presets;
       this.cdRef.markForCheck();
     }));
@@ -206,18 +198,58 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
   }
 
-  testVisualizer(): void {
-    this.visualizerService.setPreset('default-wave');
+  /** Material-free menu toggles: click events update Angular-visible state. */
+  togglePalette(): void {
+    this.paletteExpanded = !this.paletteExpanded;
+  }
 
-    this.visualizerService.updateParameters({
-      amplitude: 70,
-      frequency: 5,
-      harmonics: 4,
-    });
+  toggleVisualizers(): void {
+    this.visualizerExpanded = !this.visualizerExpanded;
+  }
 
+  // Preserve identities between change-detection passes. getPresets() makes new
+  // objects, which would cause *ngFor to replace buttons after pointerdown and
+  // before click (the static Off button was unaffected).
+  private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
 
-    const points = this.visualizerService.calculatePoints(2, 100);
-    console.log(points);
+  get visualizerPresets(): ReturnType<VisualizerService['getPresets']> {
+    return this.cachedVisualizerPresets ??= this.visualizerService.getPresets();
+  }
+
+  trackVisualizerPreset(_index: number, preset: { id: string }): string {
+    return preset.id;
+  }
+
+  get selectedVisualizerId(): string {
+    return this.visualizerService.activePresetId ?? 'off';
+  }
+
+  selectVisualizer(id: string): void {
+    if (id === 'off') {
+      // Off also revokes any pending or established tab-sharing session.
+      this.visualizerAudio.stopCapture();
+      this.visualizerService.setPreset(null);
+      return;
+    }
+
+    // Only known effects may request a screen/tab capture permission.
+    if (!this.visualizerService.getPresets().some(preset => preset.id === id)) return;
+
+    // Call immediately inside the icon click, before state subscriptions
+    // run, so getDisplayMedia retains the browser's user activation.
+    if (!this.visualizerAudio.isActive && this.visualizerAudio.status !== 'requesting') {
+      void this.visualizerAudio.startCapture();
+    }
+
+    this.visualizerService.setPreset(id);
+  }
+
+  get audioCaptureStatus() {
+    return this.visualizerAudio.status;
+  }
+
+  get audioCaptureError(): string {
+    return this.visualizerAudio.errorMessage;
   }
 
   retryVisualizers(): void {
@@ -229,9 +261,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.visualizerCatalogStatus === 'error') return 'Could not load visualizers. Try again.';
     return 'No published visualizers yet';
   }
-
-  private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
-
 
   toggleList(): void {
     this.showList = !this.showList;
@@ -507,6 +536,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.visualizerAudio.stopCapture();
     this.themeSubscription?.unsubscribe();
     this.isDestroyed = true;
     this.catalogSubscription?.unsubscribe();
