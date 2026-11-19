@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/visualizer-spec",
+    "types": ["jasmine", "youtube"]
+  },
+  "include": [
+    "src/app/services/visualizer-catalog.service.spec.ts",
+    "src/app/services/visualizer.service.spec.ts",
+    "src/app/services/visualizer-audio.service.spec.ts",
+    "src/app/view/effect/visualizer/visualizer.component.spec.ts",
+    "src/app/view/adm/visualizer-studio/visualizer-studio.component.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

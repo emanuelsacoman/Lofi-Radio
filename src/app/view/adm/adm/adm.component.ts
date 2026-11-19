@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -13,6 +13,7 @@ import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.se
 import { Chip } from 'src/app/services/interfaces/chip';
 import { Youtuber } from 'src/app/services/interfaces/youtuber';
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors } from 'src/app/services/interfaces/site-theme';
+import { VisualizerStudioComponent } from '../visualizer-studio/visualizer-studio.component';
 
 type ThemeColorField = {
   key: keyof SiteThemeColors;
@@ -27,6 +28,7 @@ type ThemeSortMode = 'order' | 'alphabetical';
   styleUrls: ['./adm.component.css']
 })
 export class AdmComponent implements OnInit, OnDestroy {
+  @ViewChild(VisualizerStudioComponent) visualizerStudio?: VisualizerStudioComponent;
   chipCreate!: FormGroup;
   youtuberCreate!: FormGroup;
   themeCreate!: FormGroup;
@@ -603,6 +605,10 @@ export class AdmComponent implements OnInit, OnDestroy {
     this.router.navigate(['']);
   }
 
+  canLeaveAdmin(): Promise<boolean> {
+    return this.visualizerStudio?.confirmDiscard() ?? Promise.resolve(true);
+  }
+
   isQuotaExhausted(): boolean {
     return this.quotaStatus.toLowerCase().includes('exceeded');
   }
@@ -616,9 +622,10 @@ export class AdmComponent implements OnInit, OnDestroy {
       cancelButtonColor: '#dc2626',
       confirmButtonText: 'Sair',
       cancelButtonText: 'Cancelar'
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.auth.deslogar();
+    }).then(async result => {
+      if (result.isConfirmed && await this.canLeaveAdmin()) {
+        this.visualizerStudio?.form.markAsPristine();
+        await this.auth.deslogar();
         this.toastService.success('Sucesso!', 'Logout realizado.', 5000);
       }
     });

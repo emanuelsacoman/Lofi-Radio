@@ -62,7 +62,13 @@
 
     <app-profile-visits-chart></app-profile-visits-chart>
 
-    <section class="workspace">
+    <nav class="admin-section-nav" aria-label="Seções do admin">
+      <a href="/adm#radio-manager"><mat-icon>radio</mat-icon>Rádios e canais</a>
+      <a href="/adm#theme-editor"><mat-icon>palette</mat-icon>Temas</a>
+      <a class="admin-section-nav__studio" href="/adm#visualizer-studio"><mat-icon>graphic_eq</mat-icon>Visualizer Studio<span>Novo</span></a>
+    </nav>
+
+    <section class="workspace" id="radio-manager">
       <aside class="tools-column">
         <section class="tool-panel">
           <div class="panel-heading">
@@ -470,5 +476,6 @@
         </ng-template>
       </div>
     </section>
+    <app-visualizer-studio></app-visualizer-studio>
   </main>
 </section>

@@ -1,6 +1,14 @@
-import { NEVER, Subject, of } from 'rxjs';
+import { BehaviorSubject, NEVER, Subject, of } from 'rxjs';
 
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
+<<<<<<< Updated upstream
+=======
+import { VisualizerService } from 'src/app/services/visualizer.service';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
+import { VisualizerCatalogService } from 'src/app/services/visualizer-catalog.service';
+import { VisualizerDocument } from 'src/app/services/interfaces/visualizer/visualizer-document';
+import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
+>>>>>>> Stashed changes
 import { Chip } from 'src/app/services/interfaces/chip';
 import { FALLBACK_SITE_THEME, SiteTheme } from 'src/app/services/interfaces/site-theme';
 import { HomeComponent } from './home.component';
@@ -9,7 +17,14 @@ describe('HomeComponent non-verbal radio feedback', () => {
   const playerTimeoutMs = 12_000;
 
   let component: HomeComponent;
+<<<<<<< Updated upstream
   let changeDetector: jasmine.SpyObj<{ detectChanges: () => void }>;
+=======
+  let visualizerService: VisualizerService;
+  let visualizerAudio: VisualizerAudioService;
+  let changeDetector: jasmine.SpyObj<{ detectChanges: () => void; markForCheck: () => void }>;
+  let visualizerCatalog: BehaviorSubject<VisualizerDocument[]>;
+>>>>>>> Stashed changes
   let firebase: jasmine.SpyObj<{
     obterTodosChip: () => unknown;
     obterTodosTemas: () => unknown;
@@ -22,7 +37,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
     const title = jasmine.createSpyObj('Title', ['setTitle']);
     const meta = jasmine.createSpyObj('Meta', ['updateTag']);
-    changeDetector = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
+    changeDetector = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges', 'markForCheck']);
     const pexels = jasmine.createSpyObj('PexelsService', ['fetchRandomImage']);
     const users = jasmine.createSpyObj('UserService', ['getConnectedUsersCount']);
     const emojis = jasmine.createSpyObj('EmojiService', ['getLastEmoji', 'sendEmoji']);
@@ -35,6 +50,15 @@ describe('HomeComponent non-verbal radio feedback', () => {
     firebase.obterTodosTemas.and.returnValue(NEVER);
     youtube.getVideoDetailsBatch.and.returnValue(of([]));
 
+<<<<<<< Updated upstream
+=======
+    visualizerCatalog = new BehaviorSubject<VisualizerDocument[]>(VISUALIZER_PRESETS.map(preset => ({ ...preset, description: '', enabled: true })));
+    const catalog = jasmine.createSpyObj<VisualizerCatalogService>('VisualizerCatalogService', ['watchPublished']);
+    catalog.watchPublished.and.returnValue(visualizerCatalog);
+    visualizerService = new VisualizerService(catalog);
+    visualizerAudio = new VisualizerAudioService();
+
+>>>>>>> Stashed changes
     component = new HomeComponent(
       title,
       meta,
@@ -56,10 +80,199 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
   afterEach(() => {
     component.ngOnDestroy();
+    visualizerService.ngOnDestroy();
     localStorage.clear();
     jasmine.clock().uninstall();
   });
 
+<<<<<<< Updated upstream
+=======
+
+  describe('independent appearance menus', () => {
+    it('keeps effect button identities stable across change detection', () => {
+      const getPresets = spyOn(visualizerService, 'getPresets').and.callThrough();
+      const presets = component.visualizerPresets;
+      const firstPreset = presets[0];
+
+      component.toggleVisualizers();
+      component.togglePalette();
+
+      expect(component.visualizerPresets).toBe(presets);
+      expect(component.visualizerPresets[0]).toBe(firstPreset);
+      expect(component.trackVisualizerPreset(0, firstPreset)).toBe(firstPreset.id);
+      expect(getPresets).not.toHaveBeenCalled();
+    });
+
+    it('refreshes effect buttons when the published catalog changes', () => {
+      const defaults = visualizerCatalog.value;
+      const published = { ...defaults[0], id: 'custom-wave', name: 'Midnight silk' };
+
+      visualizerCatalog.next([...defaults, published]);
+
+      expect(component.visualizerPresets.map(preset => preset.id)).toContain('custom-wave');
+      expect(component.visualizerPresets[0].id).toBe(defaults[0].id);
+      expect(changeDetector.markForCheck).toHaveBeenCalled();
+
+      visualizerCatalog.next([...defaults, { ...published, name: 'Neon silk' }]);
+      expect(component.visualizerPresets.find(preset => preset.id === 'custom-wave')?.name).toBe('Neon silk');
+
+      visualizerCatalog.next(defaults);
+      expect(component.visualizerPresets.some(preset => preset.id === 'custom-wave')).toBeFalse();
+    });
+
+    it('unsubscribes from visualizer catalog updates when leaving the page', () => {
+      const presets = component.visualizerPresets;
+      component.ngOnDestroy();
+
+      visualizerCatalog.next([]);
+
+      expect(component.visualizerPresets).toBe(presets);
+    });
+
+    it('shows an empty published catalog without reintroducing local visualizers', () => {
+      visualizerCatalog.next([]);
+      expect(component.visualizerPresets).toEqual([]);
+      expect(component.visualizerCatalogStatus).toBe('ready');
+      expect(component.visualizerCatalogMessage).toContain('No published');
+      const capture = spyOn(visualizerAudio, 'startCapture');
+      component.selectVisualizer('aurora-wave');
+      expect(capture).not.toHaveBeenCalled();
+    });
+
+    it('turns off and stops sharing when the selected document is unpublished', () => {
+      spyOn(visualizerAudio, 'startCapture').and.resolveTo(true);
+      component.selectVisualizer('pulse-bars');
+      spyOnProperty(visualizerAudio, 'isActive', 'get').and.returnValue(true);
+      const stop = spyOn(visualizerAudio, 'stopCapture');
+      visualizerCatalog.next([]);
+      expect(component.selectedVisualizerId).toBe('off');
+      expect(stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports database errors with a retry action instead of bundled visualizers', () => {
+      visualizerCatalog.error(new Error('permission-denied'));
+      expect(component.visualizerPresets).toEqual([]);
+      expect(component.visualizerCatalogStatus).toBe('error');
+      const reload = spyOn(visualizerService, 'reloadCatalog');
+      component.retryVisualizers();
+      expect(reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('starts with both menus closed', () => {
+      expect(component.paletteExpanded).toBeFalse();
+      expect(component.visualizerExpanded).toBeFalse();
+    });
+
+    it('opens and closes Palette independently of Visualizers', () => {
+      const capture = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      component.togglePalette();
+      expect(component.paletteExpanded).toBeTrue();
+      expect(component.visualizerExpanded).toBeFalse();
+      expect(capture).not.toHaveBeenCalled();
+
+      component.toggleVisualizers();
+      expect(component.paletteExpanded).toBeTrue();
+      expect(component.visualizerExpanded).toBeTrue();
+      expect(capture).not.toHaveBeenCalled();
+
+      component.togglePalette();
+      expect(component.paletteExpanded).toBeFalse();
+      expect(component.visualizerExpanded).toBeTrue();
+    });
+
+    it('keeps the visualizer menu open while selecting a preset', () => {
+      component.toggleVisualizers();
+      spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+
+      component.selectVisualizer('pulse-bars');
+      expect(component.visualizerExpanded).toBeTrue();
+      expect(component.paletteExpanded).toBeFalse();
+      expect(visualizerService.activePresetId).toBe('pulse-bars');
+    });
+  });
+
+  describe('visualizer icon selection and audio consent', () => {
+    it('never requests sharing just by initializing the page', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('requests tab audio only after selecting a valid effect icon', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+
+      component.selectVisualizer('moonlit-fireflies');
+
+      expect(visualizerService.activePresetId).toBe('moonlit-fireflies');
+      expect(request).toHaveBeenCalledTimes(1);
+    });
+
+    it('requests tab capture before changing the selected preset', () => {
+      const operations: string[] = [];
+      spyOn(visualizerAudio, 'startCapture').and.callFake(() => {
+        operations.push('request-audio');
+        return Promise.resolve(true);
+      });
+      const setPreset = visualizerService.setPreset.bind(visualizerService);
+      spyOn(visualizerService, 'setPreset').and.callFake(id => {
+        operations.push('set-preset');
+        return setPreset(id);
+      });
+
+      component.selectVisualizer('pulse-bars');
+
+      expect(operations).toEqual(['request-audio', 'set-preset']);
+      expect(visualizerService.activePresetId).toBe('pulse-bars');
+    });
+
+    it('reuses active sharing when the user switches effects', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      spyOnProperty(visualizerAudio, 'isActive', 'get').and.returnValue(true);
+
+      component.selectVisualizer('aurora-wave');
+      component.selectVisualizer('pulse-bars');
+
+      expect(visualizerService.activePresetId).toBe('pulse-bars');
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('does not open another permission dialog while one is pending', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      spyOnProperty(visualizerAudio, 'status', 'get').and.returnValue('requesting');
+
+      component.selectVisualizer('aurora-wave');
+
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('does not request capture for unknown presets', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      component.selectVisualizer('unknown-effect');
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('turning Off ends sharing and clears the selected visualizer', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      const stop = spyOn(visualizerAudio, 'stopCapture').and.callThrough();
+
+      component.selectVisualizer('pulse-bars');
+      component.selectVisualizer('off');
+
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(stop).toHaveBeenCalledTimes(1);
+      expect(visualizerService.activeConfig).toBeNull();
+    });
+
+    it('allows the user to retry an effect icon after denying permission', () => {
+      const request = spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(false));
+
+      component.selectVisualizer('aurora-wave');
+      component.selectVisualizer('aurora-wave');
+
+      expect(request).toHaveBeenCalledTimes(2);
+    });
+  });
+
+>>>>>>> Stashed changes
   it('uses the play control itself as non-verbal loading feedback', () => {
     expect(component.radioStatus).toBe('loading-stations');
     expect(component.showPlaySpinner).toBeTrue();

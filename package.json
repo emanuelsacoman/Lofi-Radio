@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:visualizers": "ng test --watch=false --include=src/app/services/visualizer-catalog.service.spec.ts --include=src/app/services/visualizer.service.spec.ts --include=src/app/services/visualizer-audio.service.spec.ts --include=src/app/view/effect/visualizer/visualizer.component.spec.ts --include=src/app/view/adm/visualizer-studio/visualizer-studio.component.spec.ts --ts-config=tsconfig.visualizer-spec.json --karma-config=karma.adm.conf.js",
     "test:adm": "ng test --watch=false --include=src/app/view/adm/adm/adm.component.spec.ts --ts-config=tsconfig.adm-spec.json --karma-config=karma.adm.conf.js",
     "test:share": "ng test --watch=false --include=src/app/services/share.service.spec.ts --ts-config=tsconfig.share-spec.json --karma-config=karma.adm.conf.js",
     "test:visits": "ng test --watch=false --include=src/app/services/profile-visits.service.spec.ts --include=src/app/view/adm/profile-visits-chart/profile-visits-chart.component.spec.ts --ts-config=tsconfig.visits-spec.json --karma-config=karma.adm.conf.js",

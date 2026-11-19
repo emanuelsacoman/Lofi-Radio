@@ -13,7 +13,12 @@ import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
+<<<<<<< Updated upstream
 import { VisualizerService } from 'src/app/services/visualizer.service';
+=======
+import { VisualizerCatalogStatus, VisualizerService } from 'src/app/services/visualizer.service';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
+>>>>>>> Stashed changes
 
 type FloatingEmoji = {
   emoji: string;
@@ -149,6 +154,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   
   themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
   selectedPalette = 'purple';
+<<<<<<< Updated upstream
+=======
+  paletteExpanded = false;
+  visualizerExpanded = false;
+  visualizerCatalogStatus: VisualizerCatalogStatus = 'loading';
+>>>>>>> Stashed changes
   newThemeIds = new Set<string>();
   private themeSubscription?: Subscription;
   private readonly selectedThemeKey = 'selectedPalette';
@@ -177,6 +188,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setMetaDescription(this.description);
 
     this.loadStations();
+    this.subscriptions.add(this.visualizerService.presets$.subscribe(presets => {
+      // Replace only when the catalog changes, preserving button identity during
+      // pointer interactions while reflecting published edits from Firebase.
+      this.cachedVisualizerPresets = presets;
+      this.cdRef.markForCheck();
+    }));
+    this.subscriptions.add(this.visualizerService.catalogStatus$.subscribe(status => {
+      this.visualizerCatalogStatus = status;
+      this.cdRef.markForCheck();
+    }));
+    this.subscriptions.add(this.visualizerService.activeConfig$.subscribe(config => {
+      if (!config && (this.visualizerAudio.isActive || this.visualizerAudio.status === 'requesting')) {
+        this.visualizerAudio.stopCapture();
+      }
+      this.cdRef.markForCheck();
+    }));
   }
 
   testVisualizer(): void {
@@ -188,7 +215,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       harmonics: 4,
     });
 
+<<<<<<< Updated upstream
     const points = this.visualizerService.calculatePoints(2, 100);
+=======
+  retryVisualizers(): void {
+    this.visualizerService.reloadCatalog();
+  }
+
+  get visualizerCatalogMessage(): string {
+    if (this.visualizerCatalogStatus === 'loading') return 'Loading visualizers';
+    if (this.visualizerCatalogStatus === 'error') return 'Could not load visualizers. Try again.';
+    return 'No published visualizers yet';
+  }
+
+  // Stable between change-detection passes; refreshed by the catalog stream.
+  private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
+>>>>>>> Stashed changes
 
     console.log(points);
   }

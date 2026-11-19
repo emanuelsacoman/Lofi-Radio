@@ -24,6 +24,80 @@ service cloud.firestore {
         && request.auth.uid == 'FHenQwMKI8N0kDA5x5wGBRBoc0l1';
     }
 
+    function canManageVisualizers() {
+      return request.auth != null
+        && request.auth.uid == 'FHenQwMKI8N0kDA5x5wGBRBoc0l1';
+    }
+
+    function visualizerColor(value) {
+      return value is string && (value in ['theme', 'accent', 'secondary', 'accentLight', 'text']
+        || value.matches('^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$'));
+    }
+
+    function inRange(value, minimum, maximum) {
+      return value is number && value >= minimum && value <= maximum;
+    }
+
+    function validVisualizerCustomization(data) {
+      let count = data.get('particleCount', 18);
+      return inRange(data.get('scale', 1), 0.25, 2)
+        && inRange(data.get('positionX', 0), -50, 50)
+        && inRange(data.get('positionY', 0), -50, 50)
+        && inRange(data.get('angle', 0), -180, 180)
+        && data.get('mirrorX', false) is bool
+        && data.get('colorMode', 'layered') in ['layered', 'gradient', 'solid']
+        && data.get('waveShape', 'sine') in ['sine', 'triangle', 'sawtooth']
+        && data.get('barLayout', 'bottom') in ['bottom', 'center', 'top']
+        && inRange(data.get('barGap', 0.35), 0.1, 0.9)
+        && count is int && inRange(count, 4, 96)
+        && inRange(data.get('particleSize', 1), 0.5, 3)
+        && inRange(data.get('particleSpread', 1), 0.25, 1.5)
+        && inRange(data.get('twinkleSpeed', 1), 0.25, 3)
+        && inRange(data.get('veilOpacity', 1), 0, 1);
+    }
+
+    function validVisualizer(data) {
+      let fields = ['name', 'description', 'enabled', 'icon', 'geometry', 'visualStyle',
+        'amplitude', 'audioSensitivity', 'frequency', 'speed', 'harmonics', 'phase',
+        'color', 'secondaryColor', 'lineWidth', 'glow', 'opacity', 'layers',
+        'resolution', 'barCount', 'rotation', 'createdAt', 'updatedAt'];
+      let customizationFields = ['scale', 'positionX', 'positionY', 'angle', 'mirrorX',
+        'colorMode', 'waveShape', 'barLayout', 'barGap', 'particleCount', 'particleSize',
+        'particleSpread', 'twinkleSpeed', 'veilOpacity'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields.concat(customizationFields))
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
+        && data.name.matches('.*[^\\s].*')
+        && data.description is string && data.description.size() <= 280
+        && data.enabled is bool
+        && data.icon is string && data.icon.matches('^[a-z_]{1,40}$')
+        && data.geometry in ['wave', 'bars']
+        && data.visualStyle in ['silk', 'bars', 'fireflies']
+        && ((data.visualStyle == 'bars' && data.geometry == 'bars')
+          || (data.visualStyle in ['silk', 'fireflies'] && data.geometry == 'wave'))
+        && visualizerColor(data.color) && visualizerColor(data.secondaryColor)
+        && inRange(data.amplitude, 0, 100) && inRange(data.audioSensitivity, 0.2, 4)
+        && inRange(data.frequency, 0.25, 12) && inRange(data.speed, 0, 5)
+        && data.harmonics is int && inRange(data.harmonics, 1, 12)
+        && inRange(data.phase, -360, 360) && inRange(data.lineWidth, 0.5, 10)
+        && inRange(data.glow, 0, 40) && inRange(data.opacity, 0, 1)
+        && data.layers is int && inRange(data.layers, 1, 8)
+        && data.resolution is int && inRange(data.resolution, 48, 768)
+        && data.barCount is int && inRange(data.barCount, 12, 96)
+        && inRange(data.rotation, -5, 5) && validVisualizerCustomization(data)
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    match /visualizers/{visualizerId} {
+      allow read: if canManageVisualizers() || resource.data.enabled == true;
+      allow create: if canManageVisualizers() && validVisualizer(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if canManageVisualizers() && validVisualizer(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if canManageVisualizers();
+    }
+
     match /analytics_visits/{visitId} {
       allow read, delete: if isAdmin();
       allow create, update: if false;

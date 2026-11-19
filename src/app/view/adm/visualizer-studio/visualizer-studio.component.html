@@ -1,0 +1,102 @@
+<section class="studio" lang="pt-BR" id="visualizer-studio" aria-labelledby="studio-title">
+  <header class="studio-heading">
+    <div class="studio-brand"><span class="studio-logo"><mat-icon>graphic_eq</mat-icon></span><div><span class="eyebrow">LABORATÓRIO DE EXPERIÊNCIAS</span><h2 id="studio-title">Visualizer Studio<span>.</span></h2></div></div>
+    <button class="studio-button new-button" type="button" (click)="newVisualizer()" [disabled]="saving || !!deletingId"><mat-icon>add</mat-icon>Novo visualizer</button>
+  </header>
+  <p class="studio-intro">Dê forma ao som. Crie atmosferas que tornam cada sessão única.</p>
+
+  <div class="studio-workspace">
+    <div class="preview-column">
+      <div class="preview-stage" [class.preview-stage--light]="previewLight" role="img" [attr.aria-label]="'Prévia de ' + (previewConfig.name || 'novo visualizer') + ' com sinal de demonstração'">
+        <div class="stage-grid" aria-hidden="true"></div>
+        <div class="stage-topline"><span class="live-label"><i [class.paused]="!previewPlaying"></i>{{ previewPlaying ? 'PRÉVIA AO VIVO' : 'PRÉVIA PAUSADA' }}</span><span class="stage-index">{{ styleName(previewConfig.visualStyle) }}</span></div>
+        <app-visualizer [previewMode]="true" [previewConfig]="previewConfig" [playing]="previewPlaying" [palette]="previewLight ? 'light' : 'dark'"></app-visualizer>
+        <div class="stage-caption"><span>LOFI / VISUAL EXPERIENCE</span><strong>{{ previewConfig.name || 'Sua próxima atmosfera' }}</strong></div>
+        <div class="stage-corner" aria-hidden="true">+</div>
+      </div>
+      <div class="preview-toolbar"><div><span class="demo-icon"><mat-icon>equalizer</mat-icon></span><span>Sinal de demonstração<small>O visual responde ao áudio real no player.</small></span></div><div class="preview-actions"><button type="button" (click)="previewPlaying = !previewPlaying" [attr.aria-label]="previewPlaying ? 'Pausar prévia' : 'Reproduzir prévia'" [matTooltip]="previewPlaying ? 'Pausar prévia' : 'Reproduzir prévia'"><mat-icon>{{ previewPlaying ? 'pause' : 'play_arrow' }}</mat-icon></button><button type="button" (click)="previewLight = !previewLight" [attr.aria-label]="previewLight ? 'Usar fundo escuro' : 'Usar fundo claro'" [matTooltip]="previewLight ? 'Fundo escuro' : 'Fundo claro'"><mat-icon>{{ previewLight ? 'dark_mode' : 'light_mode' }}</mat-icon></button></div></div>
+
+      <div class="template-heading"><span class="eyebrow">TIPO DE DESENHO</span><span>A base para a sua criação</span></div>
+      <div class="template-grid">
+        <button class="template-card" *ngFor="let template of templates" type="button" (click)="applyTemplate(template.config)" [class.is-selected]="previewConfig.visualStyle === template.config.visualStyle" [attr.aria-pressed]="previewConfig.visualStyle === template.config.visualStyle" [disabled]="saving || !!deletingId">
+          <div class="template-top"><mat-icon>{{ template.config.icon }}</mat-icon><span>{{ template.number }}</span></div><strong>{{ template.title }}</strong><small>{{ template.subtitle }}</small>
+        </button>
+      </div>
+      <p class="studio-tip"><mat-icon>cloud_done</mat-icon>Só suas criações salvas e publicadas aparecem no player.</p>
+      <div class="creative-tools">
+        <div><strong>Experimente outra direção</strong><span>Gere uma combinação e ajuste do seu jeito.</span></div>
+        <button class="studio-button" type="button" (click)="createVariation()" [disabled]="saving || !!deletingId"><mat-icon>auto_awesome</mat-icon>Criar variação</button>
+      </div>
+    </div>
+
+    <form class="editor" [formGroup]="form" (ngSubmit)="save()" aria-label="Editor de visualizer" [attr.aria-busy]="saving">
+      <header class="editor-header"><div><span class="eyebrow">{{ editingId ? 'EM EDIÇÃO' : 'NOVA CRIAÇÃO' }}</span><h3>Ajuste cada detalhe</h3></div><span class="unsaved-dot" *ngIf="form.dirty" matTooltip="Alterações não salvas" aria-label="Alterações não salvas"></span></header>
+      <div class="editor-tabs" role="group" aria-label="Controles do editor">
+        <button type="button" [class.is-active]="activeTab === 'identity'" [attr.aria-pressed]="activeTab === 'identity'" (click)="activeTab = 'identity'"><mat-icon>tune</mat-icon>Essência</button>
+        <button type="button" [class.is-active]="activeTab === 'motion'" [attr.aria-pressed]="activeTab === 'motion'" (click)="activeTab = 'motion'"><mat-icon>waves</mat-icon>Movimento</button>
+        <button type="button" [class.is-active]="activeTab === 'finish'" [attr.aria-pressed]="activeTab === 'finish'" (click)="activeTab = 'finish'"><mat-icon>blur_on</mat-icon>Acabamento</button>
+        <button type="button" [class.is-active]="activeTab === 'composition'" [attr.aria-pressed]="activeTab === 'composition'" (click)="activeTab = 'composition'"><mat-icon>crop_rotate</mat-icon>Composição</button>
+      </div>
+      <fieldset [disabled]="saving || !!deletingId" class="editor-fields">
+        <div *ngIf="activeTab === 'identity'" class="identity-fields">
+          <div class="field"><label for="visualizer-name">Nome do visualizer <span>*</span></label><input id="visualizer-name" formControlName="name" maxlength="60" placeholder="Ex.: Aurora boreal" autocomplete="off" [attr.aria-invalid]="form.get('name')?.touched && form.get('name')?.invalid"><small class="field-error" *ngIf="form.get('name')?.touched && form.get('name')?.invalid">Dê um nome à sua criação (até 60 caracteres).</small></div>
+          <div class="field"><label for="visualizer-description">Descrição <span class="optional">opcional</span></label><textarea id="visualizer-description" formControlName="description" rows="2" maxlength="280" placeholder="Qual é a sensação dessa atmosfera?"></textarea></div>
+          <div class="field">
+            <label id="visualizer-icon-label">Ícone no player</label>
+            <div class="icon-picker" role="group" aria-labelledby="visualizer-icon-label">
+              <button *ngFor="let icon of icons" type="button" (click)="setIcon(icon.value)" [class.is-selected]="form.get('icon')?.value === icon.value" [attr.aria-pressed]="form.get('icon')?.value === icon.value" [attr.aria-label]="icon.label" [matTooltip]="icon.label"><mat-icon>{{ icon.value }}</mat-icon></button>
+            </div>
+          </div>
+          <div class="palette-heading"><label>Paleta de cores</label><span>Experimente uma combinação</span></div>
+          <div class="palette-options"><button *ngFor="let palette of palettes" type="button" (click)="applyPalette(palette.colors)" [matTooltip]="palette.name" [attr.aria-label]="'Usar paleta ' + palette.name" [class.is-selected]="form.get('color')?.value === palette.colors[0] && form.get('secondaryColor')?.value === palette.colors[1]"><i [style.background]="palette.colors[0]"></i><i [style.background]="palette.colors[1]"></i><span>{{ palette.name }}</span></button></div>
+          <div class="color-row" *ngFor="let key of ['color', 'secondaryColor']"><label [attr.for]="'visualizer-' + key + '-mode'">{{ key === 'color' ? 'Principal' : 'Secundária' }}</label><div class="color-inputs"><select [id]="'visualizer-' + key + '-mode'" [ngModel]="colorMode(key)" [ngModelOptions]="{standalone: true}" (ngModelChange)="setColorMode(key, $event)"><option *ngFor="let token of colorTokens" [value]="token.value">{{ token.name }}</option></select><span class="custom-color" *ngIf="colorMode(key) === 'custom'"><input type="color" [value]="colorHex(form.get(key)?.value)" (input)="setColor(key, $event)" [attr.aria-label]="'Escolher cor ' + (key === 'color' ? 'principal' : 'secundária')"><input type="text" [formControlName]="key" maxlength="7" spellcheck="false" [attr.aria-label]="'Hexadecimal da cor ' + (key === 'color' ? 'principal' : 'secundária')"></span></div><small class="field-error" *ngIf="form.get(key)?.invalid">Use uma cor hexadecimal válida, como #A78BFA.</small></div>
+          <p class="field-hint">As cores do tema acompanham a paleta escolhida pelo ouvinte.</p>
+        </div>
+        <div *ngIf="activeTab !== 'identity'" class="parameter-fields">
+          <p class="parameters-intro">{{ activeTab === 'motion' ? 'Encontre o equilíbrio entre energia e delicadeza.' : (activeTab === 'composition' ? 'Escolha o enquadramento, a posição e a direção do seu visual.' : 'A assinatura visual está nos pequenos detalhes.') }}</p>
+          <div class="field parameter-choice" *ngIf="activeTab === 'motion' && previewConfig.visualStyle === 'silk'">
+            <label for="visualizer-wave-shape">Forma da onda</label>
+            <select id="visualizer-wave-shape" formControlName="waveShape"><option value="sine">Senoidal · suave</option><option value="triangle">Triangular · geométrica</option><option value="sawtooth">Dente de serra · marcada</option></select>
+          </div>
+          <div class="field parameter-choice" *ngIf="activeTab === 'motion' && previewConfig.visualStyle === 'bars'">
+            <label for="visualizer-bar-layout">Direção das barras</label>
+            <select id="visualizer-bar-layout" formControlName="barLayout"><option value="bottom">De baixo para cima</option><option value="center">Espelhadas no centro</option><option value="top">De cima para baixo</option></select>
+          </div>
+          <div class="field parameter-choice" *ngIf="activeTab === 'finish' && previewConfig.visualStyle !== 'fireflies'">
+            <label for="visualizer-color-treatment">Aplicação das cores</label>
+            <select id="visualizer-color-treatment" formControlName="colorMode"><option value="layered">Cores por camada</option><option value="gradient">Degradê entre as duas cores</option><option value="solid">Somente a cor principal</option></select>
+          </div>
+          <div class="composition-tools" *ngIf="activeTab === 'composition'">
+            <label class="mirror-control" for="visualizer-mirror"><input id="visualizer-mirror" type="checkbox" formControlName="mirrorX"><mat-icon>flip</mat-icon>Espelhar horizontalmente</label>
+            <button type="button" (click)="resetComposition()"><mat-icon>center_focus_strong</mat-icon>Centralizar e restaurar</button>
+            <p class="field-hint">Valores maiores podem levar parte do desenho para fora da tela.</p>
+          </div>
+          <div class="parameter" *ngFor="let control of visibleControls"><div class="parameter-heading"><label [attr.for]="'visualizer-' + control.key">{{ control.label }}</label><span class="parameter-value"><input type="number" [id]="'visualizer-' + control.key + '-value'" [formControlName]="control.key" [min]="control.min" [max]="control.max" [step]="control.step" [attr.aria-label]="control.label + ': valor'" [attr.aria-invalid]="form.get(control.key)?.invalid"><span>{{ control.unit }}</span></span></div><input type="range" [id]="'visualizer-' + control.key" [formControlName]="control.key" [min]="control.min" [max]="control.max" [step]="control.step"><div class="range-labels"><span>{{ control.min }}</span><span>{{ control.max }}</span></div><small class="field-error" *ngIf="form.get(control.key)?.invalid">Use um valor entre {{ control.min }} e {{ control.max }}{{ control.step === 1 ? ', sem casas decimais' : '' }}.</small></div>
+        </div>
+      </fieldset>
+      <footer class="editor-footer"><label class="publish-control" for="visualizer-enabled"><span><strong>Disponível no player</strong><small>{{ form.get('enabled')?.value ? 'Ao salvar, todos poderão escolher este visual.' : 'Desativado: salvar como rascunho.' }}</small></span><input id="visualizer-enabled" type="checkbox" formControlName="enabled" role="switch"><span class="switch-track" aria-hidden="true"></span></label><div class="save-row"><span class="save-status"><mat-icon>{{ form.dirty ? 'edit' : 'cloud_done' }}</mat-icon>{{ form.dirty ? 'Alterações não salvas' : (editingId ? 'Tudo salvo' : 'Pronto para criar') }}</span><button class="studio-button save-button" type="submit" [disabled]="saving || !!deletingId"><mat-icon>{{ saving ? 'hourglass_empty' : 'check' }}</mat-icon>{{ saving ? 'Salvando…' : 'Salvar visualizer' }}</button></div></footer>
+    </form>
+  </div>
+
+  <p class="feedback feedback--pending" *ngIf="!online || waitingForServer" role="status"><mat-icon>cloud_sync</mat-icon>{{ saving ? 'Aguardando confirmação do Firebase. Mantenha esta página aberta; o salvamento continuará quando a conexão responder.' : 'Você está sem conexão. É possível continuar editando; o salvamento será confirmado quando a conexão voltar.' }}</p>
+  <p class="feedback feedback--success" *ngIf="notice" role="status"><mat-icon>check_circle</mat-icon>{{ notice }}</p>
+  <p class="feedback feedback--error" *ngIf="saveError" role="alert"><mat-icon>error_outline</mat-icon>{{ saveError }}</p>
+
+  <section class="library" aria-labelledby="visualizer-library-title">
+    <header class="library-heading"><div><span class="eyebrow">SUAS CRIAÇÕES</span><h3 id="visualizer-library-title">Biblioteca de atmosferas <span>{{ documents.length }}</span></h3><p>{{ publishedCount }} {{ publishedCount === 1 ? 'visualizer publicado' : 'visualizers publicados' }} · suas ideias, no seu ritmo.</p></div><label class="library-search"><mat-icon>search</mat-icon><input type="search" placeholder="Buscar visualizer…" [(ngModel)]="search" aria-label="Buscar visualizer"></label></header>
+    <div class="library-filters" role="group" aria-label="Filtrar visualizers"><button type="button" [class.is-active]="filter === 'all'" [attr.aria-pressed]="filter === 'all'" (click)="filter = 'all'">Todos</button><button type="button" [class.is-active]="filter === 'published'" [attr.aria-pressed]="filter === 'published'" (click)="filter = 'published'">Publicados</button><button type="button" [class.is-active]="filter === 'draft'" [attr.aria-pressed]="filter === 'draft'" (click)="filter = 'draft'">Rascunhos</button></div>
+    <div class="library-state" *ngIf="loading" role="status"><mat-icon>cloud_sync</mat-icon><strong>Carregando suas atmosferas…</strong></div>
+    <div class="library-state" *ngIf="loadError" role="alert"><mat-icon>cloud_off</mat-icon><strong>Não conseguimos abrir sua biblioteca</strong><p>{{ loadError }}</p><button class="studio-button" type="button" (click)="loadLibrary()">Tentar novamente</button></div>
+    <div class="library-state library-state--empty" *ngIf="!loading && !loadError && !filteredDocuments.length"><span class="empty-art"><mat-icon>{{ documents.length ? 'search_off' : 'waves' }}</mat-icon></span><strong>{{ documents.length ? 'Nenhum visualizer encontrado' : 'Toda atmosfera começa com uma ideia.' }}</strong><p>{{ documents.length ? 'Experimente outro nome ou filtro.' : 'Crie seu primeiro visualizer no editor acima. Sua biblioteca começa aqui.' }}</p></div>
+    <div class="library-grid" *ngIf="!loading && !loadError && filteredDocuments.length">
+      <article class="visualizer-card" *ngFor="let item of filteredDocuments; trackBy: trackById" [class.visualizer-card--editing]="editingId === item.id">
+        <button class="card-art" type="button" (click)="edit(item)" [disabled]="saving || !!deletingId" [attr.aria-label]="'Editar ' + item.name" [style.--card-color]="colorHex(item.color)">
+          <svg viewBox="0 0 308 100" aria-hidden="true" focusable="false"><g *ngIf="item.visualStyle === 'silk'" fill="none" [attr.stroke]="colorHex(item.color)"><path *ngFor="let layer of [0, 1, 2]" [attr.d]="wavePath(item, layer)" [attr.stroke-width]="item.lineWidth" [attr.opacity]="0.9 - layer * 0.25"></path></g><g *ngIf="item.visualStyle === 'bars'" [attr.fill]="colorHex(item.color)"><rect *ngFor="let bar of thumbnailBars" [attr.x]="bar * 10 + 18" [attr.y]="83 - barHeight(bar, item)" width="5" [attr.height]="barHeight(bar, item)" rx="2"></rect></g><g *ngIf="item.visualStyle === 'fireflies'"><circle *ngFor="let star of thumbnailStars; let index = index" [attr.cx]="star.x" [attr.cy]="star.y" [attr.r]="star.radius" [attr.fill]="colorHex(index % 2 ? item.color : item.secondaryColor)" [attr.opacity]="0.35 + (index % 4) * 0.2"></circle></g></svg>
+          <span class="publication-badge" [class.is-published]="item.enabled"><i></i>{{ item.enabled ? 'Publicado' : 'Rascunho' }}</span><span class="card-edit-hint"><mat-icon>north_east</mat-icon></span>
+        </button>
+        <div class="card-body"><div class="card-title"><h4>{{ item.name }}</h4><span class="card-colors" aria-hidden="true"><i [style.background]="colorHex(item.color)"></i><i [style.background]="colorHex(item.secondaryColor)"></i></span></div><p>{{ item.description || styleName(item.visualStyle) }}</p><div class="card-footer"><span><mat-icon>{{ item.icon }}</mat-icon>{{ styleName(item.visualStyle) }}</span><div><button type="button" (click)="duplicate(item)" [disabled]="saving || !!deletingId" [attr.aria-label]="'Duplicar ' + item.name" matTooltip="Duplicar"><mat-icon>content_copy</mat-icon></button><button type="button" (click)="edit(item)" [disabled]="saving || !!deletingId" [attr.aria-label]="'Editar ' + item.name" matTooltip="Editar"><mat-icon>edit</mat-icon></button><button class="delete-button" type="button" (click)="remove(item)" [disabled]="saving || !!deletingId" [attr.aria-label]="'Excluir ' + item.name" matTooltip="Excluir"><mat-icon>{{ deletingId === item.id ? 'hourglass_empty' : 'delete_outline' }}</mat-icon></button></div></div></div>
+      </article>
+    </div>
+  </section>
+  <div class="studio-footnote"><span>FEITO PARA SENTIR. CRIADO POR VOCÊ.</span><span><mat-icon>{{ !online || loadError ? 'cloud_off' : 'cloud_queue' }}</mat-icon>{{ !online ? 'Aguardando conexão' : (loadError ? 'Conexão com a biblioteca indisponível' : 'Suas criações no Firebase') }}</span></div>
+</section>
