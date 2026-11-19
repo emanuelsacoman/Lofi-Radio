@@ -215,9 +215,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       harmonics: 4,
     });
 
-<<<<<<< Updated upstream
+
     const points = this.visualizerService.calculatePoints(2, 100);
-=======
+    console.log(points);
+  }
+
   retryVisualizers(): void {
     this.visualizerService.reloadCatalog();
   }
@@ -228,12 +230,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'No published visualizers yet';
   }
 
-  // Stable between change-detection passes; refreshed by the catalog stream.
   private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
->>>>>>> Stashed changes
 
-    console.log(points);
-  }
 
   toggleList(): void {
     this.showList = !this.showList;
