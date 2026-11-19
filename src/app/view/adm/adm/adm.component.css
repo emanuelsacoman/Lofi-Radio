@@ -161,11 +161,20 @@ input {
 }
 
 .workspace {
+  scroll-margin-top: 90px;
   display: grid;
   grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
+
+.admin-section-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0; }
+.admin-section-nav a { display: inline-flex; align-items: center; gap: 7px; padding: 10px 13px; border: 1px solid #dbe2ea; border-radius: 8px; background: #fff; color: #475569; text-decoration: none; font-size: 12px; font-weight: 600; }
+.admin-section-nav a:hover { border-color: #a78bfa; color: #6d28d9; }
+.admin-section-nav a:focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
+.admin-section-nav mat-icon { width: 17px; height: 17px; font-size: 17px; }
+.admin-section-nav .admin-section-nav__studio { color: #6d28d9; background: #f5f3ff; border-color: #ddd6fe; }
+.admin-section-nav__studio span { font-size: 9px; padding: 3px 5px; border-radius: 4px; color: #fff; background: #7c3aed; }
 
 .tools-column {
   display: grid;

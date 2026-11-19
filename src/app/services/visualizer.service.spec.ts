@@ -1,27 +1,52 @@
-import { VisualizerService } from './visualizer.service';
+import { TestBed } from '@angular/core/testing';
 
-describe('VisualizerService procedural engine', () => {
+import { VisualizerService } from './visualizer.service';
+import { Subject } from 'rxjs';
+import { VISUALIZER_PRESETS } from './visualizer-presets';
+import { VisualizerCatalogService } from './visualizer-catalog.service';
+import { VisualizerDocument } from './interfaces/visualizer/visualizer-document';
+
+describe('VisualizerService', () => {
   let service: VisualizerService;
+
+  function catalogFrom(updates: Subject<VisualizerDocument[]>): VisualizerCatalogService {
+    const catalog = jasmine.createSpyObj<VisualizerCatalogService>('catalog', ['watchPublished']);
+    catalog.watchPublished.and.returnValue(updates);
+    return catalog;
+  }
 
   beforeEach(() => {
     localStorage.clear();
-    service = new VisualizerService();
+    const updates = new Subject<VisualizerDocument[]>();
+    service = new VisualizerService(catalogFrom(updates));
+    updates.next(VISUALIZER_PRESETS.map(preset => ({ ...preset, description: '', enabled: true })));
   });
 
-  afterEach(() => localStorage.clear());
+  afterEach(() => { service.ngOnDestroy(); localStorage.clear(); });
 
   it('starts Off on the first visit without automatically selecting a preset', () => {
     expect(service.activePresetId).toBeNull();
     expect(service.calculatePaths(1)).toEqual([]);
   });
 
-  it('has English names for every visualizer icon', () => {
+  it('has no local catalog before Firestore returns documents or without a catalog provider', () => {
+    const empty = new VisualizerService();
+    expect(empty.getPresets()).toEqual([]);
+    expect(empty.setPreset('aurora-wave')).toBeFalse();
+    empty.ngOnDestroy();
+    const pending = new VisualizerService(catalogFrom(new Subject<VisualizerDocument[]>()));
+    expect(pending.getPresets()).toEqual([]);
+    expect(pending.activeConfig).toBeNull();
+    pending.ngOnDestroy();
+  });
+
+  it('exposes the names of documents received from Firestore', () => {
     expect(service.getPresets().map(preset => preset.name)).toEqual([
       'Waveform', 'Equalizer', 'Firefly Garden'
     ]);
   });
 
-  it('offers three configurable presets and a single active configuration', () => {
+  it('offers only the received documents and a single active configuration', () => {
     expect(service.getPresets().length).toBe(3);
     expect(service.setPreset('aurora-wave')).toBeTrue();
     expect(service.activeConfig?.geometry).toBe('wave');
@@ -110,6 +135,136 @@ describe('VisualizerService procedural engine', () => {
     const preset = service.getPresets()[0];
     preset.amplitude = 0;
     expect(service.getPresets()[0].amplitude).not.toBe(0);
+  });
+
+  it('renders a draft without changing the selected preset or local preference', () => {
+    service.setPreset('pulse-bars');
+    const selected = service.activeConfig;
+    const draft = service.getPresets()[0];
+    const frame = { source: 'tab' as const, level: 0.6, bass: 0.5, mids: 0.4,
+      treble: 0.3, beat: 0.8, spectrum: new Array(64).fill(0.6) };
+    const result = service.calculatePathsForConfig(draft, 1, undefined, frame);
+    expect(result[0].kind).toBe('curve');
+    expect(service.activeConfig).toEqual(selected);
+    expect(localStorage.getItem('lofi.visualizer.preset.v1')).toBe('pulse-bars');
+  });
+
+  it('bounds draft geometry before iterating even for huge or non-finite inputs', () => {
+    const draft = { ...service.getPresets()[0], layers: 1e9, harmonics: 1e9,
+      resolution: 1e9, amplitude: Infinity, frequency: NaN, phase: Infinity };
+    const frame = { source: 'tab' as const, level: 0.6, bass: 0.5, mids: 0.4,
+      treble: 0.3, beat: 0.8, spectrum: new Array(64).fill(0.6) };
+    const waves = service.calculatePathsForConfig(draft, Infinity, Infinity, frame);
+    expect(waves.length).toBe(8);
+    expect(waves.every(path => path.points.length === 768)).toBeTrue();
+    expect(waves.every(path => path.points.every(point => Number.isFinite(point.y)))).toBeTrue();
+    const bars = service.calculatePathsForConfig({ ...draft, geometry: 'bars', barCount: 1e9 }, 1, undefined, frame);
+    expect(bars.every(path => path.points.length === 96)).toBeTrue();
+    const incomplete = service.calculatePathsForConfig({ ...draft, layers: NaN, harmonics: Infinity,
+      resolution: NaN, barCount: NaN }, 1, undefined, frame);
+    expect(incomplete.length).toBe(3);
+    expect(incomplete.every(path => path.points.length === 256)).toBeTrue();
+    expect(draft.layers).toBe(1e9);
+    expect(service.activeConfig).toBeNull();
+  });
+
+  it('restores a cloud selection after the asynchronous catalog arrives', () => {
+    const updates = new Subject<VisualizerDocument[]>();
+    localStorage.setItem('lofi.visualizer.preset.v1', 'cloud-dream');
+    const cloud = new VisualizerService(catalogFrom(updates));
+    expect(cloud.activePresetId).toBeNull();
+    updates.next([{ ...service.getPresets()[0], id: 'cloud-dream', name: 'Cloud dream',
+      description: '', enabled: true }]);
+    expect(cloud.activePresetId).toBe('cloud-dream');
+    expect(cloud.getPresets().length).toBe(1);
+    cloud.ngOnDestroy();
+  });
+
+  it('honors Off chosen while a remembered cloud selection is loading', () => {
+    const updates = new Subject<VisualizerDocument[]>();
+    localStorage.setItem('lofi.visualizer.preset.v1', 'cloud-dream');
+    const cloud = new VisualizerService(catalogFrom(updates));
+    cloud.setPreset(null);
+    updates.next([{ ...service.getPresets()[0], id: 'cloud-dream', name: 'Cloud dream',
+      description: '', enabled: true }]);
+    expect(cloud.activePresetId).toBeNull();
+    cloud.ngOnDestroy();
+  });
+
+  it('updates published effects in real time and turns a removed selection off', () => {
+    const updates = new Subject<VisualizerDocument[]>();
+    const cloud = new VisualizerService(catalogFrom(updates));
+    const document = { ...service.getPresets()[0], id: 'cloud-dream', name: 'Cloud dream',
+      description: '', enabled: true };
+    let lastNames: string[] = [];
+    cloud.presets$.subscribe(presets => lastNames = presets.map(preset => preset.name));
+    updates.next([document]);
+    cloud.setPreset(document.id);
+    updates.next([{ ...document, name: 'Moonlight', amplitude: 80 }]);
+    expect(cloud.activeConfig?.amplitude).toBe(80);
+    expect(lastNames).toContain('Moonlight');
+    updates.next([]);
+    expect(cloud.activeConfig).toBeNull();
+    expect(lastNames.length).toBe(0);
+    expect(localStorage.getItem('lofi.visualizer.preset.v1')).toBe('off');
+    cloud.ngOnDestroy();
+  });
+
+  it('keeps an empty catalog with Off on a database error and never adds bundled effects', () => {
+    const updates = new Subject<VisualizerDocument[]>();
+    const cloud = new VisualizerService(catalogFrom(updates));
+    updates.error(new Error('unavailable'));
+    expect(cloud.getPresets()).toEqual([]);
+    expect(cloud.setPreset('aurora-wave')).toBeFalse();
+    expect(cloud.activeConfig).toBeNull();
+    cloud.ngOnDestroy();
+  });
+
+  it('clears previously loaded records on error and reloads only database results on retry', () => {
+    const updates = new Subject<VisualizerDocument[]>();
+    const catalog = catalogFrom(updates) as jasmine.SpyObj<VisualizerCatalogService>;
+    const cloud = new VisualizerService(catalog);
+    const document = { ...VISUALIZER_PRESETS[0], id: 'cloud-only', description: '', enabled: true };
+    const states: string[] = [];
+    cloud.catalogStatus$.subscribe(state => states.push(state));
+    updates.next([document]);
+    cloud.setPreset(document.id);
+    updates.error(new Error('unavailable'));
+    expect(cloud.getPresets()).toEqual([]);
+    expect(cloud.activeConfig).toBeNull();
+    const retry = new Subject<VisualizerDocument[]>();
+    catalog.watchPublished.and.returnValue(retry);
+    cloud.reloadCatalog();
+    retry.next([document]);
+    expect(cloud.getPresets().map(preset => preset.id)).toEqual(['cloud-only']);
+    expect(states).toEqual(['loading', 'ready', 'error', 'loading', 'ready']);
+    expect(cloud.activeConfig).toBeNull();
+    cloud.ngOnDestroy();
+  });
+
+  it('renders distinct sine, triangle and sawtooth wave profiles with bounded coordinates', () => {
+    const config = { ...VISUALIZER_PRESETS[0], harmonics: 1 };
+    const audio = { source: 'tab' as const, level: 0.65, bass: 0.6, mids: 0.4,
+      treble: 0.3, beat: 0.3, spectrum: new Array(64).fill(0.5) };
+    const sine = service.calculatePathsForConfig({ ...config, waveShape: 'sine' }, 1, 64, audio);
+    const triangle = service.calculatePathsForConfig({ ...config, waveShape: 'triangle' }, 1, 64, audio);
+    const sawtooth = service.calculatePathsForConfig({ ...config, waveShape: 'sawtooth' }, 1, 64, audio);
+    expect(triangle).not.toEqual(sine);
+    expect(sawtooth).not.toEqual(sine);
+    expect(sawtooth).not.toEqual(triangle);
+    for (const result of [sine, triangle, sawtooth]) {
+      expect(result.every(path => path.points.every(point => Number.isFinite(point.y) && point.y >= 0 && point.y <= 1))).toBeTrue();
+    }
+  });
+
+  it('keeps spectrum heights independent of the renderer bar layout', () => {
+    const audio = { source: 'tab' as const, level: 0.65, bass: 0.6, mids: 0.4,
+      treble: 0.3, beat: 0.3, spectrum: new Array(64).fill(0.5) };
+    const bottom = service.calculatePathsForConfig({ ...VISUALIZER_PRESETS[1], barLayout: 'bottom' }, 1, 64, audio);
+    const top = service.calculatePathsForConfig({ ...VISUALIZER_PRESETS[1], barLayout: 'top' }, 1, 64, audio);
+    const center = service.calculatePathsForConfig({ ...VISUALIZER_PRESETS[1], barLayout: 'center' }, 1, 64, audio);
+    expect(top).toEqual(bottom);
+    expect(center).toEqual(bottom);
   });
 
   it('changes wave geometry in response to real tab audio', () => {

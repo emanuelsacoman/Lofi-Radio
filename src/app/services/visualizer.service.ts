@@ -1,10 +1,12 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, OnDestroy, Optional } from '@angular/core';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { VisualizerConfig, VisualizerParameters, VisualizerStyle } from './interfaces/visualizer/visualizerconfig';
 import { VisualizerPath, VisualizerPoint } from './interfaces/visualizer/visualizerpoint';
-import { VISUALIZER_PRESETS } from './visualizer-presets';
+import { VisualizerCatalogService } from './visualizer-catalog.service';
+import { normalizeVisualizerCustomization } from './visualizer-customization';
 import { VisualizerAudioFrame } from './interfaces/visualizer/visualizer-audio-frame';
 
+export type VisualizerCatalogStatus = 'loading' | 'ready' | 'error';
 const STORAGE_KEY = 'lofi.visualizer.preset.v1';
 const TAU = Math.PI * 2;
 
@@ -21,11 +23,42 @@ function validColor(color: string, fallback: string): string {
 }
 
 @Injectable({ providedIn: 'root' })
-export class VisualizerService {
-  private readonly presets: VisualizerConfig[] = VISUALIZER_PRESETS.map((preset: VisualizerConfig) => this.normalizeConfig(preset));
+export class VisualizerService implements OnDestroy {
+  private presets: VisualizerConfig[] = [];
+  private pendingPresetId: string | null = null;
   private readonly activeSubject = new BehaviorSubject<VisualizerConfig | null>(this.restorePreset());
+  private readonly presetsSubject = new BehaviorSubject<VisualizerConfig[]>(this.getPresets());
+  private readonly catalogStatusSubject = new BehaviorSubject<VisualizerCatalogStatus>('loading');
+  private catalogSubscription?: Subscription;
 
   readonly activeConfig$ = this.activeSubject.asObservable();
+  readonly presets$ = this.presetsSubject.asObservable();
+  readonly catalogStatus$ = this.catalogStatusSubject.asObservable();
+
+  constructor(@Optional() private catalog?: VisualizerCatalogService) {
+    this.reloadCatalog();
+  }
+
+  reloadCatalog(): void {
+    this.catalogSubscription?.unsubscribe();
+    if (!this.catalog) {
+      this.catalogStatusSubject.next('ready');
+      return;
+    }
+    this.catalogStatusSubject.next('loading');
+    this.catalogSubscription = this.catalog.watchPublished().subscribe({
+      next: documents => {
+        this.mergeCatalog(documents);
+        this.catalogStatusSubject.next('ready');
+      },
+      error: () => {
+        this.presets = [];
+        this.presetsSubject.next([]);
+        this.setPreset(null);
+        this.catalogStatusSubject.next('error');
+      }
+    });
+  }
 
   get activeConfig(): VisualizerConfig | null {
     const config = this.activeSubject.value;
@@ -42,6 +75,7 @@ export class VisualizerService {
 
   setPreset(id: string | null): boolean {
     if (id === null) {
+      this.pendingPresetId = null;
       this.activeSubject.next(null);
       this.persist(null);
       return true;
@@ -49,6 +83,7 @@ export class VisualizerService {
 
     const preset = this.presets.find((item: VisualizerConfig) => item.id === id);
     if (!preset) return false;
+    this.pendingPresetId = null;
     this.activeSubject.next({ ...preset });
     this.persist(id);
     return true;
@@ -93,6 +128,12 @@ export class VisualizerService {
   calculatePaths(timeSeconds: number, resolution?: number, audio?: VisualizerAudioFrame): VisualizerPath[] {
     const config = this.activeSubject.value;
     if (!config) return [];
+    return this.calculatePathsForConfig(config, timeSeconds, resolution, audio);
+  }
+
+  /** Pure renderer entry point for Studio previews; no player selection changes. */
+  calculatePathsForConfig(config: VisualizerConfig, timeSeconds: number, resolution?: number, audio?: VisualizerAudioFrame): VisualizerPath[] {
+    config = this.normalizeConfig(config);
     const t = Number.isFinite(timeSeconds) ? timeSeconds : 0;
     const count = clamp(resolution ?? config.resolution, 12, 768, config.resolution) | 0;
     const paths: VisualizerPath[] = [];
@@ -162,19 +203,27 @@ export class VisualizerService {
     const phase = config.phase * Math.PI / 180 + layer * 0.55;
     for (let harmonic = 1; harmonic <= config.harmonics; harmonic++) {
       const weight = 1 / Math.pow(harmonic, 1.3);
-      signal += Math.sin(TAU * (u * config.frequency * harmonic - t * config.speed * (1 + harmonic * 0.08)) + phase) * weight;
+      const angle = TAU * (u * config.frequency * harmonic - t * config.speed * (1 + harmonic * 0.08)) + phase;
+      let sample: number;
+      switch (config.waveShape) {
+        case 'triangle': sample = 2 / Math.PI * Math.asin(Math.sin(angle)); break;
+        case 'sawtooth': { const cycles = angle / TAU; sample = 2 * (cycles - Math.floor(cycles + 0.5)); break; }
+        default: sample = Math.sin(angle);
+      }
+      signal += sample * weight;
       total += weight;
     }
     return total ? signal / total : 0;
   }
 
-  private normalizeConfig(config: VisualizerConfig): VisualizerConfig {
+  normalizeConfig(config: VisualizerConfig): VisualizerConfig {
     const allowed = ['wave', 'bars'];
     const styles: VisualizerStyle[] = [
       'silk', 'bars', 'fireflies'
     ];
     return {
       ...config,
+      ...normalizeVisualizerCustomization(config),
       geometry: allowed.includes(config.geometry) ? config.geometry : 'wave',
       visualStyle: styles.includes(config.visualStyle) ? config.visualStyle : 'silk',
       icon: typeof config.icon === 'string' && /^[a-z_]{1,40}$/.test(config.icon) ? config.icon : 'graphic_eq',
@@ -202,9 +251,35 @@ export class VisualizerService {
     catch { /* Storage may be disabled by browser settings. */ }
     // A fresh visit starts Off. Sharing permission is never requested on load.
     if (!stored || stored === 'off') return null;
-    // Removed presets must not silently switch the user to an unrelated effect.
-    const preset = this.presets.find((item: VisualizerConfig) => item.id === stored);
-    return preset ? { ...preset } : null;
+    this.pendingPresetId = stored;
+    return null;
+  }
+
+  private mergeCatalog(documents: VisualizerConfig[]): void {
+    const previous = this.activeSubject.value;
+    const previousDefinition = this.presets.find(p => p.id === previous?.id);
+    const merged = new Map<string, VisualizerConfig>();
+    for (const document of documents) merged.set(document.id, this.normalizeConfig(document));
+    this.presets = Array.from(merged.values());
+    this.presetsSubject.next(this.getPresets());
+    const selectedId = previous?.id ?? this.pendingPresetId;
+    if (!selectedId) return;
+    const selected = this.presets.find(p => p.id === selectedId);
+    if (selected) {
+      this.pendingPresetId = null;
+      if (!previous || JSON.stringify(previousDefinition) !== JSON.stringify(selected)) {
+        this.activeSubject.next({ ...selected });
+      }
+    } else if (previous) {
+      this.setPreset(null);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.catalogSubscription?.unsubscribe();
+    this.activeSubject.complete();
+    this.presetsSubject.complete();
+    this.catalogStatusSubject.complete();
   }
 
   private persist(id: string | null): void {

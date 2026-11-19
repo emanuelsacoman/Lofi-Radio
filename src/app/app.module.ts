@@ -33,6 +33,7 @@ import { ProfileVisitsChartComponent } from './view/adm/profile-visits-chart/pro
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { VisualizerComponent } from './view/effect/visualizer/visualizer.component';
+import { VisualizerStudioComponent } from './view/adm/visualizer-studio/visualizer-studio.component';
 
 registerLocaleData(localePt, 'pt-BR');
 
@@ -46,6 +47,7 @@ const client = createClient(environment.apikey);
     LoginComponent,
     AdmComponent,
     VhsComponent,
+    VisualizerStudioComponent,
     VisualizerComponent
   ],
   imports: [

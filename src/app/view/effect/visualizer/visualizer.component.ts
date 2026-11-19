@@ -24,7 +24,7 @@ interface AtmosphereSeed {
 
 const TAU = Math.PI * 2;
 const fraction = (value: number): number => value - Math.floor(value);
-const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 18 }, (_, i) => {
+const ATMOSPHERE: ReadonlyArray<AtmosphereSeed> = Array.from({ length: 96 }, (_, i) => {
   const seed = i + 1;
   return {
     x: fraction(Math.sin(seed * 127.1) * 43758.5453),
@@ -111,11 +111,12 @@ export function fireflyAudioResponse(
   selector: 'app-visualizer',
   templateUrl: './visualizer.component.html',
   styleUrls: ['./visualizer.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() playing = true;
   @Input() palette = '';
+  @Input() previewMode = false;
+  @Input() previewConfig: VisualizerConfig | null = null;
   @ViewChild('canvas', { static: true }) canvasElement!: ElementRef<HTMLCanvasElement>;
 
   private ctx: CanvasRenderingContext2D | null = null;
@@ -126,6 +127,11 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   private frameId: number | null = null;
   private lastFrame = 0;
   private time = 0;
+  private readonly previewSpectrum = new Array<number>(64).fill(0);
+  private readonly previewAudio: VisualizerAudioFrame = {
+    source: 'tab', level: 0, bass: 0, mids: 0, treble: 0, beat: 0,
+    spectrum: this.previewSpectrum
+  };
   private width = 0;
   private height = 0;
   private destroyed = false;
@@ -153,23 +159,55 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     } else {
       window.addEventListener('resize', this.resize);
     }
+    if (this.previewMode) {
+      this.config = this.previewConfig ? this.visualizer.normalizeConfig(this.previewConfig) : null;
+    }
     this.resize();
     this.subscription = this.visualizer.activeConfig$.subscribe(config => {
-      const wasFirefly = this.config?.visualStyle === 'fireflies';
-      this.config = config;
-      if (wasFirefly !== (config?.visualStyle === 'fireflies')) {
-        this.fireflyPreviousBeat = 0;
-        this.fireflyLastBeatAt = -Infinity;
-      }
-      // Firefly uses a smaller framebuffer; restore normal resolution on exit.
-      if (wasFirefly !== (config?.visualStyle === 'fireflies')) this.resize();
-      this.syncAnimation();
+      if (!this.previewMode) this.setConfig(config);
     });
     this.audioSubscription = this.audio.status$.subscribe(() => this.syncAnimation());
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['previewMode'] || changes['previewConfig']) {
+      this.setConfig(this.previewMode ? this.previewConfig : this.visualizer.activeConfig);
+    }
     if ((changes['playing'] || changes['palette']) && this.ctx) this.syncAnimation();
+  }
+
+  private setConfig(config: VisualizerConfig | null): void {
+    const wasFirefly = this.config?.visualStyle === 'fireflies';
+    this.config = config ? this.visualizer.normalizeConfig(config) : null;
+    if (wasFirefly !== (config?.visualStyle === 'fireflies')) {
+      this.fireflyPreviousBeat = 0;
+      this.fireflyLastBeatAt = -Infinity;
+      this.resize();
+    }
+    this.syncAnimation();
+  }
+
+  /** Demo data is confined to an explicitly enabled studio preview. No capture occurs. */
+  private readFrame(): VisualizerAudioFrame {
+    if (!this.previewMode) return this.audio.isActive ? this.audio.readFrame() : SILENT_AUDIO_FRAME;
+    const t = this.time;
+    const beat = Math.pow(Math.max(0, Math.cos(t * Math.PI * 2 * 0.9)), 8);
+    for (let i = 0; i < this.previewSpectrum.length; i++) {
+      const u = i / this.previewSpectrum.length;
+      this.previewSpectrum[i] = Math.min(0.95,
+        0.18 + (0.24 + Math.sin(i * 0.38 - t * 1.6) * 0.16) * (1 - u * 0.4) +
+        beat * 0.32 * (1 - u) + Math.sin(i * 0.11 + t * 0.8) * 0.09);
+    }
+    this.previewAudio.level = 0.45 + beat * 0.15;
+    this.previewAudio.bass = 0.42 + beat * 0.3;
+    this.previewAudio.mids = 0.4 + Math.sin(t * 0.7) * 0.13;
+    this.previewAudio.treble = 0.28 + Math.cos(t * 0.9) * 0.09;
+    this.previewAudio.beat = beat;
+    return this.previewAudio;
+  }
+
+  private get canAnimate(): boolean {
+    return this.previewMode ? this.playing : this.audio.isActive;
   }
 
   private readonly resize = (): void => {
@@ -194,7 +232,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       canvas.height = pixelHeight;
     }
     this.ctx.setTransform(canvas.width / this.width, 0, 0, canvas.height / this.height, 0, 0);
-    this.render();
+    this.render(this.readFrame());
   };
 
   private syncAnimation(): void {
@@ -205,9 +243,9 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.lastFrame = 0;
     if (!this.ctx || this.destroyed) return;
     // For reduced motion show a single audio-driven still instead of a blank canvas.
-    this.render(this.audio.isActive ? this.audio.readFrame() : SILENT_AUDIO_FRAME);
+    this.render(this.readFrame());
     // Audio from the captured tab is authoritative; YouTube state may lag behind.
-    if (!this.config || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
+    if (!this.config || !this.canAnimate || document.hidden || this.reducedMotion?.matches) return;
     this.zone.runOutsideAngular(() => {
       this.frameId = requestAnimationFrame(this.tick);
     });
@@ -215,14 +253,14 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
 
   private readonly tick = (timestamp: number): void => {
     this.frameId = null;
-    if (this.destroyed || !this.config || !this.audio.isActive || document.hidden || this.reducedMotion?.matches) return;
+    if (this.destroyed || !this.config || !this.canAnimate || document.hidden || this.reducedMotion?.matches) return;
     // Firefly needs gentle motion, not 45 blurred frames every second.
     const frameInterval = this.config.visualStyle === 'fireflies' ? 1000 / 24 : 1000 / 45;
     if (this.lastFrame && timestamp - this.lastFrame < frameInterval) {
       this.frameId = requestAnimationFrame(this.tick);
       return;
     }
-    const frame = this.audio.readFrame();
+    const frame = this.readFrame();
     // No real signal means no prerecorded looping animation.
     if (this.lastFrame) {
       const dt = Math.min((timestamp - this.lastFrame) / 1000, 0.05);
@@ -244,14 +282,25 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     const config = this.config;
     if (!config) return;
 
-    // An actual FFT signal is the only source of light and motion.
+    // Production uses captured FFT; only the explicit studio preview uses demo data.
     const activity = this.visualizer.getAudioActivity(audio);
     if (activity <= 0) return;
 
     const main = this.color(config.color, '--clr-primary', '#aea4d3');
-    const accent = this.color(config.secondaryColor, '--clr-accent', '#805cb1');
+    const accent = config.colorMode === 'solid'
+      ? main : this.color(config.secondaryColor, '--clr-accent', '#805cb1');
     const style = config.visualStyle;
 
+    // Keep positioning relative to the viewport and restore its pixel-ratio
+    // transform after every frame. Clearing above always covers the whole canvas.
+    ctx.save();
+    ctx.translate(this.width * (0.5 + (config.positionX ?? 0) / 100),
+      this.height * (0.5 + (config.positionY ?? 0) / 100));
+    ctx.rotate((config.angle ?? 0) * Math.PI / 180);
+    ctx.scale((config.scale ?? 1) * (config.mirrorX ? -1 : 1), config.scale ?? 1);
+    ctx.translate(-this.width / 2, -this.height / 2);
+
+    try {
     if (style === 'fireflies') {
       // No wave geometry, translucent full-screen veils, per-particle blur or
       // additive whole-screen compositing; only small cached sprite blits.
@@ -262,7 +311,13 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       return;
     }
 
-    const paths = this.visualizer.calculatePaths(this.time, undefined, audio);
+    const paths = this.visualizer.calculatePathsForConfig(config, this.time, undefined, audio);
+    const strokeGradient = config.colorMode === 'gradient'
+      ? ctx.createLinearGradient(0, 0, this.width, this.height) : null;
+    if (strokeGradient) {
+      strokeGradient.addColorStop(0, main);
+      strokeGradient.addColorStop(1, accent);
+    }
 
     ctx.globalCompositeOperation = 'lighter';
     if (style === 'silk') {
@@ -272,7 +327,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     for (const path of paths) {
       const blend = paths.length <= 1 ? 0 : path.layer / (paths.length - 1);
       const color = blend < 0.5 ? main : accent;
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = strokeGradient || color;
       ctx.globalAlpha = Math.min(0.95, config.opacity *
         0.64 * (1 - blend * 0.36) *
         activity * (0.65 + audio.level * 0.35 + audio.beat * 0.18));
@@ -298,13 +353,16 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
+    } finally {
+      ctx.restore();
+    }
   }
 
   private drawAuroraVeils(
     ctx: CanvasRenderingContext2D, audio: VisualizerAudioFrame,
     activity: number, main: string, accent: string
   ): void {
-    if (typeof ctx.fill !== 'function') return;
+    if (typeof ctx.fill !== 'function' || this.config?.veilOpacity === 0) return;
     const steps = this.width < 640 ? 32 : 64;
     for (let layer = 0; layer < 3; layer++) {
       ctx.beginPath();
@@ -312,10 +370,12 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
         const u = i / steps;
         const x = u * this.width;
         const envelope = Math.sin(Math.PI * u);
-        const swell = Math.sin(u * TAU * (1.25 + layer * 0.35) +
-          this.time * (0.28 + layer * 0.05) + layer * 1.5);
+        const swell = Math.sin(u * TAU * (1.25 + layer * 0.35) *
+          ((this.config?.frequency ?? 3.2) / 3.2) +
+          this.time * (0.28 + layer * 0.05) * ((this.config?.speed ?? 0.35) / 0.35) + layer * 1.5);
         const y = this.height * (0.43 + layer * 0.055) +
-          swell * this.height * (0.035 + audio.bass * 0.075) * envelope * activity;
+          swell * this.height * (0.035 + audio.bass * 0.075) * envelope * activity *
+          ((this.config?.amplitude ?? 45) / 45);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.lineTo(this.width, this.height * 0.86);
@@ -326,10 +386,12 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
         : null;
       if (gradient) {
         gradient.addColorStop(0, layer % 2 === 0 ? main : accent);
+        if (this.config?.colorMode === 'gradient') gradient.addColorStop(0.5, accent);
         gradient.addColorStop(1, 'transparent');
       }
       ctx.fillStyle = gradient || (layer % 2 === 0 ? main : accent);
-      ctx.globalAlpha = 0.11 * activity * (1 + audio.bass * 0.3);
+      ctx.globalAlpha = 0.11 * activity * (1 + audio.bass * 0.3) *
+        ((this.config?.opacity ?? 0.82) / 0.82) * (this.config?.veilOpacity ?? 1);
       ctx.shadowBlur = 0;
       ctx.fill();
     }
@@ -360,9 +422,15 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       const bin = audio.spectrum[Math.min(audio.spectrum.length - 1,
         Math.floor(i / path.points.length * audio.spectrum.length))] || 0;
       if (bin < 0.08 || point.y >= 0.98) continue;
-      this.drawOrb(ctx, point.x * this.width, point.y * this.height,
+      const endpoints = this.barEndpoints(point.y);
+      this.drawOrb(ctx, point.x * this.width, endpoints.end,
         1 + audio.beat * 2 + bin * 2, accent,
-        activity * bin * (0.36 + audio.beat * 0.35), 13);
+        activity * bin * (0.36 + audio.beat * 0.35) * (this.config?.opacity ?? 0.85), 13);
+      if (this.config?.barLayout === 'center') {
+        this.drawOrb(ctx, point.x * this.width, endpoints.start,
+          1 + audio.beat * 2 + bin * 2, accent,
+          activity * bin * (0.36 + audio.beat * 0.35) * (this.config?.opacity ?? 0.85), 13);
+      }
     }
   }
 
@@ -403,7 +471,10 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
 
     ctx.globalCompositeOperation = 'source-over';
     ctx.shadowBlur = 0;
-    const count = this.width < 640 ? 11 : 18;
+    // Density is an artistic choice, including on mobile; the cached textures,
+    // reduced framebuffer and 24 fps cap bound the cost of the maximum 96 lights.
+    const count = Math.min(ATMOSPHERE.length, Math.max(4, this.config?.particleCount ?? 18));
+    const twinkleSpeed = this.config?.twinkleSpeed ?? 1;
 
     // A real new onset starts one tiny conversation between four of the
     // fireflies. ReadFrame's beat envelope decays, so detect a rising edge.
@@ -415,22 +486,26 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
 
     for (let i = 0; i < count; i++) {
       const seed = ATMOSPHERE[i];
-      const position = fireflyFlight(seed, this.time);
+      const motionTime = this.time * ((this.config?.speed ?? 0.16) / 0.16);
+      const position = fireflyFlight(seed, motionTime);
       const bandIndex = audio.spectrum.length ? (i * 7 + 3) % audio.spectrum.length : 0;
-      const echo = fireflyEcho(this.time - this.fireflyLastBeatAt, i);
+      const echo = fireflyEcho((this.time - this.fireflyLastBeatAt) * twinkleSpeed, i % 20);
       const reaction = fireflyAudioResponse(
         audio, audio.spectrum[bandIndex] ?? 0, activity,
-        this.time, seed.phase, seed.speed, echo
+        this.time * twinkleSpeed, seed.phase, seed.speed, echo
       );
       // An unlit insect requires no draw call. The scene often renders only
       // 2–5 glows even though 18 different insects can take turns blinking.
-      const alpha = reaction.alpha * (0.60 + seed.depth * 0.40);
+      const alpha = Math.min(1, reaction.alpha * (0.60 + seed.depth * 0.40) *
+        ((this.config?.opacity ?? 0.7) / 0.7) *
+        ((this.config?.audioSensitivity ?? 1.25) / 1.25));
       if (alpha < 0.01) continue;
 
-      const x = position.x * this.width;
-      const y = position.y * this.height;
+      const spread = this.config?.particleSpread ?? 1;
+      const x = Math.min(0.98, Math.max(0.02, 0.5 + (position.x - 0.5) * spread)) * this.width;
+      const y = Math.min(0.98, Math.max(0.02, 0.5 + (position.y - 0.5) * spread)) * this.height;
       // Per-seed depth establishes the size, NEVER amplitude or the beat.
-      const size = 10 + seed.size * 3.1 + seed.depth * 5;
+      const size = (10 + seed.size * 3.1 + seed.depth * 5) * (this.config?.particleSize ?? 1);
       ctx.globalAlpha = alpha;
       ctx.drawImage(i % 3 === 0 ? sprites.main : sprites.accent,
         x - size / 2, y - size / 2, size, size);
@@ -450,16 +525,27 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   private drawBars(ctx: CanvasRenderingContext2D, path: VisualizerPath, barCount: number): void {
-    ctx.lineWidth = Math.max(1, this.width / barCount * 0.55);
+    const available = 1 - (this.config?.barGap ?? 0.35);
+    ctx.lineWidth = Math.max(0.5, Math.min(this.width / barCount * available,
+      this.width / barCount * 0.55 * (available / 0.65) * ((this.config?.lineWidth ?? 2.3) / 2.3)));
     ctx.beginPath();
     for (const point of path.points) {
       const x = point.x * this.width;
-      const y = point.y * this.height;
-      // A bar starts at the bottom and only grows upwards.
-      ctx.moveTo(x, this.height);
-      ctx.lineTo(x, y);
+      const endpoints = this.barEndpoints(point.y);
+      ctx.moveTo(x, endpoints.start);
+      ctx.lineTo(x, endpoints.end);
     }
     ctx.stroke();
+  }
+
+  /** The math engine supplies 1 - intensity; layout only changes its placement. */
+  private barEndpoints(y: number): { start: number; end: number } {
+    const extent = (1 - y) * this.height;
+    switch (this.config?.barLayout) {
+      case 'top': return { start: 0, end: extent };
+      case 'center': return { start: this.height / 2 + extent / 2, end: this.height / 2 - extent / 2 };
+      default: return { start: this.height, end: y * this.height };
+    }
   }
 
   private color(value: string, cssVariable: string, fallback: string): string {
@@ -472,7 +558,9 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       text: '--clr-text'
     };
     const key = variables[value] ?? cssVariable;
-    const style = getComputedStyle(document.documentElement);
+    // Read inherited tokens from this canvas so the studio can have its own
+    // palette while the player continues inheriting the document's theme.
+    const style = getComputedStyle(this.canvasElement.nativeElement);
     return style.getPropertyValue(key).trim()
       || style.getPropertyValue(cssVariable).trim() || fallback;
   }

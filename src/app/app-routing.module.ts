@@ -18,6 +18,7 @@ const routes: Routes = [
     path: 'adm',
     component: AdmComponent,
     canActivate: [AuthGuard],
+    canDeactivate: [(component: AdmComponent) => component.canLeaveAdmin()],
   },
 ];
 

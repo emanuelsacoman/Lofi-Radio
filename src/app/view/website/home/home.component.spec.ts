@@ -3,6 +3,8 @@ import { NEVER, Subject, of } from 'rxjs';
 import { RadioFavoritesService } from 'src/app/services/radio-favorites.service';
 import { VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
+import { VisualizerCatalogService } from 'src/app/services/visualizer-catalog.service';
+import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { FALLBACK_SITE_THEME, SiteTheme } from 'src/app/services/interfaces/site-theme';
 import { HomeComponent } from './home.component';
@@ -13,7 +15,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
   let component: HomeComponent;
   let visualizerService: VisualizerService;
   let visualizerAudio: VisualizerAudioService;
-  let changeDetector: jasmine.SpyObj<{ detectChanges: () => void }>;
+  let changeDetector: jasmine.SpyObj<{ detectChanges: () => void; markForCheck: () => void }>;
   let firebase: jasmine.SpyObj<{
     obterTodosChip: () => unknown;
     obterTodosTemas: () => unknown;
@@ -26,7 +28,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
 
     const title = jasmine.createSpyObj('Title', ['setTitle']);
     const meta = jasmine.createSpyObj('Meta', ['updateTag']);
-    changeDetector = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
+    changeDetector = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges', 'markForCheck']);
     const pexels = jasmine.createSpyObj('PexelsService', ['fetchRandomImage']);
     const users = jasmine.createSpyObj('UserService', ['getConnectedUsersCount']);
     const emojis = jasmine.createSpyObj('EmojiService', ['getLastEmoji', 'sendEmoji']);
@@ -39,7 +41,9 @@ describe('HomeComponent non-verbal radio feedback', () => {
     firebase.obterTodosTemas.and.returnValue(NEVER);
     youtube.getVideoDetailsBatch.and.returnValue(of([]));
 
-    visualizerService = new VisualizerService();
+    visualizerService = new VisualizerService({
+      watchPublished: () => of(VISUALIZER_PRESETS.map(preset => ({ ...preset, description: '', enabled: true })))
+    } as unknown as VisualizerCatalogService);
     visualizerAudio = new VisualizerAudioService();
 
     component = new HomeComponent(
@@ -82,7 +86,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
       expect(component.visualizerPresets).toBe(presets);
       expect(component.visualizerPresets[0]).toBe(firstPreset);
       expect(component.trackVisualizerPreset(0, firstPreset)).toBe(firstPreset.id);
-      expect(getPresets).toHaveBeenCalledTimes(1);
+      expect(getPresets).toHaveBeenCalledTimes(0);
     });
 
     it('starts with both menus closed', () => {

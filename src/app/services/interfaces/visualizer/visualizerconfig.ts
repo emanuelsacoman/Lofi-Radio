@@ -5,7 +5,24 @@ export type VisualizerGeometry = 'wave' | 'bars';
 export type VisualizerStyle =
   | 'silk' | 'bars' | 'fireflies';
 
-export interface VisualizerConfig {
+export interface VisualizerCustomization {
+  scale: number;          // 0.25..2: scale around the center of the viewport
+  positionX: number;      // -50..50: horizontal offset in viewport percent
+  positionY: number;      // -50..50: vertical offset in viewport percent
+  angle: number;          // -180..180: fixed orientation in degrees
+  mirrorX: boolean;
+  colorMode: 'layered' | 'gradient' | 'solid';
+  waveShape: 'sine' | 'triangle' | 'sawtooth';
+  barLayout: 'bottom' | 'center' | 'top';
+  barGap: number;         // 0.1..0.9: fraction of each bar slot left empty
+  particleCount: number;  // 4..96: number of fireflies
+  particleSize: number;   // 0.5..3: size multiplier
+  particleSpread: number;// 0.25..1.5: spread around the center
+  twinkleSpeed: number;   // 0.25..3: flash cadence multiplier
+  veilOpacity: number;    // 0..1: opacity multiplier for the wave curtains
+}
+
+export interface VisualizerConfig extends Partial<VisualizerCustomization> {
   id: string;
   name: string;
   icon: string;         // nome de ícone Material exibido no seletor

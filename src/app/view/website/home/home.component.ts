@@ -13,7 +13,7 @@ import { UserService } from 'src/app/services/user.service';
 import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
 import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
-import { VisualizerService } from 'src/app/services/visualizer.service';
+import { VisualizerCatalogStatus, VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
 
 type FloatingEmoji = {
@@ -152,6 +152,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPalette = 'purple';
   paletteExpanded = false;
   visualizerExpanded = false;
+  visualizerCatalogStatus: VisualizerCatalogStatus = 'loading';
   newThemeIds = new Set<string>();
   private themeSubscription?: Subscription;
   private readonly selectedThemeKey = 'selectedPalette';
@@ -181,6 +182,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setMetaDescription(this.description);
 
     this.loadStations();
+    this.subscriptions.add(this.visualizerService.presets$.subscribe(presets => {
+      this.cachedVisualizerPresets = presets;
+      this.cdRef.markForCheck();
+    }));
+    this.subscriptions.add(this.visualizerService.catalogStatus$.subscribe(status => {
+      this.visualizerCatalogStatus = status;
+      this.cdRef.markForCheck();
+    }));
+    this.subscriptions.add(this.visualizerService.activeConfig$.subscribe(config => {
+      if (!config && (this.visualizerAudio.isActive || this.visualizerAudio.status === 'requesting')) {
+        this.visualizerAudio.stopCapture();
+      }
+      this.cdRef.markForCheck();
+    }));
   }
 
   /** Material-free menu toggles: click events update Angular-visible state. */
@@ -235,6 +250,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get audioCaptureError(): string {
     return this.visualizerAudio.errorMessage;
+  }
+
+  retryVisualizers(): void {
+    this.visualizerService.reloadCatalog();
+  }
+
+  get visualizerCatalogMessage(): string {
+    if (this.visualizerCatalogStatus === 'loading') return 'Loading visualizers';
+    if (this.visualizerCatalogStatus === 'error') return 'Could not load visualizers. Try again.';
+    return 'No published visualizers yet';
   }
 
   toggleList(): void {

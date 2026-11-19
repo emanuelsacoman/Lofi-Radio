@@ -413,6 +413,21 @@
                 <mat-icon aria-hidden="true">{{ preset.icon }}</mat-icon>
               </button>
               <mat-icon
+                *ngIf="!visualizerPresets.length && visualizerCatalogStatus !== 'error'"
+                class="visual-control__state"
+                role="status"
+                [matTooltip]="visualizerCatalogMessage"
+                [attr.aria-label]="visualizerCatalogMessage">{{ visualizerCatalogStatus === 'loading' ? 'cloud_sync' : 'cloud_queue' }}</mat-icon>
+              <button
+                *ngIf="visualizerCatalogStatus === 'error'"
+                class="visual-control__effect"
+                type="button"
+                [matTooltip]="visualizerCatalogMessage"
+                [attr.aria-label]="visualizerCatalogMessage"
+                (click)="retryVisualizers()">
+                <mat-icon aria-hidden="true">refresh</mat-icon>
+              </button>
+              <mat-icon
                 *ngIf="audioCaptureStatus === 'requesting'"
                 class="visual-control__state"
                 role="img"
