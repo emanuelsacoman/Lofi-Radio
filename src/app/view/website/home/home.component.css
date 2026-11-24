@@ -1234,6 +1234,7 @@ mat-list:has(> mat-list-item:hover) > mat-list-item:not(:hover) {
       pointer-events: none;
     }
     .visual-control__notice--error { color: var(--clr-accent-light); }
+    .visual-control__notice--new { left: 3px; right: auto; }
 
     .visual-control__menu {
       position: absolute;

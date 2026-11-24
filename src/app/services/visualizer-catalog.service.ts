@@ -27,6 +27,8 @@ const COLOR_TOKENS = ['theme', 'accent', 'secondary', 'accentLight', 'text'];
 @Injectable({ providedIn: 'root' })
 export class VisualizerCatalogService {
   private readonly path = 'visualizers';
+  private readonly maxOrder = 1000000;
+  private readonly maxBatchWrites = 500;
 
   constructor(private readonly firestore: AngularFirestore) {}
 
@@ -43,11 +45,46 @@ export class VisualizerCatalogService {
 
   async create(draft: VisualizerDraft): Promise<string> {
     const data = this.validate(draft);
+    const collection = this.firestore.collection<Omit<VisualizerDocument, 'id'>>(this.path);
+    const snapshot = await collection.ref.get();
+    const records = snapshot.docs.flatMap(document => {
+      const stored = document.data();
+      try {
+        return [{ id: document.id, name: this.validate(stored).name, order: this.readOrder(stored.order) }];
+      } catch {
+        // Do not modify malformed records omitted from the visible catalog.
+        return [];
+      }
+    });
+    const highestOrder = records.reduce((highest, document) => Math.max(highest, document.order ?? 0), 0);
+    const legacy = records.filter(document => document.order === undefined)
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR') || a.id.localeCompare(b.id));
+    const order = highestOrder + legacy.length + 1;
+    if (order > this.maxOrder) {
+      throw new Error('Reorganize a biblioteca antes de adicionar outro visualizer.');
+    }
     // Use AngularFire's timestamp factory so it uses the same Firebase SDK
     // version as AngularFirestore (the repository also has a newer root SDK).
     const timestamp = serverTimestamp();
-    const document = await this.firestore.collection(this.path).add({
-      ...data, createdAt: timestamp, updatedAt: timestamp
+    if (legacy.length) {
+      if (legacy.length + 1 > this.maxBatchWrites) {
+        throw new Error('Organize a ordem da biblioteca antes de adicionar outro visualizer.');
+      }
+      // Keep existing unranked entries in their visible sequence, then append
+      // the new creation. A single commit avoids a partly migrated catalog.
+      const document = collection.doc();
+      const batch = this.firestore.firestore.batch();
+      legacy.forEach((item, index) => {
+        batch.update(collection.doc(item.id).ref, {
+          order: highestOrder + index + 1, updatedAt: timestamp
+        });
+      });
+      batch.set(document.ref, { ...data, order, createdAt: timestamp, updatedAt: timestamp });
+      await batch.commit();
+      return document.ref.id;
+    }
+    const document = await collection.add({
+      ...data, order, createdAt: timestamp, updatedAt: timestamp
     });
     return document.id;
   }
@@ -66,6 +103,34 @@ export class VisualizerCatalogService {
     await this.firestore.collection(this.path).doc(documentId).delete();
   }
 
+  /** Persist one complete ordering atomically; no appearance fields are touched. */
+  async reorder(ids: string[]): Promise<void> {
+    if (!Array.isArray(ids) || ids.length > this.maxBatchWrites) {
+      throw new Error('É possível ordenar até 500 visualizers por vez.');
+    }
+    const normalizedIds = ids.map(id => this.validateId(id));
+    if (new Set(normalizedIds).size !== normalizedIds.length) {
+      throw new Error('A ordem contém visualizers repetidos.');
+    }
+    if (!normalizedIds.length) return;
+
+    const collection = this.firestore.collection<VisualizerDocument>(this.path);
+    const snapshot = await collection.ref.get();
+    const currentIds = new Set(snapshot.docs.filter(document => {
+      try { this.validate(document.data()); return true; } catch { return false; }
+    }).map(document => document.id));
+    if (currentIds.size !== normalizedIds.length || normalizedIds.some(id => !currentIds.has(id))) {
+      throw new Error('A biblioteca mudou. Atualize a lista antes de ordenar novamente.');
+    }
+
+    const batch = this.firestore.firestore.batch();
+    const updatedAt = serverTimestamp();
+    normalizedIds.forEach((id, index) => {
+      batch.update(collection.doc(id).ref, { order: index + 1, updatedAt });
+    });
+    await batch.commit();
+  }
+
   private observe(collection: AngularFirestoreCollection<VisualizerDraft>): Observable<VisualizerDocument[]> {
     return collection.snapshotChanges().pipe(map(changes => {
       const documents: VisualizerDocument[] = [];
@@ -75,6 +140,7 @@ export class VisualizerCatalogService {
         try {
           documents.push({
             ...this.validate(data), id: snapshot.id,
+            ...(this.readOrder(data.order) === undefined ? {} : { order: data.order }),
             createdAt: data.createdAt, updatedAt: data.updatedAt
           });
         } catch {
@@ -82,9 +148,15 @@ export class VisualizerCatalogService {
         }
       }
       return documents.sort((a, b) =>
+        (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
         a.name.localeCompare(b.name, 'pt-BR') || a.id.localeCompare(b.id)
       );
     }));
+  }
+
+  private readOrder(value: unknown): number | undefined {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= this.maxOrder
+      ? value : undefined;
   }
 
   private validateId(id: string): string {

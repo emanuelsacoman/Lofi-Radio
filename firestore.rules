@@ -63,12 +63,13 @@ service cloud.firestore {
         'resolution', 'barCount', 'rotation', 'createdAt', 'updatedAt'];
       let customizationFields = ['scale', 'positionX', 'positionY', 'angle', 'mirrorX',
         'colorMode', 'waveShape', 'barLayout', 'barGap', 'particleCount', 'particleSize',
-        'particleSpread', 'twinkleSpeed', 'veilOpacity'];
+        'particleSpread', 'twinkleSpeed', 'veilOpacity', 'order'];
       return data.keys().hasAll(fields) && data.keys().hasOnly(fields.concat(customizationFields))
         && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
         && data.name.matches('.*[^\\s].*')
         && data.description is string && data.description.size() <= 280
         && data.enabled is bool
+        && data.get('order', 1) is int && inRange(data.get('order', 1), 1, 1000000)
         && data.icon is string && data.icon.matches('^[a-z_]{1,40}$')
         && data.geometry in ['wave', 'bars']
         && data.visualStyle in ['silk', 'bars', 'fireflies']

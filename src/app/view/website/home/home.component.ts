@@ -154,6 +154,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   visualizerExpanded = false;
   visualizerCatalogStatus: VisualizerCatalogStatus = 'loading';
   newThemeIds = new Set<string>();
+  newVisualizerIds = new Set<string>();
+  private readonly visualizerCatalogInitializedKey = 'visualizerCatalogInitialized';
+  private readonly seenVisualizerPrefix = 'seen_visualizer_';
+  private visualizerCatalogInitialized = false;
+  private readonly seenVisualizerIds = new Set<string>();
   private themeSubscription?: Subscription;
   private readonly selectedThemeKey = 'selectedPalette';
   private readonly cachedThemeKey = 'selectedSiteTheme';
@@ -184,10 +189,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadStations();
     this.subscriptions.add(this.visualizerService.presets$.subscribe(presets => {
       this.cachedVisualizerPresets = presets;
+      this.refreshNewVisualizers();
       this.cdRef.markForCheck();
     }));
     this.subscriptions.add(this.visualizerService.catalogStatus$.subscribe(status => {
       this.visualizerCatalogStatus = status;
+      this.refreshNewVisualizers();
       this.cdRef.markForCheck();
     }));
     this.subscriptions.add(this.visualizerService.activeConfig$.subscribe(config => {
@@ -242,6 +249,60 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.visualizerService.setPreset(id);
+    this.markVisualizerAsSeen(id);
+  }
+
+  get hasNewVisualizers(): boolean {
+    return this.newVisualizerIds.size > 0;
+  }
+
+  isVisualizerNew(id: string): boolean {
+    return this.newVisualizerIds.has(id);
+  }
+
+  markVisualizerAsSeen(id: string): void {
+    if (!this.newVisualizerIds.has(id)) return;
+    this.rememberVisualizer(id);
+    this.newVisualizerIds.delete(id);
+  }
+
+  private refreshNewVisualizers(): void {
+    // The service emits an empty array before Firestore answers. Only a ready
+    // catalog (including a genuinely empty one) can establish the first visit.
+    if (this.visualizerCatalogStatus !== 'ready') {
+      if (this.visualizerCatalogStatus === 'error') this.newVisualizerIds.clear();
+      return;
+    }
+    const presets = this.cachedVisualizerPresets ?? [];
+    if (!this.visualizerCatalogInitialized) {
+      try {
+        this.visualizerCatalogInitialized = localStorage.getItem(this.visualizerCatalogInitializedKey) === 'true';
+      } catch { /* Keep the same behavior for this session when storage is blocked. */ }
+      if (!this.visualizerCatalogInitialized) {
+        presets.forEach(preset => this.rememberVisualizer(preset.id));
+        this.visualizerCatalogInitialized = true;
+        try { localStorage.setItem(this.visualizerCatalogInitializedKey, 'true'); }
+        catch { /* Session state is sufficient for a working novelty indicator. */ }
+        this.newVisualizerIds.clear();
+        return;
+      }
+    }
+    this.newVisualizerIds = new Set(presets.filter(preset => {
+      if (this.seenVisualizerIds.has(preset.id)) return false;
+      try {
+        if (localStorage.getItem(`${this.seenVisualizerPrefix}${preset.id}`) === 'true') {
+          this.seenVisualizerIds.add(preset.id);
+          return false;
+        }
+      } catch { /* Unseen IDs still work during this session. */ }
+      return true;
+    }).map(preset => preset.id));
+  }
+
+  private rememberVisualizer(id: string): void {
+    this.seenVisualizerIds.add(id);
+    try { localStorage.setItem(`${this.seenVisualizerPrefix}${id}`, 'true'); }
+    catch { /* The in-memory set also prevents badges from reappearing. */ }
   }
 
   get audioCaptureStatus() {

@@ -1,10 +1,14 @@
 import { FormBuilder } from '@angular/forms';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Subject } from 'rxjs';
 import Swal from 'sweetalert2';
 import { VisualizerCatalogService } from 'src/app/services/visualizer-catalog.service';
 import { VisualizerDocument } from 'src/app/services/interfaces/visualizer/visualizer-document';
 import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
 import { VISUALIZER_CUSTOMIZATION_DEFAULTS } from 'src/app/services/visualizer-customization';
+import { FALLBACK_SITE_THEME, SiteTheme, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
+import { VisualizerCaptureStatus } from 'src/app/services/interfaces/visualizer/visualizer-audio-frame';
 import { VisualizerStudioComponent } from './visualizer-studio.component';
 
 describe('VisualizerStudioComponent', () => {
@@ -12,20 +16,34 @@ describe('VisualizerStudioComponent', () => {
   let catalog: jasmine.SpyObj<VisualizerCatalogService>;
   let library: Subject<VisualizerDocument[]>;
   let confirmation: jasmine.Spy;
+  let audio: jasmine.SpyObj<VisualizerAudioService>;
+  let audioState: { active: boolean; status: VisualizerCaptureStatus };
 
   beforeEach(() => {
     library = new Subject<VisualizerDocument[]>();
     catalog = jasmine.createSpyObj<VisualizerCatalogService>('catalog', [
-      'watchAll', 'create', 'update', 'delete'
+      'watchAll', 'create', 'update', 'delete', 'reorder'
     ]);
     catalog.watchAll.and.returnValue(library);
     catalog.create.and.resolveTo('new-id');
     catalog.update.and.resolveTo(undefined);
     catalog.delete.and.resolveTo(undefined);
+    catalog.reorder.and.resolveTo(undefined);
+    audioState = { active: false, status: 'idle' };
+    audio = jasmine.createSpyObj<VisualizerAudioService>('audio', ['startCapture', 'stopCapture']);
+    Object.defineProperties(audio, {
+      isActive: { get: () => audioState.active },
+      status: { get: () => audioState.status }
+    });
+    audio.startCapture.and.callFake(async () => {
+      audioState = { active: true, status: 'active' };
+      return true;
+    });
+    audio.stopCapture.and.callFake(() => { audioState = { active: false, status: 'idle' }; });
     confirmation = spyOn(Swal, 'fire').and.resolveTo({
       isConfirmed: true, isDenied: false, isDismissed: false
     });
-    component = new VisualizerStudioComponent(new FormBuilder(), catalog);
+    component = new VisualizerStudioComponent(new FormBuilder(), catalog, audio);
     component.ngOnInit();
   });
 
@@ -403,6 +421,260 @@ describe('VisualizerStudioComponent', () => {
     }
     expect(catalog.create).not.toHaveBeenCalled();
     expect(catalog.update).not.toHaveBeenCalled();
+  });
+
+  it('opens ordering with the full catalog even when a search and publication filter were active', () => {
+    component.search = 'Aurora';
+    component.filter = 'published';
+
+    component.toggleOrdering();
+
+    expect(component.ordering).toBeTrue();
+    expect(component.search).toBe('');
+    expect(component.filter).toBe('all');
+    expect(catalog.reorder).not.toHaveBeenCalled();
+    component.toggleOrdering();
+    expect(component.ordering).toBeFalse();
+  });
+
+  it('saves the entire catalog order without saving or resetting the current editor draft', async () => {
+    const records = [makeDocument('a', { enabled: true }), makeDocument('b'), makeDocument('c')];
+    library.next(records);
+    await component.edit(records[1]);
+    fill({ name: 'Work in progress', amplitude: 79 });
+    const unsavedDraft = component.form.getRawValue();
+
+    await component.moveVisualizer(2, 0);
+
+    expect(catalog.reorder).toHaveBeenCalledOnceWith(['c', 'a', 'b']);
+    expect(component.documents.map(item => [item.id, item.order])).toEqual([['c', 1], ['a', 2], ['b', 3]]);
+    expect(component.form.getRawValue()).toEqual(unsavedDraft);
+    expect(component.form.dirty).toBeTrue();
+    expect(component.editingId).toBe('b');
+    expect(component.orderNotice).not.toBe('');
+    expect(component.orderError).toBe('');
+    expect(component.savingOrder).toBeFalse();
+    expect(catalog.update).not.toHaveBeenCalled();
+    expect(catalog.create).not.toHaveBeenCalled();
+  });
+
+  it('waits for order confirmation and blocks overlapping writes or navigation', async () => {
+    library.next([makeDocument('a'), makeDocument('b')]);
+    component.ordering = true;
+    let complete!: () => void;
+    catalog.reorder.and.returnValue(new Promise<void>(resolve => { complete = resolve; }));
+
+    const pending = component.moveVisualizer(1, 0);
+
+    expect(component.savingOrder).toBeTrue();
+    expect(component.orderNotice).toBe('');
+    expect(component.documents.map(item => item.id)).toEqual(['b', 'a']);
+    component.toggleOrdering();
+    expect(component.ordering).toBeTrue();
+    expect(await component.confirmDiscard()).toBeFalse();
+    const event = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;
+    component.beforeUnload(event);
+    expect(event.defaultPrevented).toBeTrue();
+    await component.moveVisualizer(0, 1);
+    await component.save();
+    await component.remove(makeDocument('a'));
+    expect(catalog.reorder).toHaveBeenCalledTimes(1);
+    expect(catalog.create).not.toHaveBeenCalled();
+    expect(catalog.delete).not.toHaveBeenCalled();
+    expect(confirmation).not.toHaveBeenCalled();
+
+    complete();
+    await pending;
+    expect(component.savingOrder).toBeFalse();
+    expect(component.orderNotice).not.toBe('');
+  });
+
+  it('preserves concurrent document edits and additions received while an order write is pending', async () => {
+    library.next([makeDocument('a'), makeDocument('b')]);
+    let complete!: () => void;
+    catalog.reorder.and.returnValue(new Promise<void>(resolve => { complete = resolve; }));
+    const pending = component.moveVisualizer(1, 0);
+    library.next([makeDocument('a', { name: 'Remote edit', amplitude: 81 }), makeDocument('b'), makeDocument('new')]);
+    expect(component.documents.map(item => item.id)).toEqual(['b', 'a']);
+
+    complete();
+    await pending;
+
+    expect(component.documents.map(item => item.id)).toEqual(['b', 'a', 'new']);
+    expect(component.documents[1]).toEqual(jasmine.objectContaining({ name: 'Remote edit', amplitude: 81 }));
+  });
+
+  it('restores the original sequence on failure even if a speculative reordered snapshot arrived', async () => {
+    const records = [makeDocument('a', { order: 1 }), makeDocument('b', { order: 2 })];
+    library.next(records);
+    let reject!: (reason: Error) => void;
+    catalog.reorder.and.returnValue(new Promise<void>((_, fail) => { reject = fail; }));
+    const pending = component.moveVisualizer(1, 0);
+    library.next([makeDocument('b', { order: 1, name: 'Remote edit' }), makeDocument('a', { order: 2 })]);
+
+    reject(new Error('permission-denied'));
+    await pending;
+
+    expect(component.documents.map(item => item.id)).toEqual(['a', 'b']);
+    expect(component.documents[1].name).toBe('Remote edit');
+    expect(component.orderError).not.toBe('');
+    expect(component.orderNotice).toBe('');
+    expect(component.savingOrder).toBeFalse();
+    catalog.reorder.and.resolveTo(undefined);
+    await component.moveVisualizer(1, 0);
+    expect(catalog.reorder).toHaveBeenCalledTimes(2);
+    expect(component.orderError).toBe('');
+  });
+
+  it('does not reorder incomplete filtered lists or out-of-bounds positions', async () => {
+    library.next([makeDocument('a'), makeDocument('b')]);
+    for (const [from, to] of [[-1, 0], [0, -1], [2, 0], [0, 2], [0, 0]]) {
+      await component.moveVisualizer(from, to);
+    }
+    component.search = 'a';
+    await component.moveVisualizer(0, 1);
+    component.search = '';
+    component.filter = 'published';
+    await component.moveVisualizer(0, 1);
+    component.filter = 'all';
+    component.saving = true;
+    await component.moveVisualizer(0, 1);
+    component.saving = false;
+    component.deletingId = 'a';
+    await component.moveVisualizer(0, 1);
+    component.deletingId = null;
+
+    expect(catalog.reorder).not.toHaveBeenCalled();
+    expect(component.documents.map(item => item.id)).toEqual(['a', 'b']);
+  });
+
+  it('supports drag and keyboard ordering through the same persisted sequence', async () => {
+    library.next([makeDocument('a'), makeDocument('b'), makeDocument('c')]);
+    await component.onOrderDrop({ previousIndex: 0, currentIndex: 2 } as CdkDragDrop<VisualizerDocument[]>);
+    expect(catalog.reorder).toHaveBeenCalledWith(['b', 'c', 'a']);
+    for (const [key, index, expected] of [
+      ['Home', 2, ['a', 'b', 'c']], ['End', 0, ['b', 'c', 'a']],
+      ['ArrowUp', 2, ['b', 'a', 'c']], ['ArrowDown', 0, ['a', 'b', 'c']]
+    ] as Array<[string, number, string[]]>) {
+      const event = new KeyboardEvent('keydown', { key, cancelable: true });
+      await component.onOrderKeydown(event, index);
+      expect(event.defaultPrevented).withContext(key).toBeTrue();
+      expect(component.documents.map(item => item.id)).withContext(key).toEqual(expected);
+    }
+    const unrelatedKey = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true });
+    await component.onOrderKeydown(unrelatedKey, 0);
+    expect(unrelatedKey.defaultPrevented).toBeFalse();
+    expect(catalog.reorder).toHaveBeenCalledTimes(5);
+  });
+
+  it('previews complete desktop and mobile screens without changing the saved appearance', () => {
+    const appearance = component.form.getRawValue();
+    expect(component.previewViewport).toEqual(jasmine.objectContaining({ width: 1440, height: 900 }));
+    component.previewDevice = 'mobile';
+    expect(component.previewViewport).toEqual(jasmine.objectContaining({ width: 390, height: 844 }));
+    component.previewDevice = 'removed-device';
+    expect(component.previewViewport).toBe(component.previewViewports[0]);
+    expect(component.form.getRawValue()).toEqual(appearance);
+    expect(component.form.pristine).toBeTrue();
+  });
+
+  it('uses saved theme colors and refreshes the preview palette when a theme is edited', () => {
+    const ocean: SiteTheme = {
+      ...FALLBACK_SITE_THEME, id: 'ocean', name: 'Ocean',
+      colors: { ...FALLBACK_SITE_THEME.colors, background: '#123456', primary: '#abcdef' }
+    };
+    component.themes = [FALLBACK_SITE_THEME, ocean];
+    component.previewThemeId = 'ocean';
+    const paletteKey = component.previewPaletteKey;
+
+    expect(component.previewThemes).toBe(component.themes);
+    expect(component.previewTheme).toBe(ocean);
+    expect(component.previewThemeStyles).toEqual(siteThemeToCssVariables(ocean.colors));
+    component.themes = [FALLBACK_SITE_THEME, { ...ocean, colors: { ...ocean.colors, primary: '#654321' } }];
+    expect(component.previewPaletteKey).not.toBe(paletteKey);
+    expect(component.previewThemeStyles['--clr-primary']).toBe('#654321');
+    component.themes = [];
+    expect(component.previewTheme).toBe(FALLBACK_SITE_THEME);
+    expect(component.form.pristine).toBeTrue();
+  });
+
+  it('starts real preview audio only on an explicit action and stops owned capture on returning to demo', async () => {
+    expect(component.previewAudioSource).toBe('demo');
+    expect(audio.startCapture).not.toHaveBeenCalled();
+    component.previewPlaying = false;
+
+    const start = component.useLiveAudio();
+    // The browser request must stay in the original user activation, before any await.
+    expect(audio.startCapture).toHaveBeenCalledTimes(1);
+    await start;
+    expect(component.previewAudioSource).toBe('live');
+    expect(component.previewPlaying).toBeTrue();
+    expect(component.isPreviewAudioActive).toBeTrue();
+    component.useDemoAudio();
+    expect(audio.stopCapture).toHaveBeenCalledTimes(1);
+    expect(component.previewAudioSource).toBe('demo');
+    expect(component.isPreviewAudioActive).toBeFalse();
+    component.ngOnDestroy();
+    expect(audio.stopCapture).toHaveBeenCalledTimes(1);
+  });
+
+  it('borrows an existing player audio stream without stopping it when preview closes', async () => {
+    audioState = { active: true, status: 'active' };
+    await component.useLiveAudio();
+
+    expect(component.previewAudioSource).toBe('live');
+    expect(audio.startCapture).not.toHaveBeenCalled();
+    component.useDemoAudio();
+    component.ngOnDestroy();
+    expect(audio.stopCapture).not.toHaveBeenCalled();
+    expect(audioState.active).toBeTrue();
+  });
+
+  it('blocks duplicate share requests and cancels owned pending capture when leaving the editor', async () => {
+    let complete!: (started: boolean) => void;
+    audio.startCapture.and.callFake(() => {
+      audioState = { active: false, status: 'requesting' };
+      return new Promise<boolean>(resolve => { complete = resolve; });
+    });
+    const start = component.useLiveAudio();
+    expect(component.isPreviewAudioRequesting).toBeTrue();
+    await component.useLiveAudio();
+    expect(audio.startCapture).toHaveBeenCalledTimes(1);
+
+    component.ngOnDestroy();
+    expect(audio.stopCapture).toHaveBeenCalledTimes(1);
+    complete(false);
+    await start;
+    expect(component.previewAudioError).toBe('');
+  });
+
+  it('reports denied real audio capture, retains the draft and clears the error in demo mode', async () => {
+    fill({ name: 'Unsaved appearance', amplitude: 71 });
+    const draft = component.form.getRawValue();
+    audio.startCapture.and.resolveTo(false);
+
+    await component.useLiveAudio();
+
+    expect(component.previewAudioSource).toBe('live');
+    expect(component.previewAudioError).not.toBe('');
+    expect(component.isPreviewAudioActive).toBeFalse();
+    expect(component.form.getRawValue()).toEqual(draft);
+    expect(component.form.dirty).toBeTrue();
+    component.useDemoAudio();
+    expect(component.previewAudioError).toBe('');
+  });
+
+  it('ignores a pending share rejection after the user returns to demonstration', async () => {
+    let reject!: (reason: Error) => void;
+    audio.startCapture.and.returnValue(new Promise<boolean>((_, fail) => { reject = fail; }));
+    const start = component.useLiveAudio();
+    component.useDemoAudio();
+    reject(new Error('cancelled'));
+    await start;
+
+    expect(component.previewAudioSource).toBe('demo');
+    expect(component.previewAudioError).toBe('');
+    expect(audio.stopCapture).toHaveBeenCalledTimes(1);
   });
 
   it('cleans up subscriptions when leaving the admin', () => {

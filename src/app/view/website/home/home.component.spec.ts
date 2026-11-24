@@ -8,6 +8,7 @@ import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
 import { Chip } from 'src/app/services/interfaces/chip';
 import { FALLBACK_SITE_THEME, SiteTheme } from 'src/app/services/interfaces/site-theme';
 import { HomeComponent } from './home.component';
+import { VisualizerDocument } from 'src/app/services/interfaces/visualizer/visualizer-document';
 
 describe('HomeComponent non-verbal radio feedback', () => {
   const playerTimeoutMs = 12_000;
@@ -15,6 +16,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
   let component: HomeComponent;
   let visualizerService: VisualizerService;
   let visualizerAudio: VisualizerAudioService;
+  let createHome: () => HomeComponent;
   let changeDetector: jasmine.SpyObj<{ detectChanges: () => void; markForCheck: () => void }>;
   let firebase: jasmine.SpyObj<{
     obterTodosChip: () => unknown;
@@ -46,7 +48,7 @@ describe('HomeComponent non-verbal radio feedback', () => {
     } as unknown as VisualizerCatalogService);
     visualizerAudio = new VisualizerAudioService();
 
-    component = new HomeComponent(
+    createHome = () => new HomeComponent(
       title,
       meta,
       changeDetector as any,
@@ -63,14 +65,113 @@ describe('HomeComponent non-verbal radio feedback', () => {
       visualizerService,
       visualizerAudio
     );
+    component = createHome();
 
     component.isOnline = true;
   });
 
   afterEach(() => {
     component.ngOnDestroy();
+    visualizerService.ngOnDestroy();
     localStorage.clear();
     jasmine.clock().uninstall();
+  });
+
+  describe('new visualizer badges', () => {
+    const initial = () => VISUALIZER_PRESETS.map(preset => ({ ...preset, description: '', enabled: true }));
+    const added = (): VisualizerDocument => ({ ...initial()[0], id: 'cloud-new', name: 'New cloud visualizer' });
+
+    function connectCatalog(clearSeen = true): Subject<VisualizerDocument[]> {
+      component.ngOnDestroy();
+      visualizerService.ngOnDestroy();
+      if (clearSeen) localStorage.clear();
+      const source = new Subject<VisualizerDocument[]>();
+      visualizerService = new VisualizerService({ watchPublished: () => source } as unknown as VisualizerCatalogService);
+      component = createHome();
+      return source;
+    }
+
+    it('waits for the first successful catalog before marking its existing entries as seen', () => {
+      const source = connectCatalog();
+      expect(component.visualizerCatalogStatus).toBe('loading');
+      expect(localStorage.getItem('visualizerCatalogInitialized')).toBeNull();
+      expect(component.hasNewVisualizers).toBeFalse();
+      source.next(initial());
+      expect(component.hasNewVisualizers).toBeFalse();
+      expect(localStorage.getItem('visualizerCatalogInitialized')).toBe('true');
+      expect(localStorage.getItem('seen_visualizer_aurora-wave')).toBe('true');
+    });
+
+    it('treats a confirmed empty catalog as a baseline and flags later publications', () => {
+      const source = connectCatalog();
+      source.next([]);
+      expect(localStorage.getItem('visualizerCatalogInitialized')).toBe('true');
+      source.next([added()]);
+      expect(component.hasNewVisualizers).toBeTrue();
+      expect(component.isVisualizerNew('cloud-new')).toBeTrue();
+      expect(localStorage.getItem('seen_visualizer_cloud-new')).toBeNull();
+    });
+
+    it('marks a new item as seen after selection and persists that state across page reloads', () => {
+      let source = connectCatalog();
+      source.next(initial());
+      source.next([...initial(), added()]);
+      spyOn(visualizerAudio, 'startCapture').and.returnValue(Promise.resolve(true));
+      component.selectVisualizer('cloud-new');
+      expect(component.isVisualizerNew('cloud-new')).toBeFalse();
+      expect(localStorage.getItem('seen_visualizer_cloud-new')).toBe('true');
+      source = connectCatalog(false);
+      source.next([...initial(), added()]);
+      expect(component.hasNewVisualizers).toBeFalse();
+    });
+
+    it('keeps unseen items new across reloads and clears badges for removed items', () => {
+      let source = connectCatalog();
+      source.next(initial());
+      source.next([...initial(), added()]);
+      source = connectCatalog(false);
+      source.next([...initial(), added()]);
+      expect(component.newVisualizerIds).toEqual(new Set(['cloud-new']));
+      source.next(initial());
+      expect(component.hasNewVisualizers).toBeFalse();
+    });
+
+    it('never turns an existing ID new when its name, parameters or order change', () => {
+      const source = connectCatalog();
+      source.next(initial());
+      source.next(initial().reverse().map(item => ({ ...item, name: item.name + ' edited', amplitude: 25 })));
+      expect(component.hasNewVisualizers).toBeFalse();
+      source.next([...initial(), added()]);
+      component.markVisualizerAsSeen('cloud-new');
+      source.next([{ ...added(), name: 'Reordered visualizer' }, ...initial()]);
+      expect(component.hasNewVisualizers).toBeFalse();
+    });
+
+    it('does not initialize a failed catalog or keep stale badges after an error', () => {
+      let source = connectCatalog();
+      source.error(new Error('permission-denied'));
+      expect(component.visualizerCatalogStatus).toBe('error');
+      expect(localStorage.getItem('visualizerCatalogInitialized')).toBeNull();
+      source = connectCatalog(false);
+      source.next(initial());
+      source.next([...initial(), added()]);
+      expect(component.hasNewVisualizers).toBeTrue();
+      source.error(new Error('unavailable'));
+      expect(component.hasNewVisualizers).toBeFalse();
+    });
+
+    it('keeps novelty state in memory when browser storage is unavailable', () => {
+      const source = connectCatalog();
+      spyOn(Storage.prototype, 'getItem').and.throwError('Storage blocked');
+      spyOn(Storage.prototype, 'setItem').and.throwError('Storage blocked');
+      expect(() => source.next(initial())).not.toThrow();
+      expect(component.hasNewVisualizers).toBeFalse();
+      source.next([...initial(), added()]);
+      expect(component.isVisualizerNew('cloud-new')).toBeTrue();
+      expect(() => component.markVisualizerAsSeen('cloud-new')).not.toThrow();
+      source.next([...initial(), added()]);
+      expect(component.hasNewVisualizers).toBeFalse();
+    });
   });
 
 

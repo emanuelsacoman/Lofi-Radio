@@ -178,111 +178,23 @@ h2,h3,h4,p {
   min-width: 0;
 }
 
-.preview-stage {
-  position: relative;
-  height: 390px;
-  overflow: hidden;
-  border: 1px solid #393143;
-  border-radius: 12px;
-  background: radial-gradient(ellipse at 48% 65%,#271c3e80,transparent 70%),#0b0b13;
-  color: #eee9ff;
-  isolation: isolate;
-  --clr-primary: #a78bfa;
-  --clr-accent: #5eead4;
-  --clr-secondary: #818cf8;
-  --clr-accent-light: #ddd6fe;
-  --clr-text: #f1f5f9;
-}
-
-.preview-stage--light {
-  background: radial-gradient(ellipse at 48% 65%,#ddceee90,transparent 70%),#edeaf2;
-  color: #30263e;
-}
-
-.stage-grid {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: linear-gradient(#a7a0be08 1px,transparent 1px),linear-gradient(90deg,#a7a0be08 1px,transparent 1px);
-  background-size: 36px 36px;
-  mask-image: linear-gradient(transparent,#000 40%,#000);
-}
-
-.preview-stage app-visualizer {
-  position: absolute;
-  inset: 56px 12px 70px;
-  width: auto;
-  height: auto;
-}
-
-.stage-topline {
-  position: absolute;
-  inset: 20px 20px auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 9px;
-  letter-spacing: 1.2px;
-}
-
-.live-label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.live-label i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #85e7bb;
-  box-shadow: 0 0 9px #85e7bb50;
-}
-
-.live-label i.paused {
-  background: #c4bfd0;
-  box-shadow: none;
-}
-
-.stage-index {
-  opacity: .6;
-}
-
-.stage-caption {
-  position: absolute;
-  bottom: 24px;
-  left: 24px;
-  right: 48px;
-  pointer-events: none;
-}
-
-.stage-caption>span {
-  display: block;
-  font-size: 8px;
-  letter-spacing: 2.2px;
-  opacity: .6;
-  margin-bottom: 10px;
-}
-
-.stage-caption strong {
-  display: block;
-  font-weight: 400;
-  font-size: 20px;
-  letter-spacing: -.4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stage-corner {
-  position: absolute;
-  right: 24px;
-  bottom: 25px;
-  font-size: 24px;
-  font-weight: 300;
-  opacity: .5;
-}
+.preview-settings { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.preview-devices { display: flex; gap: 5px; padding: 4px; border: 1px solid #403747; border-radius: 8px; background: #1a1723; }
+.preview-devices button { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 0; border-radius: 5px; background: transparent; color: #b7a5cd; font-size: 11px; }
+.preview-devices button.is-selected { background: #3b2d4e; color: #e9d6ff; }
+.preview-devices mat-icon { width: 16px; height: 16px; font-size: 16px; }
+.preview-theme { display: grid; gap: 5px; min-width: 130px; max-width: 210px; }
+.preview-theme span { font-size: 9px; color: #a99ab9; }
+.preview-theme select { padding: 9px; width: 100%; min-width: 0; color-scheme: dark; background: #1a1723; color: #e1d3ee; border: 1px solid #403747; border-radius: 6px; font-size: 11px; }
+.preview-scene { display: grid; place-items: center; padding: 10px; background: #0d0c13; border: 1px solid #393143; border-radius: 12px; }
+.preview-scene .preview-stage { position: relative; width: 100%; height: auto; overflow: hidden; background: var(--clr-background); color: var(--clr-text); isolation: isolate; }
+.preview-stage app-visualizer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.preview-scale-label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; padding: 10px 1px 0; color: #ac9dbb; font-size: 9px; }
+.preview-scale-label strong { color: #d9cbe7; font-size: 11px; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preview-audio-tools { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 24px; }
+.preview-audio-tools .studio-button { font-size: 10px; padding: 9px 11px; }
+.preview-audio-tools mat-icon { width: 16px; height: 16px; font-size: 16px; }
+.preview-audio-tools p { flex-basis: 100%; }
 
 .preview-toolbar {
   gap: 10px;
@@ -1446,4 +1358,39 @@ label,.palette-heading>label {
   * {
     transition: none!important;
   }
+}
+
+.library-tools { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.library-tools .studio-button { font-size: 10px; }
+.order-panel { margin-top: 20px; }
+.order-description { color: #b6a7c4; font-size: 11px; line-height: 1.7; margin-bottom: 15px; }
+.order-list { display: grid; gap: 8px; }
+.order-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #43344f; border-radius: 8px; background: #201928; color: #e1d2ee; }
+.order-index { min-width: 20px; color: #aa91c3; font-family: monospace; font-size: 12px; }
+.order-style-icon { color: #c1a3e3; }
+.order-drag,.order-arrows button { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border: 0; border-radius: 5px; background: #30223e; color: #c6a7e1; }
+.order-drag { cursor: grab; touch-action: none; }
+.order-arrows { display: flex; gap: 6px; }
+.order-row-copy { min-width: 0; flex: 1; }
+.order-row-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
+.order-row-copy span { display: block; margin-top: 5px; font-size: 10px; color: #b5a0c5; }
+.order-feedback { font-size: 11px; color: #c9b6da; margin-top: 14px; }
+.order-row.cdk-drag-preview { box-shadow: 0 8px 30px #0008; }
+.order-row.cdk-drag-placeholder { opacity: .3; }
+.order-list.cdk-drop-list-dragging .order-row:not(.cdk-drag-placeholder),.order-row.cdk-drag-animating { transition: transform 180ms ease; }
+@media (max-width: 540px) {
+  .preview-settings { align-items: stretch; }
+  .preview-theme { max-width: none; flex: 1; }
+  .preview-devices { flex: 1; align-self: flex-end; justify-content: center; }
+  .preview-devices button { padding: 8px 6px; font-size: 10px; }
+  .preview-scene { padding: 5px; }
+  .library-tools { justify-content: stretch; }
+  .library-tools>.studio-button,.library-tools>.library-search { flex: 1; }
+  .order-row { padding: 9px 7px; gap: 7px; }
+  .order-style-icon { display: none; }
+  .order-index { min-width: 12px; font-size: 10px; }
+  .order-row-copy strong { font-size: 11px; }
+  .order-arrows { gap: 3px; }
+  .order-drag,.order-arrows button { width: 25px; height: 28px; }
+  .order-drag mat-icon,.order-arrows mat-icon { width: 16px; height: 16px; font-size: 16px; }
 }

@@ -370,9 +370,10 @@
               matTooltipPosition="right"
               [attr.aria-expanded]="visualizerExpanded"
               aria-controls="visualizer-options"
-              aria-label="Toggle visualizers"
+              [attr.aria-label]="hasNewVisualizers ? 'Toggle visualizers, new visualizers available' : 'Toggle visualizers'"
               (click)="toggleVisualizers()">
               <mat-icon class="visual-control__icon" aria-hidden="true">equalizer</mat-icon>
+              <mat-icon *ngIf="hasNewVisualizers" class="visual-control__notice visual-control__notice--new" aria-hidden="true">new_releases</mat-icon>
               <mat-icon
                 *ngIf="audioCaptureStatus === 'active'"
                 class="visual-control__notice"
@@ -400,18 +401,22 @@
                 (click)="selectVisualizer('off')">
                 <mat-icon aria-hidden="true">visibility_off</mat-icon>
               </button>
+              <span class="visual-control__item" *ngFor="let preset of visualizerPresets; trackBy: trackVisualizerPreset">
               <button
-                *ngFor="let preset of visualizerPresets; trackBy: trackVisualizerPreset"
                 class="visual-control__effect"
                 type="button"
                 [class.is-selected]="selectedVisualizerId === preset.id"
                 [attr.aria-pressed]="selectedVisualizerId === preset.id"
-                [attr.aria-label]="'Select ' + preset.name"
+                [attr.aria-label]="'Select ' + preset.name + (isVisualizerNew(preset.id) ? ', new' : '')"
                 [matTooltip]="preset.name"
                 matTooltipPosition="right"
-                (click)="selectVisualizer(preset.id)">
+                (click)="selectVisualizer(preset.id)"
+                (mouseenter)="markVisualizerAsSeen(preset.id)"
+                (focus)="markVisualizerAsSeen(preset.id)">
                 <mat-icon aria-hidden="true">{{ preset.icon }}</mat-icon>
               </button>
+              <span class="theme-new-label" *ngIf="isVisualizerNew(preset.id)">NEW!</span>
+              </span>
               <mat-icon
                 *ngIf="!visualizerPresets.length && visualizerCatalogStatus !== 'error'"
                 class="visual-control__state"

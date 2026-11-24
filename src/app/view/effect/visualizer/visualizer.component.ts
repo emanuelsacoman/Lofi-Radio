@@ -117,6 +117,9 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   @Input() palette = '';
   @Input() previewMode = false;
   @Input() previewConfig: VisualizerConfig | null = null;
+  /** Render in the player's logical viewport, then fit that frame into the editor. */
+  @Input() previewViewport: { width: number; height: number } | null = null;
+  @Input() previewAudioSource: 'demo' | 'live' = 'demo';
   @ViewChild('canvas', { static: true }) canvasElement!: ElementRef<HTMLCanvasElement>;
 
   private ctx: CanvasRenderingContext2D | null = null;
@@ -134,6 +137,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   };
   private width = 0;
   private height = 0;
+  private pixelEffectScale = 1;
   private destroyed = false;
   private reducedMotion: MediaQueryList | null = null;
   // Tiny pre-rendered light textures. Rebuild only when the palette changes.
@@ -173,7 +177,13 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     if (changes['previewMode'] || changes['previewConfig']) {
       this.setConfig(this.previewMode ? this.previewConfig : this.visualizer.activeConfig);
     }
-    if ((changes['playing'] || changes['palette']) && this.ctx) this.syncAnimation();
+    if ((changes['previewViewport'] || changes['previewMode']) && this.ctx) this.resize();
+    if (changes['previewAudioSource']) {
+      this.fireflyPreviousBeat = 0;
+      this.fireflyLastBeatAt = -Infinity;
+    }
+    if ((changes['playing'] || changes['palette'] || changes['previewViewport'] ||
+         changes['previewAudioSource']) && this.ctx) this.syncAnimation();
   }
 
   private setConfig(config: VisualizerConfig | null): void {
@@ -189,7 +199,9 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
 
   /** Demo data is confined to an explicitly enabled studio preview. No capture occurs. */
   private readFrame(): VisualizerAudioFrame {
-    if (!this.previewMode) return this.audio.isActive ? this.audio.readFrame() : SILENT_AUDIO_FRAME;
+    if (!this.previewMode || this.previewAudioSource === 'live') {
+      return this.audio.isActive ? this.audio.readFrame() : SILENT_AUDIO_FRAME;
+    }
     const t = this.time;
     const beat = Math.pow(Math.max(0, Math.cos(t * Math.PI * 2 * 0.9)), 8);
     for (let i = 0; i < this.previewSpectrum.length; i++) {
@@ -207,30 +219,45 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   private get canAnimate(): boolean {
-    return this.previewMode ? this.playing : this.audio.isActive;
+    return this.previewMode
+      ? this.playing && (this.previewAudioSource === 'demo' || this.audio.isActive)
+      : this.audio.isActive;
   }
 
   private readonly resize = (): void => {
     if (!this.ctx) return;
     const canvas = this.canvasElement.nativeElement;
     const rect = canvas.getBoundingClientRect();
-    this.width = rect.width;
-    this.height = rect.height;
-    if (this.width <= 0 || this.height <= 0) return;
+    if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height) || rect.width <= 0 || rect.height <= 0) {
+      this.width = 0;
+      this.height = 0;
+      return;
+    }
+    const viewport = this.previewMode ? this.previewViewport : null;
+    const boundedSize = (value: number, fallback: number, maximum: number): number =>
+      Math.round(Math.min(maximum, Math.max(240, Number.isFinite(value) ? value : fallback)));
+    this.width = viewport ? boundedSize(viewport.width, rect.width, 3840) : rect.width;
+    this.height = viewport ? boundedSize(viewport.height, rect.height, 2160) : rect.height;
 
     // Limit the framebuffer to ~4.5 MP on large/high-DPI screens.
     // Firefly is deliberately lower-resolution: its diffuse light needs no
     // per-pixel sharpness and large backing buffers are expensive to clear.
     const firefly = this.config?.visualStyle === 'fireflies';
     const pixelBudget = firefly ? 1_400_000 : 4_500_000;
-    const scale = Math.min(window.devicePixelRatio || 1, firefly ? 1 : 2,
-      Math.sqrt(pixelBudget / Math.max(1, this.width * this.height)));
-    const pixelWidth = Math.max(1, Math.round(this.width * scale));
-    const pixelHeight = Math.max(1, Math.round(this.height * scale));
+    const deviceScale = Math.min(window.devicePixelRatio || 1, firefly ? 1 : 2);
+    const scale = Math.min(deviceScale,
+      Math.sqrt(pixelBudget / Math.max(1, rect.width * rect.height)));
+    const pixelWidth = Math.max(1, Math.round(rect.width * scale));
+    const pixelHeight = Math.max(1, Math.round(rect.height * scale));
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
       canvas.width = pixelWidth;
       canvas.height = pixelHeight;
     }
+    // Canvas shadows do not follow the transform. Match the blur the full-size
+    // player would produce before shrinking it, including its pixel-budget cap.
+    const playerScale = Math.min(deviceScale,
+      Math.sqrt(pixelBudget / Math.max(1, this.width * this.height)));
+    this.pixelEffectScale = viewport ? canvas.width / this.width / playerScale : 1;
     this.ctx.setTransform(canvas.width / this.width, 0, 0, canvas.height / this.height, 0, 0);
     this.render(this.readFrame());
   };
@@ -335,7 +362,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.shadowColor = color;
-      ctx.shadowBlur = config.glow * (0.8 + audio.beat * 0.6);
+      ctx.shadowBlur = config.glow * (0.8 + audio.beat * 0.6) * this.pixelEffectScale;
       if (path.kind === 'bar') this.drawBars(ctx, path, config.barCount);
       else this.drawCurve(ctx, path);
     }
@@ -407,7 +434,7 @@ export class VisualizerComponent implements AfterViewInit, OnChanges, OnDestroy 
     ctx.fillStyle = color;
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
     ctx.shadowColor = color;
-    ctx.shadowBlur = blur;
+    ctx.shadowBlur = blur * this.pixelEffectScale;
     ctx.fill();
   }
 

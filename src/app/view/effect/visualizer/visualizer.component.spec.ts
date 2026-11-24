@@ -7,6 +7,7 @@ import { VisualizerComponent, fireflyAudioResponse, fireflyFlight, fireflyEcho }
 import { VisualizerService } from 'src/app/services/visualizer.service';
 import { VisualizerCatalogService } from 'src/app/services/visualizer-catalog.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
+import { SILENT_AUDIO_FRAME } from 'src/app/services/interfaces/visualizer/visualizer-audio-frame';
 
 describe('VisualizerComponent', () => {
   let component: VisualizerComponent;
@@ -67,6 +68,135 @@ describe('VisualizerComponent', () => {
     expect(render).toHaveBeenCalled();
     expect((component as any).config.color).toBe('#ffffff');
     expect((component as any).frameId).toBeNull();
+  });
+
+  it('fits a full player viewport into a smaller preview without inflating its framebuffer', () => {
+    const ctx = contextSpy();
+    const canvas = component.canvasElement.nativeElement;
+    spyOn(canvas, 'getBoundingClientRect').and.returnValue({ width: 360, height: 225 } as DOMRect);
+    spyOnProperty(window, 'devicePixelRatio', 'get').and.returnValue(1);
+    (component as any).ctx = ctx;
+    component.previewMode = true;
+    component.playing = false;
+    component.previewViewport = { width: 1440, height: 900 };
+    component.previewConfig = { ...VISUALIZER_PRESETS[1] };
+    component.ngOnChanges({
+      previewConfig: new SimpleChange(null, component.previewConfig, true),
+      previewViewport: new SimpleChange(null, component.previewViewport, true)
+    });
+
+    expect((component as any).width).toBe(1440);
+    expect((component as any).height).toBe(900);
+    expect(canvas.width).toBe(360);
+    expect(canvas.height).toBe(225);
+    expect(ctx.setTransform.calls.mostRecent().args as unknown[]).toEqual([0.25, 0, 0, 0.25, 0, 0]);
+    expect((component as any).pixelEffectScale).toBe(0.25);
+    expect((component as any).frameId).toBeNull();
+
+    component.previewViewport = { width: 390, height: 844 };
+    component.ngOnChanges({ previewViewport: new SimpleChange(null, component.previewViewport, false) });
+    expect((component as any).width).toBe(390);
+    expect((component as any).height).toBe(844);
+    expect(ctx.setTransform.calls.mostRecent().args as unknown[]).toEqual([360 / 390, 0, 0, 225 / 844, 0, 0]);
+  });
+
+  it('bounds invalid preview dimensions and ignores preview dimensions in the public player', () => {
+    const ctx = contextSpy();
+    const canvas = component.canvasElement.nativeElement;
+    const measure = spyOn(canvas, 'getBoundingClientRect').and.returnValue({ width: 360, height: 225 } as DOMRect);
+    (component as any).ctx = ctx;
+    component.previewMode = true;
+    component.playing = false;
+    component.previewViewport = { width: 1e12, height: -10 };
+    component.ngOnChanges({ previewViewport: new SimpleChange(null, component.previewViewport, true) });
+    expect((component as any).width).toBe(3840);
+    expect((component as any).height).toBe(240);
+    component.previewViewport = { width: NaN, height: Infinity };
+    component.ngOnChanges({ previewViewport: new SimpleChange(null, component.previewViewport, false) });
+    expect((component as any).width).toBe(360);
+    expect((component as any).height).toBe(240);
+
+    component.previewMode = false;
+    component.ngOnChanges({ previewMode: new SimpleChange(true, false, false) });
+    expect((component as any).width).toBe(360);
+    expect((component as any).height).toBe(225);
+    expect((component as any).pixelEffectScale).toBe(1);
+    measure.and.returnValue({ width: 0, height: 0 } as DOMRect);
+    (component as any).resize();
+    expect((component as any).width).toBe(0);
+    expect((component as any).height).toBe(0);
+  });
+
+  it('draws the same coordinates, particle sizes and line widths as the player for a shared live frame', () => {
+    const audio = TestBed.inject(VisualizerAudioService);
+    spyOnProperty(audio, 'isActive', 'get').and.returnValue(true);
+    spyOn(audio, 'readFrame').and.returnValue(music());
+    spyOnProperty(window, 'devicePixelRatio', 'get').and.returnValue(1);
+    const measure = spyOn(component.canvasElement.nativeElement, 'getBoundingClientRect');
+    const ctx = contextSpy();
+    const strokeSamples: Array<{ width: number; blur: number }> = [];
+    ctx.stroke.and.callFake(() => { strokeSamples.push({ width: ctx.lineWidth, blur: ctx.shadowBlur }); });
+    const resetCalls = (): void => {
+      ctx.moveTo.calls.reset(); ctx.lineTo.calls.reset(); ctx.arc.calls.reset(); ctx.drawImage.calls.reset();
+      strokeSamples.length = 0;
+    };
+
+    for (const preset of VISUALIZER_PRESETS) {
+      installConfig(ctx, preset);
+      component.previewMode = false;
+      measure.and.returnValue({ width: 1440, height: 900 } as DOMRect);
+      (component as any).resize();
+      const player = {
+        starts: ctx.moveTo.calls.allArgs(), points: ctx.lineTo.calls.allArgs(),
+        particles: ctx.drawImage.calls.allArgs().map(args => args.slice(1)),
+        sparks: ctx.arc.calls.allArgs(), strokes: [...strokeSamples]
+      };
+      resetCalls();
+      component.previewMode = true;
+      component.previewAudioSource = 'live';
+      component.previewViewport = { width: 1440, height: 900 };
+      measure.and.returnValue({ width: 360, height: 225 } as DOMRect);
+      (component as any).resize();
+      expect(ctx.moveTo.calls.allArgs()).withContext(preset.id).toEqual(player.starts);
+      expect(ctx.lineTo.calls.allArgs()).withContext(preset.id).toEqual(player.points);
+      expect(ctx.arc.calls.allArgs()).withContext(preset.id).toEqual(player.sparks);
+      expect(ctx.drawImage.calls.allArgs().map(args => args.slice(1))).withContext(preset.id).toEqual(player.particles);
+      expect(strokeSamples).withContext(preset.id).toEqual(player.strokes.map(sample => ({
+        width: sample.width, blur: sample.blur * 0.25
+      })));
+      resetCalls();
+    }
+  });
+
+  it('uses captured sound only in live preview and stays silent until capture is active', () => {
+    const audio = TestBed.inject(VisualizerAudioService);
+    let active = false;
+    spyOnProperty(audio, 'isActive', 'get').and.callFake(() => active);
+    const frame = music();
+    const readAudio = spyOn(audio, 'readFrame').and.returnValue(frame);
+    const startCapture = spyOn(audio, 'startCapture');
+    const ctx = contextSpy();
+    installConfig(ctx, VISUALIZER_PRESETS[1]);
+    component.previewMode = true;
+    component.previewAudioSource = 'live';
+    component.playing = false;
+    component.ngOnChanges({ previewAudioSource: new SimpleChange('demo', 'live', false) });
+    expect((component as any).readFrame()).toBe(SILENT_AUDIO_FRAME);
+    expect(ctx.stroke).not.toHaveBeenCalled();
+    expect(readAudio).not.toHaveBeenCalled();
+    expect((component as any).canAnimate).toBeFalse();
+
+    active = true;
+    expect((component as any).readFrame()).toBe(frame);
+    expect((component as any).canAnimate).toBeFalse();
+    component.playing = true;
+    expect((component as any).canAnimate).toBeTrue();
+    active = false;
+    expect((component as any).canAnimate).toBeFalse();
+    component.previewAudioSource = 'demo';
+    expect((component as any).canAnimate).toBeTrue();
+    expect((component as any).readFrame().level).toBeGreaterThan(0);
+    expect(startCapture).not.toHaveBeenCalled();
   });
 
   it('normalizes incomplete editor values before rendering without mutating the form draft', () => {

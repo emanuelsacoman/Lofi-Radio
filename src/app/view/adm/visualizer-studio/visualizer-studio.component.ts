@@ -1,4 +1,5 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit, Optional } from '@angular/core';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -7,6 +8,8 @@ import { VisualizerDocument, VisualizerDraft } from 'src/app/services/interfaces
 import { VisualizerConfig, VisualizerStyle } from 'src/app/services/interfaces/visualizer/visualizerconfig';
 import { VISUALIZER_PRESETS } from 'src/app/services/visualizer-presets';
 import { normalizeVisualizerCustomization } from 'src/app/services/visualizer-customization';
+import { FALLBACK_SITE_THEME, SiteTheme, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
+import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
 
 interface StudioControl {
   key: string; label: string; min: number; max: number; step: number; unit?: string;
@@ -20,6 +23,17 @@ interface StudioControl {
   styleUrls: ['./visualizer-studio.component.css']
 })
 export class VisualizerStudioComponent implements OnInit, OnDestroy {
+  @Input() themes: SiteTheme[] = [];
+  readonly previewViewports = [
+    { id: 'desktop', label: 'Desktop', width: 1440, height: 900 },
+    { id: 'mobile', label: 'Celular', width: 390, height: 844 }
+  ];
+  previewDevice = 'desktop';
+  previewThemeId = FALLBACK_SITE_THEME.id;
+  previewAudioSource: 'demo' | 'live' = 'demo';
+  previewAudioError = '';
+  private ownsAudioCapture = false;
+  private destroyed = false;
   readonly templates = [
     { config: VISUALIZER_PRESETS[0], title: 'Ondas de seda', subtitle: 'Fluidas e envolventes', number: '01' },
     { config: VISUALIZER_PRESETS[1], title: 'Pulso elétrico', subtitle: 'O ritmo em cada frequência', number: '02' },
@@ -79,19 +93,24 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
   search = '';
   loading = true;
   saving = false;
+  ordering = false;
+  savingOrder = false;
+  orderError = '';
+  orderNotice = '';
+  private latestDocuments: VisualizerDocument[] = [];
   deletingId: string | null = null;
   loadError = '';
   saveError = '';
   notice = '';
   previewPlaying = true;
-  previewLight = false;
   online = typeof navigator === 'undefined' || navigator.onLine;
   waitingForServer = false;
   private savingTimer?: ReturnType<typeof setTimeout>;
   private loadSubscription?: Subscription;
   private readonly subscriptions = new Subscription();
 
-  constructor(private fb: FormBuilder, private catalog: VisualizerCatalogService) {
+  constructor(private fb: FormBuilder, private catalog: VisualizerCatalogService,
+    @Optional() private audio?: VisualizerAudioService) {
     const config = { ...this.templates[0].config, ...normalizeVisualizerCustomization(this.templates[0].config) };
     const fields: Record<string, unknown> = {};
     Object.entries(config).forEach(([key, value]) => { if (key !== 'id') fields[key] = [value]; });
@@ -121,7 +140,55 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void { this.loadLibrary(); }
-  ngOnDestroy(): void { this.loadSubscription?.unsubscribe(); this.subscriptions.unsubscribe(); clearTimeout(this.savingTimer); }
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    this.loadSubscription?.unsubscribe();
+    this.subscriptions.unsubscribe();
+    clearTimeout(this.savingTimer);
+    this.releasePreviewAudio();
+  }
+
+  get previewViewport() { return this.previewViewports.find(viewport => viewport.id === this.previewDevice) || this.previewViewports[0]; }
+  get previewThemes(): SiteTheme[] {
+    return this.themes.length ? this.themes : [FALLBACK_SITE_THEME];
+  }
+  get previewTheme(): SiteTheme {
+    return this.previewThemes.find(theme => theme.id === this.previewThemeId) || this.previewThemes[0];
+  }
+  get previewThemeStyles(): Record<string, string> { return siteThemeToCssVariables(this.previewTheme.colors); }
+  get previewPaletteKey(): string { return Object.values(this.previewTheme.colors).join('|'); }
+  get isPreviewAudioActive(): boolean { return !!this.audio?.isActive; }
+  get isPreviewAudioRequesting(): boolean { return this.audio?.status === 'requesting'; }
+
+  async useLiveAudio(): Promise<void> {
+    if (!this.audio || this.audio.status === 'requesting') return;
+    this.previewAudioSource = 'live';
+    this.previewPlaying = true;
+    this.previewAudioError = '';
+    if (this.audio.isActive) return;
+    this.ownsAudioCapture = true;
+    try {
+      const started = await this.audio.startCapture();
+      if (!this.destroyed && !started && this.previewAudioSource === 'live') {
+        this.previewAudioError = 'Não foi possível compartilhar o áudio. Escolha uma aba com música e ative o compartilhamento de áudio.';
+      }
+    } catch {
+      if (!this.destroyed && this.previewAudioSource === 'live') {
+        this.previewAudioError = 'Não foi possível iniciar o áudio. Tente novamente em uma aba com música.';
+      }
+    }
+  }
+
+  useDemoAudio(): void {
+    this.previewAudioSource = 'demo';
+    this.previewAudioError = '';
+    this.releasePreviewAudio();
+  }
+
+  private releasePreviewAudio(): void {
+    if (this.ownsAudioCapture) this.audio?.stopCapture();
+    this.ownsAudioCapture = false;
+  }
 
   @HostListener('window:online')
   onOnline(): void { this.online = true; }
@@ -131,7 +198,7 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
 
   @HostListener('window:beforeunload', ['$event'])
   beforeUnload(event: BeforeUnloadEvent): void {
-    if (this.form.dirty || this.saving) { event.preventDefault(); event.returnValue = ''; }
+    if (this.form.dirty || this.saving || this.savingOrder) { event.preventDefault(); event.returnValue = ''; }
   }
 
   get publishedCount(): number { return this.documents.filter(item => item.enabled).length; }
@@ -152,13 +219,17 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.loadError = '';
     this.loadSubscription = this.catalog.watchAll().subscribe({
-      next: documents => { this.documents = documents; this.loading = false; },
+      next: documents => {
+        this.latestDocuments = documents;
+        if (!this.savingOrder) this.documents = documents;
+        this.loading = false;
+      },
       error: () => { this.loading = false; this.loadError = 'Não foi possível carregar a biblioteca. Confira sua conexão e o acesso ao Firebase.'; }
     });
   }
 
   async confirmDiscard(): Promise<boolean> {
-    if (this.saving || this.deletingId) return false;
+    if (this.saving || this.deletingId || this.savingOrder) return false;
     if (!this.form.dirty) return true;
     const result = await Swal.fire({
       title: 'Descartar alterações?', text: 'Você tem alterações que ainda não foram salvas.',
@@ -265,7 +336,7 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
   }
 
   async save(): Promise<void> {
-    if (this.saving || this.deletingId) return;
+    if (this.saving || this.deletingId || this.savingOrder) return;
     this.form.markAllAsTouched();
     if (this.form.invalid) { this.saveError = 'Revise o nome e os valores destacados antes de salvar.'; return; }
     this.saving = true;
@@ -294,7 +365,7 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
   }
 
   async remove(document: VisualizerDocument): Promise<void> {
-    if (this.saving || this.deletingId) return;
+    if (this.saving || this.deletingId || this.savingOrder) return;
     const result = await Swal.fire({
       title: 'Excluir visualizer?', text: `“${document.name}” será removido da biblioteca e do player.`,
       icon: 'warning', showCancelButton: true, confirmButtonText: 'Excluir', cancelButtonText: 'Cancelar',
@@ -328,6 +399,59 @@ export class VisualizerStudioComponent implements OnInit, OnDestroy {
     }).join(' ');
   }
   trackById(_: number, item: VisualizerDocument): string { return item.id; }
+
+  toggleOrdering(): void {
+    if (this.savingOrder) return;
+    this.ordering = !this.ordering;
+    if (this.ordering) { this.search = ''; this.filter = 'all'; }
+  }
+
+  async onOrderDrop(event: CdkDragDrop<VisualizerDocument[]>): Promise<void> {
+    await this.moveVisualizer(event.previousIndex, event.currentIndex);
+  }
+
+  async onOrderKeydown(event: KeyboardEvent, index: number): Promise<void> {
+    const target: Record<string, number> = { ArrowUp: index - 1, ArrowDown: index + 1, Home: 0, End: this.documents.length - 1 };
+    if (target[event.key] === undefined) return;
+    event.preventDefault();
+    await this.moveVisualizer(index, target[event.key]);
+  }
+
+  async moveVisualizer(from: number, to: number): Promise<void> {
+    if (this.savingOrder || this.saving || this.deletingId || from === to ||
+        from < 0 || to < 0 || from >= this.documents.length || to >= this.documents.length ||
+        this.search.trim() || this.filter !== 'all') return;
+    const original = [...this.documents];
+    const moved = [...original];
+    moveItemInArray(moved, from, to);
+    this.documents = moved;
+    this.latestDocuments = original;
+    this.savingOrder = true;
+    this.orderError = '';
+    this.orderNotice = '';
+    try {
+      await this.catalog.reorder(moved.map(document => document.id));
+      // Apply the confirmed order to the latest versions of these records;
+      // remote content edits must not be replaced by the pre-drag snapshot.
+      const byId = new Map(this.latestDocuments.map(document => [document.id, document]));
+      const movedIds = new Set(moved.map(document => document.id));
+      this.documents = [
+        ...moved.filter(document => byId.has(document.id))
+          .map((document, index) => ({ ...byId.get(document.id)!, order: index + 1 })),
+        ...this.latestDocuments.filter(document => !movedIds.has(document.id))
+      ];
+      this.orderNotice = 'Ordem salva. O player já usa esta sequência.';
+    } catch {
+      const byId = new Map(this.latestDocuments.map(document => [document.id, document]));
+      const originalIds = new Set(original.map(document => document.id));
+      this.documents = [
+        ...original.filter(document => byId.has(document.id))
+          .map(document => ({ ...byId.get(document.id)!, order: document.order })),
+        ...this.latestDocuments.filter(document => !originalIds.has(document.id))
+      ];
+      this.orderError = 'Não foi possível salvar a ordem. A sequência anterior foi restaurada; tente novamente.';
+    } finally { this.savingOrder = false; }
+  }
 
   private resetForm(config: VisualizerConfig & { description?: string; enabled?: boolean }): void {
     this.form.reset({ ...config, ...normalizeVisualizerCustomization(config), description: config.description || '', enabled: config.enabled ?? false });

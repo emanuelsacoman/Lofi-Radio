@@ -17,6 +17,11 @@ describe('VisualizerCatalogService', () => {
   let remove: jasmine.Spy;
   let snapshotChanges: jasmine.Spy;
   let where: jasmine.Spy;
+  let get: jasmine.Spy;
+  let batch: jasmine.Spy;
+  let batchUpdate: jasmine.Spy;
+  let batchSet: jasmine.Spy;
+  let commit: jasmine.Spy;
 
   beforeEach(() => {
     // The timestamp factory must come from the same SDK as AngularFirestore.
@@ -24,16 +29,21 @@ describe('VisualizerCatalogService', () => {
     add = jasmine.createSpy('add').and.resolveTo({ id: 'generated-id' });
     update = jasmine.createSpy('update').and.resolveTo(undefined);
     remove = jasmine.createSpy('delete').and.resolveTo(undefined);
-    doc = jasmine.createSpy('doc').and.returnValue({ update, delete: remove });
+    doc = jasmine.createSpy('doc').and.callFake((id = 'generated-id') => ({ update, delete: remove, ref: { id } }));
+    get = jasmine.createSpy('get').and.resolveTo({ docs: [], size: 0 });
+    batchUpdate = jasmine.createSpy('batch.update');
+    batchSet = jasmine.createSpy('batch.set');
+    commit = jasmine.createSpy('batch.commit').and.resolveTo(undefined);
+    batch = jasmine.createSpy('batch').and.returnValue({ update: batchUpdate, set: batchSet, commit });
     snapshotChanges = jasmine.createSpy('snapshotChanges').and.returnValue(of([]));
     where = jasmine.createSpy('where').and.returnValue({});
     collection = jasmine.createSpy('collection').and.callFake(
       (_path: string, query?: (ref: unknown) => unknown) => {
         query?.({ where });
-        return { add, doc, snapshotChanges };
+        return { add, doc, snapshotChanges, ref: { get } };
       }
     );
-    service = new VisualizerCatalogService({ collection } as unknown as AngularFirestore);
+    service = new VisualizerCatalogService({ collection, firestore: { batch } } as unknown as AngularFirestore);
   });
 
   it('persists the complete draft with generated identity and server timestamps', async () => {
@@ -48,12 +58,13 @@ describe('VisualizerCatalogService', () => {
     expect(collection).toHaveBeenCalledOnceWith('visualizers');
     expect(add).toHaveBeenCalledOnceWith({
       ...makeDraft(), name: 'Aurora', description: 'Luz e música.',
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      order: 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
   });
 
-  it('updates the same document without changing its creation timestamp', async () => {
-    await service.update(' saved-id ', { ...makeDraft(), enabled: true });
+  it('updates the same document without changing its creation timestamp or manual order', async () => {
+    const document = { ...makeDraft(), enabled: true, order: 42, createdAt: 'old-time' };
+    await service.update(' saved-id ', document);
 
     expect(doc).toHaveBeenCalledOnceWith('saved-id');
     expect(update).toHaveBeenCalledOnceWith({
@@ -71,7 +82,7 @@ describe('VisualizerCatalogService', () => {
     };
     await service.create(draft);
     expect(add).toHaveBeenCalledOnceWith({
-      ...draft, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      ...draft, order: 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
 
     snapshotChanges.and.returnValue(of([change('saved', draft)]));
@@ -205,6 +216,123 @@ describe('VisualizerCatalogService', () => {
     remove.and.rejectWith(denied);
     await expectAsync(service.delete('saved-id')).toBeRejectedWith(denied);
   });
+
+  it('appends a new document after the highest valid manual order and ignores supplied order', async () => {
+    get.and.resolveTo(catalogSnapshot([
+      { id: 'old', order: 4 }, { id: 'last', order: 12 }
+    ]));
+    const draft = { ...makeDraft(), order: 1 };
+    await service.create(draft);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(add).toHaveBeenCalledOnceWith(jasmine.objectContaining({ order: 13 }));
+  });
+
+  it('preserves the visible legacy sequence and atomically appends a new creation after it', async () => {
+    get.and.resolveTo(catalogSnapshot([
+      { id: 'z', name: 'Zen' }, { id: 'a', name: 'Aurora' },
+      { id: 'ranked', order: 7 }, { id: 'broken', amplitude: NaN, order: 1000000 }
+    ]));
+    expect(await service.create(makeDraft())).toBe('generated-id');
+    expect(batchUpdate.calls.allArgs()).toEqual([
+      [{ id: 'a' }, { order: 8, updatedAt: serverTimestamp() }],
+      [{ id: 'z' }, { order: 9, updatedAt: serverTimestamp() }]
+    ]);
+    expect(batchSet).toHaveBeenCalledOnceWith({ id: 'generated-id' }, {
+      ...makeDraft(), order: 10, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  it('appends after an entirely legacy catalog and exposes atomic failure without a second creation', async () => {
+    get.and.resolveTo(catalogSnapshot([{ id: 'first' }, { id: 'second' }]));
+    const offline = new Error('offline');
+    commit.and.rejectWith(offline);
+    await expectAsync(service.create(makeDraft())).toBeRejectedWith(offline);
+    expect(batchSet).toHaveBeenCalledOnceWith({ id: 'generated-id' }, jasmine.objectContaining({ order: 3 }));
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  it('rejects oversized legacy migrations and exhausted order values before writing', async () => {
+    get.and.resolveTo(catalogSnapshot(Array.from({ length: 500 }, (_, index) => ({ id: String(index) }))));
+    await expectAsync(service.create(makeDraft())).toBeRejectedWithError(/Organize a ordem/);
+    get.and.resolveTo(catalogSnapshot([{ id: 'last', order: 1000000 }]));
+    await expectAsync(service.create(makeDraft())).toBeRejectedWithError(/Reorganize/);
+    expect(batch).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  it('sorts both catalogs by manual order, then name and id, with unranked legacy entries last', async () => {
+    snapshotChanges.and.returnValue(of([
+      change('legacy-z', { ...makeDraft(), name: 'Zen' }),
+      change('second', { ...makeDraft(), name: 'Boreal', order: 2 }),
+      change('first', { ...makeDraft(), name: 'Zen', order: 1 }),
+      change('tie-b', { ...makeDraft(), name: 'Aurora', order: 2 }),
+      change('tie-a', { ...makeDraft(), name: 'Aurora', order: 2 }),
+      change('legacy-a', { ...makeDraft(), name: 'Aurora', order: NaN })
+    ]));
+    for (const stream of [service.watchAll(), service.watchPublished()]) {
+      const documents = await firstValueFrom(stream);
+      expect(documents.map(item => item.id)).toEqual(['first', 'tie-a', 'tie-b', 'second', 'legacy-a', 'legacy-z']);
+      expect(documents[0].order).toBe(1);
+      expect(documents[4].order).toBeUndefined();
+    }
+  });
+
+  it('atomically saves the complete order and server timestamps without appearance data', async () => {
+    get.and.resolveTo(catalogSnapshot([{ id: 'a' }, { id: 'b' }, { id: 'c' }]));
+    await service.reorder(['c', 'a', 'b']);
+    expect(batch).toHaveBeenCalledTimes(1);
+    expect(batchUpdate.calls.allArgs()).toEqual([
+      [{ id: 'c' }, { order: 1, updatedAt: serverTimestamp() }],
+      [{ id: 'a' }, { order: 2, updatedAt: serverTimestamp() }],
+      [{ id: 'b' }, { order: 3, updatedAt: serverTimestamp() }]
+    ]);
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid, duplicate and oversized orders before contacting Firestore', async () => {
+    for (const ids of [[''], ['a/b'], ['a', ' a '], Array.from({ length: 501 }, (_, index) => String(index))]) {
+      await expectAsync(service.reorder(ids)).toBeRejectedWithError();
+    }
+    await service.reorder([]);
+    expect(collection).not.toHaveBeenCalled();
+    expect(batch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a stale or filtered catalog without partially writing its order', async () => {
+    get.and.resolveTo(catalogSnapshot([{ id: 'a' }, { id: 'b' }, { id: 'new' }]));
+    await expectAsync(service.reorder(['b', 'a'])).toBeRejectedWithError(/biblioteca mudou/);
+    await expectAsync(service.reorder(['b', 'a', 'deleted'])).toBeRejectedWithError(/biblioteca mudou/);
+    expect(batch).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it('orders the complete visible catalog without being blocked by a malformed hidden record', async () => {
+    get.and.resolveTo(catalogSnapshot([{ id: 'a' }, { id: 'broken', amplitude: NaN }, { id: 'b' }]));
+    await service.reorder(['b', 'a']);
+    expect(batchUpdate.calls.allArgs().map(args => args[0].id)).toEqual(['b', 'a']);
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates catalog read and atomic commit errors so failed ordering can be rolled back', async () => {
+    const offline = new Error('offline');
+    get.and.rejectWith(offline);
+    await expectAsync(service.reorder(['a'])).toBeRejectedWith(offline);
+    await expectAsync(service.create(makeDraft())).toBeRejectedWith(offline);
+    expect(batch).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
+    get.and.resolveTo(catalogSnapshot([{ id: 'a' }]));
+    commit.and.rejectWith(offline);
+    await expectAsync(service.reorder(['a'])).toBeRejectedWith(offline);
+  });
+
+  function catalogSnapshot(items: Array<{ id: string; order?: number } & Partial<VisualizerDraft>>): object {
+    return { size: items.length, docs: items.map(item => ({ id: item.id, data: () => ({ ...makeDraft(), ...item }) })) };
+  }
 
   function makeDraft(): VisualizerDraft {
     const { id: _id, ...config } = VISUALIZER_PRESETS[0];
