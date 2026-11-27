@@ -702,6 +702,18 @@ span {
   user-select: none;
 }
 
+.adm,
+.aside {
+  opacity: 1;
+  transition: opacity 350ms ease;
+}
+
+.adm.controls-hidden,
+.aside.controls-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @keyframes title-shimmer {
   0% {
     background-position: 110% 0;

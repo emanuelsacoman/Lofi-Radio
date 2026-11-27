@@ -7,6 +7,7 @@ import {
   ElementRef,
   HostListener,
   ViewChild,
+  NgZone,
 } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
@@ -29,7 +30,7 @@ import {
   SiteThemeColors,
   siteThemeToCssVariables,
 } from 'src/app/services/interfaces/site-theme';
-import { Subscription } from 'rxjs';
+import { fromEvent, Subscription, throttleTime } from 'rxjs';
 import {
   VisualizerCatalogStatus,
   VisualizerService,
@@ -188,6 +189,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly seenThemePrefix = 'seen_theme_';
 
   sideControlsVisible = true;
+  private inactivityTimer?: ReturnType<typeof setTimeout>;
+  private mouseSubscription?: Subscription;
+  private readonly INACTIVITY_MS = 10_000;
 
   constructor(
     private titleService: Title,
@@ -206,6 +210,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     private visualizerService: VisualizerService,
     private visualizerAudio: VisualizerAudioService,
+
+    private ngZone: NgZone,
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
@@ -1852,5 +1858,47 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.panelOpen = !this.panelOpen;
   }
 
-  
+  @HostListener('window:pointermove', ['$event'])
+  onMouseMove(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse') return;
+
+    console.log('Mouse X:', event.clientX);
+    console.log('Mouse Y:', event.clientY);
+  }
+
+  private monitorMouse(): void {
+    this.ngZone.runOutsideAngular(() => {
+      this.mouseSubscription = fromEvent<PointerEvent>(window, 'pointermove')
+        .pipe(throttleTime(250))
+        .subscribe((event) => {
+          if (event.pointerType !== 'mouse') return;
+
+          this.resetInactivityTimer();
+        });
+
+      this.resetInactivityTimer();
+    });
+  }
+
+  private resetInactivityTimer(): void {
+    clearTimeout(this.inactivityTimer);
+
+    if (!this.sideControlsVisible) {
+      this.ngZone.run(() => {
+        this.sideControlsVisible = true;
+      });
+    }
+
+    this.inactivityTimer = setTimeout(() => {
+      // Não esconder enquanto algum painel estiver aberto.
+      if (this.paletteExpanded || this.visualizerExpanded || this.showList) {
+        this.resetInactivityTimer();
+        return;
+      }
+
+      this.ngZone.run(() => {
+        this.sideControlsVisible = false;
+      });
+    }, this.INACTIVITY_MS);
+  }
 }

@@ -7,7 +7,7 @@
             {{ totalVideos ? currentIndex + 1 : 0 }} / {{ totalVideos }}
         </p>
           
-        <nav class="adm" aria-label="Site controls">
+        <nav class="adm" aria-label="Site controls" [class.controls-hidden]="!sideControlsVisible">
             <button
               class="utility-button"
               type="button"
@@ -323,7 +323,7 @@
         </div>
     </main>
       <!-- Floating appearance controls live outside the animated main stacking context. -->
-        <div class="aside" role="group" aria-label="Appearance controls">
+        <div class="aside" role="group" aria-label="Appearance controls" [class.controls-hidden]="!sideControlsVisible">
           <!-- Independent absolute-positioned menus. No Material expansion panel. -->
           <section class="visual-control visual-control--palette">
             <button
