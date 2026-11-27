@@ -1,4 +1,13 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, ElementRef, HostListener, ViewChild } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  ElementRef,
+  HostListener,
+  ViewChild,
+} from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
@@ -10,10 +19,21 @@ import { RadioFavoritesService } from 'src/app/services/radio-favorites.service'
 import { ProfileVisitsService } from 'src/app/services/profile-visits.service';
 import { ShareService } from 'src/app/services/share.service';
 import { UserService } from 'src/app/services/user.service';
-import { YouTubeVideoDetails, YoutubeService } from 'src/app/services/youtube.service';
-import { FALLBACK_SITE_THEME, SiteTheme, SiteThemeColors, siteThemeToCssVariables } from 'src/app/services/interfaces/site-theme';
+import {
+  YouTubeVideoDetails,
+  YoutubeService,
+} from 'src/app/services/youtube.service';
+import {
+  FALLBACK_SITE_THEME,
+  SiteTheme,
+  SiteThemeColors,
+  siteThemeToCssVariables,
+} from 'src/app/services/interfaces/site-theme';
 import { Subscription } from 'rxjs';
-import { VisualizerCatalogStatus, VisualizerService } from 'src/app/services/visualizer.service';
+import {
+  VisualizerCatalogStatus,
+  VisualizerService,
+} from 'src/app/services/visualizer.service';
 import { VisualizerAudioService } from 'src/app/services/visualizer-audio.service';
 
 type FloatingEmoji = {
@@ -51,7 +71,7 @@ enum YouTubePlaybackState {
   Playing = 1,
   Paused = 2,
   Buffering = 3,
-  Cued = 5
+  Cued = 5,
 }
 
 type YouTubePlayerWithMetadata = YT.Player & {
@@ -70,7 +90,8 @@ type YouTubePlayerWithMetadata = YT.Player & {
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   title = 'Lofi Radio | Your 24/7 Soundtrack for Focus';
-  description = 'Drift into handpicked lofi, chillwave and ambient stations for deep focus, quiet study and late-night unwinding.';
+  description =
+    'Drift into handpicked lofi, chillwave and ambient stations for deep focus, quiet study and late-night unwinding.';
 
   randomImage: string = './assets/image/loadinglofi.gif';
   imageQuery: string = '';
@@ -91,7 +112,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly playerVars: YT.PlayerVars = {
     modestbranding: 1,
     playsinline: 1,
-    rel: 0
+    rel: 0,
   };
 
   connectedUsersCount: number = 0;
@@ -108,7 +129,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('radioListPanel')
   private radioListPanel?: ElementRef<HTMLElement>;
 
-  public isFirstVisit: boolean = false; 
+  public isFirstVisit: boolean = false;
 
   public newItems: boolean[] = [];
 
@@ -143,11 +164,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private refreshBackgroundOnRecoverySuccess = false;
 
   isAnimating = false;
-  
+
   isFullScreen = false;
 
   favorites: boolean[] = [];
-  
+
   themeOptions: SiteTheme[] = [FALLBACK_SITE_THEME];
   selectedPalette = 'purple';
   paletteExpanded = false;
@@ -155,7 +176,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   visualizerCatalogStatus: VisualizerCatalogStatus = 'loading';
   newThemeIds = new Set<string>();
   newVisualizerIds = new Set<string>();
-  private readonly visualizerCatalogInitializedKey = 'visualizerCatalogInitialized';
+  private readonly visualizerCatalogInitializedKey =
+    'visualizerCatalogInitialized';
   private readonly seenVisualizerPrefix = 'seen_visualizer_';
   private visualizerCatalogInitialized = false;
   private readonly seenVisualizerIds = new Set<string>();
@@ -164,7 +186,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly cachedThemeKey = 'selectedSiteTheme';
   private readonly themeCatalogInitializedKey = 'themeCatalogInitialized';
   private readonly seenThemePrefix = 'seen_theme_';
-  
+
+  sideControlsVisible = true;
+
   constructor(
     private titleService: Title,
     private metaService: Meta,
@@ -181,28 +205,38 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private profileVisits: ProfileVisitsService,
 
     private visualizerService: VisualizerService,
-    private visualizerAudio: VisualizerAudioService
+    private visualizerAudio: VisualizerAudioService,
   ) {
     this.setDocTitle(this.title);
     this.setMetaDescription(this.description);
 
     this.loadStations();
-    this.subscriptions.add(this.visualizerService.presets$.subscribe(presets => {
-      this.cachedVisualizerPresets = presets;
-      this.refreshNewVisualizers();
-      this.cdRef.markForCheck();
-    }));
-    this.subscriptions.add(this.visualizerService.catalogStatus$.subscribe(status => {
-      this.visualizerCatalogStatus = status;
-      this.refreshNewVisualizers();
-      this.cdRef.markForCheck();
-    }));
-    this.subscriptions.add(this.visualizerService.activeConfig$.subscribe(config => {
-      if (!config && (this.visualizerAudio.isActive || this.visualizerAudio.status === 'requesting')) {
-        this.visualizerAudio.stopCapture();
-      }
-      this.cdRef.markForCheck();
-    }));
+    this.subscriptions.add(
+      this.visualizerService.presets$.subscribe((presets) => {
+        this.cachedVisualizerPresets = presets;
+        this.refreshNewVisualizers();
+        this.cdRef.markForCheck();
+      }),
+    );
+    this.subscriptions.add(
+      this.visualizerService.catalogStatus$.subscribe((status) => {
+        this.visualizerCatalogStatus = status;
+        this.refreshNewVisualizers();
+        this.cdRef.markForCheck();
+      }),
+    );
+    this.subscriptions.add(
+      this.visualizerService.activeConfig$.subscribe((config) => {
+        if (
+          !config &&
+          (this.visualizerAudio.isActive ||
+            this.visualizerAudio.status === 'requesting')
+        ) {
+          this.visualizerAudio.stopCapture();
+        }
+        this.cdRef.markForCheck();
+      }),
+    );
   }
 
   /** Material-free menu toggles: click events update Angular-visible state. */
@@ -220,7 +254,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private cachedVisualizerPresets?: ReturnType<VisualizerService['getPresets']>;
 
   get visualizerPresets(): ReturnType<VisualizerService['getPresets']> {
-    return this.cachedVisualizerPresets ??= this.visualizerService.getPresets();
+    return (this.cachedVisualizerPresets ??=
+      this.visualizerService.getPresets());
   }
 
   trackVisualizerPreset(_index: number, preset: { id: string }): string {
@@ -240,11 +275,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // Only known effects may request a screen/tab capture permission.
-    if (!this.visualizerService.getPresets().some(preset => preset.id === id)) return;
+    if (!this.visualizerService.getPresets().some((preset) => preset.id === id))
+      return;
 
     // Call immediately inside the icon click, before state subscriptions
     // run, so getDisplayMedia retains the browser's user activation.
-    if (!this.visualizerAudio.isActive && this.visualizerAudio.status !== 'requesting') {
+    if (
+      !this.visualizerAudio.isActive &&
+      this.visualizerAudio.status !== 'requesting'
+    ) {
       void this.visualizerAudio.startCapture();
     }
 
@@ -270,39 +309,59 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     // The service emits an empty array before Firestore answers. Only a ready
     // catalog (including a genuinely empty one) can establish the first visit.
     if (this.visualizerCatalogStatus !== 'ready') {
-      if (this.visualizerCatalogStatus === 'error') this.newVisualizerIds.clear();
+      if (this.visualizerCatalogStatus === 'error')
+        this.newVisualizerIds.clear();
       return;
     }
     const presets = this.cachedVisualizerPresets ?? [];
     if (!this.visualizerCatalogInitialized) {
       try {
-        this.visualizerCatalogInitialized = localStorage.getItem(this.visualizerCatalogInitializedKey) === 'true';
-      } catch { /* Keep the same behavior for this session when storage is blocked. */ }
+        this.visualizerCatalogInitialized =
+          localStorage.getItem(this.visualizerCatalogInitializedKey) === 'true';
+      } catch {
+        /* Keep the same behavior for this session when storage is blocked. */
+      }
       if (!this.visualizerCatalogInitialized) {
-        presets.forEach(preset => this.rememberVisualizer(preset.id));
+        presets.forEach((preset) => this.rememberVisualizer(preset.id));
         this.visualizerCatalogInitialized = true;
-        try { localStorage.setItem(this.visualizerCatalogInitializedKey, 'true'); }
-        catch { /* Session state is sufficient for a working novelty indicator. */ }
+        try {
+          localStorage.setItem(this.visualizerCatalogInitializedKey, 'true');
+        } catch {
+          /* Session state is sufficient for a working novelty indicator. */
+        }
         this.newVisualizerIds.clear();
         return;
       }
     }
-    this.newVisualizerIds = new Set(presets.filter(preset => {
-      if (this.seenVisualizerIds.has(preset.id)) return false;
-      try {
-        if (localStorage.getItem(`${this.seenVisualizerPrefix}${preset.id}`) === 'true') {
-          this.seenVisualizerIds.add(preset.id);
-          return false;
-        }
-      } catch { /* Unseen IDs still work during this session. */ }
-      return true;
-    }).map(preset => preset.id));
+    this.newVisualizerIds = new Set(
+      presets
+        .filter((preset) => {
+          if (this.seenVisualizerIds.has(preset.id)) return false;
+          try {
+            if (
+              localStorage.getItem(
+                `${this.seenVisualizerPrefix}${preset.id}`,
+              ) === 'true'
+            ) {
+              this.seenVisualizerIds.add(preset.id);
+              return false;
+            }
+          } catch {
+            /* Unseen IDs still work during this session. */
+          }
+          return true;
+        })
+        .map((preset) => preset.id),
+    );
   }
 
   private rememberVisualizer(id: string): void {
     this.seenVisualizerIds.add(id);
-    try { localStorage.setItem(`${this.seenVisualizerPrefix}${id}`, 'true'); }
-    catch { /* The in-memory set also prevents badges from reappearing. */ }
+    try {
+      localStorage.setItem(`${this.seenVisualizerPrefix}${id}`, 'true');
+    } catch {
+      /* The in-memory set also prevents badges from reappearing. */
+    }
   }
 
   get audioCaptureStatus() {
@@ -318,8 +377,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get visualizerCatalogMessage(): string {
-    if (this.visualizerCatalogStatus === 'loading') return 'Loading visualizers';
-    if (this.visualizerCatalogStatus === 'error') return 'Could not load visualizers. Try again.';
+    if (this.visualizerCatalogStatus === 'loading')
+      return 'Loading visualizers';
+    if (this.visualizerCatalogStatus === 'error')
+      return 'Could not load visualizers. Try again.';
     return 'No published visualizers yet';
   }
 
@@ -365,19 +426,25 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.startCatalogWatchdog();
 
     this.catalogSubscription = this.firebase.obterTodosChip().subscribe({
-      next: res => {
+      next: (res) => {
         this.clearCatalogWatchdog();
-        this.chipArray = res.map(chip => ({
-          id: chip.payload.doc.id,
-          ...(chip.payload.doc.data() as object)
-        } as Chip));
+        this.chipArray = res.map(
+          (chip) =>
+            ({
+              id: chip.payload.doc.id,
+              ...(chip.payload.doc.data() as object),
+            }) as Chip,
+        );
 
         this.addChipnamesToVideoIds();
       },
       error: () => {
         this.clearCatalogWatchdog();
-        this.setRadioError('We could not load the station list. Check your connection and try again.', 'catalog');
-      }
+        this.setRadioError(
+          'We could not load the station list. Check your connection and try again.',
+          'catalog',
+        );
+      },
     });
   }
 
@@ -390,18 +457,25 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resetRecoverySession();
 
     this.chipArray = this.chipArray
-      .filter(chip => typeof chip?.chipname === 'string' && chip.chipname.trim().length > 0)
+      .filter(
+        (chip) =>
+          typeof chip?.chipname === 'string' && chip.chipname.trim().length > 0,
+      )
       .sort((a, b) => {
-        const aOrder = Number.isFinite(a.order) && a.order > 0
-          ? a.order
-          : Number.MAX_SAFE_INTEGER;
-        const bOrder = Number.isFinite(b.order) && b.order > 0
-          ? b.order
-          : Number.MAX_SAFE_INTEGER;
+        const aOrder =
+          Number.isFinite(a.order) && a.order > 0
+            ? a.order
+            : Number.MAX_SAFE_INTEGER;
+        const bOrder =
+          Number.isFinite(b.order) && b.order > 0
+            ? b.order
+            : Number.MAX_SAFE_INTEGER;
 
-        return aOrder - bOrder
-          || a.chipname.trim().localeCompare(b.chipname.trim())
-          || String(a.id || '').localeCompare(String(b.id || ''));
+        return (
+          aOrder - bOrder ||
+          a.chipname.trim().localeCompare(b.chipname.trim()) ||
+          String(a.id || '').localeCompare(String(b.id || ''))
+        );
       });
 
     this.videoIds = this.chipArray.reduce<string[]>((ids, chip) => {
@@ -453,20 +527,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    this.detailsSubscription = this.youtubeService.getVideoDetailsBatch(this.videoIds).subscribe({
-      next: details => {
-        if (this.isDestroyed || loadVersion !== this.metadataLoadVersion) {
-          return;
-        }
+    this.detailsSubscription = this.youtubeService
+      .getVideoDetailsBatch(this.videoIds)
+      .subscribe({
+        next: (details) => {
+          if (this.isDestroyed || loadVersion !== this.metadataLoadVersion) {
+            return;
+          }
 
-        this.applyVideoDetails(details);
-        this.cdRef.detectChanges();
-      }
-    });
+          this.applyVideoDetails(details);
+          this.cdRef.detectChanges();
+        },
+      });
   }
 
   get hasNewItems(): boolean {
-    return this.newItems.some(item => item);
+    return this.newItems.some((item) => item);
   }
 
   selectVideo(index: number): void {
@@ -475,7 +551,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (index === this.currentIndex) {
-      if (['error', 'ended', 'recovering', 'exhausted'].includes(this.radioStatus)) {
+      if (
+        ['error', 'ended', 'recovering', 'exhausted'].includes(this.radioStatus)
+      ) {
         this.resetRecoverySession();
         this.recreatePlayer(this.desiredPlayback);
       }
@@ -487,7 +565,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.noise();
     this.prepareStation(index, this.desiredPlayback, true);
   }
-  
+
   ngOnInit(): void {
     void this.profileVisits.registerVisit().catch((error: unknown) => {
       // Keep playback available, but retain a useful diagnostic for failures.
@@ -507,13 +585,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     if (savedVolume) {
       this.setVolume(parseInt(savedVolume, 10));
     } else {
-      this.setVolume(50); 
+      this.setVolume(50);
     }
-    
+
     this.loadRandomImage(this.imageQuery);
     this.fetchConnectedUsersCount();
     this.emoji();
-    
+
     this.restoreSavedTheme();
     this.loadThemes();
   }
@@ -527,46 +605,54 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initializeNewItems(): void {
-    this.newItems = this.videoIds.map(id => {
+    this.newItems = this.videoIds.map((id) => {
       const seenKey = `seen_${id}`;
       const seen = localStorage.getItem(seenKey);
-  
+
       if (this.isFirstVisit) {
         localStorage.setItem(seenKey, 'true');
         return false;
       }
       return seen === null;
     });
-  }  
-  
+  }
+
   floatingEmojis: FloatingEmoji[] = [];
-  
+
   emoji(): void {
-    this.subscriptions.add(this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
-      if (emojis.length > 0) {
-        const emojiData = emojis[0];
-        const drift = this.randomBetween(-18, 18);
-        const spin = Math.abs(drift) < 4 ? 0 : drift * this.randomBetween(2.5, 5);
-        
-        const floatingEmoji: FloatingEmoji = {
-          emoji: emojiData.emoji, 
-          x: this.randomBetween(12, 88),
-          drift,
-          duration: this.randomBetween(3.8, 6.2),
-          delay: this.randomBetween(0, 0.12),
-          scale: this.randomBetween(0.86, 1.16),
-          spin,
-          glow: this.randomBetween(0.15, 0.65),
-          trailOpacity: this.randomBetween(0.12, 0.36)
-        };
+    this.subscriptions.add(
+      this.emojiService.getLastEmoji().subscribe((emojis: any[]) => {
+        if (emojis.length > 0) {
+          const emojiData = emojis[0];
+          const drift = this.randomBetween(-18, 18);
+          const spin =
+            Math.abs(drift) < 4 ? 0 : drift * this.randomBetween(2.5, 5);
 
-        this.floatingEmojis.push(floatingEmoji);
+          const floatingEmoji: FloatingEmoji = {
+            emoji: emojiData.emoji,
+            x: this.randomBetween(12, 88),
+            drift,
+            duration: this.randomBetween(3.8, 6.2),
+            delay: this.randomBetween(0, 0.12),
+            scale: this.randomBetween(0.86, 1.16),
+            spin,
+            glow: this.randomBetween(0.15, 0.65),
+            trailOpacity: this.randomBetween(0.12, 0.36),
+          };
 
-        setTimeout(() => {
-          this.floatingEmojis = this.floatingEmojis.filter(emoji => emoji !== floatingEmoji);
-        }, (floatingEmoji.duration + floatingEmoji.delay) * 1000 + 100);
-      }
-    }));
+          this.floatingEmojis.push(floatingEmoji);
+
+          setTimeout(
+            () => {
+              this.floatingEmojis = this.floatingEmojis.filter(
+                (emoji) => emoji !== floatingEmoji,
+              );
+            },
+            (floatingEmoji.duration + floatingEmoji.delay) * 1000 + 100,
+          );
+        }
+      }),
+    );
   }
 
   addEmoji(emoji: string): void {
@@ -578,23 +664,23 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   fetchConnectedUsersCount() {
-    this.subscriptions.add(this.userService.getConnectedUsersCount().subscribe(count => {
-      this.connectedUsersCount = count;
-    }));
+    this.subscriptions.add(
+      this.userService.getConnectedUsersCount().subscribe((count) => {
+        this.connectedUsersCount = count;
+      }),
+    );
   }
-  
+
   triggerAnimation() {
     this.isAnimating = true;
     this.loadRandomImage(this.imageQuery);
 
     setTimeout(() => {
       this.isAnimating = false;
-    }, 500); 
+    }, 500);
   }
-  
-  ngAfterViewInit() {
-    
-  }
+
+  ngAfterViewInit() {}
 
   ngOnDestroy() {
     this.visualizerAudio.stopCapture();
@@ -641,16 +727,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private resolveStoredStationIndex(): number {
     const savedVideoId = localStorage.getItem('currentVideoId');
-    const preferredVideoId = savedVideoId && this.videoIds.includes(savedVideoId)
-      ? savedVideoId
-      : this.currentVideoId;
+    const preferredVideoId =
+      savedVideoId && this.videoIds.includes(savedVideoId)
+        ? savedVideoId
+        : this.currentVideoId;
 
     if (preferredVideoId && this.videoIds.includes(preferredVideoId)) {
       return this.videoIds.indexOf(preferredVideoId);
     }
 
-    const savedIndex = Number.parseInt(localStorage.getItem('currentIndex') || '', 10);
-    return Number.isInteger(savedIndex) && this.isValidStationIndex(savedIndex) ? savedIndex : 0;
+    const savedIndex = Number.parseInt(
+      localStorage.getItem('currentIndex') || '',
+      10,
+    );
+    return Number.isInteger(savedIndex) && this.isValidStationIndex(savedIndex)
+      ? savedIndex
+      : 0;
   }
 
   private restoreFavorites(): void {
@@ -661,7 +753,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private applyVideoDetails(details: YouTubeVideoDetails[]): void {
     this.videoTitles = this.videoIds.map((_, index) => {
       const title = details[index]?.title;
-      return !title || title === 'Temporarily unavailable' ? `Lofi station ${index + 1}` : title;
+      return !title || title === 'Temporarily unavailable'
+        ? `Lofi station ${index + 1}`
+        : title;
     });
     this.videoOwners = this.videoIds.map((_, index) => {
       const creator = details[index]?.creator;
@@ -684,7 +778,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private updateMetadataFromPlayer(): void {
     const videoData = this.player?.getVideoData?.();
 
-    if (!videoData || (videoData.video_id && videoData.video_id !== this.currentVideoId)) {
+    if (
+      !videoData ||
+      (videoData.video_id && videoData.video_id !== this.currentVideoId)
+    ) {
       return;
     }
 
@@ -699,7 +796,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private prepareStation(index: number, shouldResume: boolean, refreshBackground: boolean): void {
+  private prepareStation(
+    index: number,
+    shouldResume: boolean,
+    refreshBackground: boolean,
+  ): void {
     if (!this.isValidStationIndex(index)) {
       return;
     }
@@ -732,8 +833,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  onPlayerReady(event: YT.PlayerEvent, attempt: number = this.activeStationAttempt): void {
-    if (attempt !== this.activeStationAttempt || !this.isCurrentPlayerEvent(event.target)) {
+  onPlayerReady(
+    event: YT.PlayerEvent,
+    attempt: number = this.activeStationAttempt,
+  ): void {
+    if (
+      attempt !== this.activeStationAttempt ||
+      !this.isCurrentPlayerEvent(event.target)
+    ) {
       return;
     }
 
@@ -752,7 +859,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         playerIframe.tabIndex = -1;
       }
     } catch {
-      this.setRadioError('The audio player could not be configured. Please try again.', 'player');
+      this.setRadioError(
+        'The audio player could not be configured. Please try again.',
+        'player',
+      );
       return;
     }
 
@@ -773,7 +883,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  onPlayerStateChange(event: YT.OnStateChangeEvent, attempt: number = this.activeStationAttempt): void {
+  onPlayerStateChange(
+    event: YT.OnStateChangeEvent,
+    attempt: number = this.activeStationAttempt,
+  ): void {
     if (attempt !== this.activeStationAttempt) {
       return;
     }
@@ -840,8 +953,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  onPlayerError(event: YT.OnErrorEvent, attempt: number = this.activeStationAttempt): void {
-    if (attempt !== this.activeStationAttempt || !this.isCurrentPlayerEvent(event.target)) {
+  onPlayerError(
+    event: YT.OnErrorEvent,
+    attempt: number = this.activeStationAttempt,
+  ): void {
+    if (
+      attempt !== this.activeStationAttempt ||
+      !this.isCurrentPlayerEvent(event.target)
+    ) {
       return;
     }
 
@@ -987,7 +1106,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get isRadioBusy(): boolean {
-    return ['loading-stations', 'loading-player', 'buffering'].includes(this.radioStatus);
+    return ['loading-stations', 'loading-player', 'buffering'].includes(
+      this.radioStatus,
+    );
   }
 
   get showPlaySpinner(): boolean {
@@ -1019,7 +1140,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get canRetryRadio(): boolean {
-    return this.isOnline && ['error', 'ended', 'exhausted'].includes(this.radioStatus);
+    return (
+      this.isOnline &&
+      ['error', 'ended', 'exhausted'].includes(this.radioStatus)
+    );
   }
 
   get showNextRecoveryAction(): boolean {
@@ -1027,20 +1151,26 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get canControlPlayback(): boolean {
-    return this.isOnline
-      && this.isPlayerReady
-      && ['ready', 'paused', 'playing'].includes(this.radioStatus);
+    return (
+      this.isOnline &&
+      this.isPlayerReady &&
+      ['ready', 'paused', 'playing'].includes(this.radioStatus)
+    );
   }
 
   get isPlayerControlDisabled(): boolean {
-    return this.showPlaySpinner
-      || ['recovering', 'offline', 'empty'].includes(this.radioStatus);
+    return (
+      this.showPlaySpinner ||
+      ['recovering', 'offline', 'empty'].includes(this.radioStatus)
+    );
   }
 
   get canNavigateStations(): boolean {
-    return this.isOnline
-      && this.videoIds.length > 1
-      && !['loading-stations', 'offline', 'empty'].includes(this.radioStatus);
+    return (
+      this.isOnline &&
+      this.videoIds.length > 1 &&
+      !['loading-stations', 'offline', 'empty'].includes(this.radioStatus)
+    );
   }
 
   get canFavoriteCurrentStation(): boolean {
@@ -1090,7 +1220,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const currentIndex = this.videoIds.indexOf(this.currentVideoId);
-    this.prepareStation(currentIndex >= 0 ? currentIndex : this.currentIndex, resumePlayback, false);
+    this.prepareStation(
+      currentIndex >= 0 ? currentIndex : this.currentIndex,
+      resumePlayback,
+      false,
+    );
   }
 
   private mountFreshPlayer(attempt: number): void {
@@ -1111,7 +1245,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.playerResetTimer = setTimeout(() => {
       this.playerResetTimer = undefined;
 
-      if (this.isDestroyed || !this.isOnline || attempt !== this.activeStationAttempt) {
+      if (
+        this.isDestroyed ||
+        !this.isOnline ||
+        attempt !== this.activeStationAttempt
+      ) {
         return;
       }
 
@@ -1128,14 +1266,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    document.querySelector<HTMLScriptElement>('script[src*="youtube.com/iframe_api"]')?.remove();
+    document
+      .querySelector<HTMLScriptElement>('script[src*="youtube.com/iframe_api"]')
+      ?.remove();
     const script = document.createElement('script');
     script.src = 'https://www.youtube.com/iframe_api';
     script.async = true;
     document.head.appendChild(script);
   }
 
-  private startPlayerWatchdog(attempt: number = this.activeStationAttempt): void {
+  private startPlayerWatchdog(
+    attempt: number = this.activeStationAttempt,
+  ): void {
     this.clearPlayerWatchdog();
 
     if (!this.isOnline || this.isDestroyed) {
@@ -1145,13 +1287,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const videoId = this.currentVideoId;
     this.playerWatchdog = setTimeout(() => {
       if (
-        attempt === this.activeStationAttempt
-        && videoId === this.currentVideoId
-        && (this.radioStatus === 'loading-player' || this.radioStatus === 'buffering')
+        attempt === this.activeStationAttempt &&
+        videoId === this.currentVideoId &&
+        (this.radioStatus === 'loading-player' ||
+          this.radioStatus === 'buffering')
       ) {
-        const message = this.radioStatus === 'buffering'
-          ? 'The audio took too long to start.'
-          : 'The station took too long to respond.';
+        const message =
+          this.radioStatus === 'buffering'
+            ? 'The audio took too long to start.'
+            : 'The station took too long to respond.';
         this.handleStationFailure(message);
       }
     }, this.playerTimeoutMs);
@@ -1166,7 +1310,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.catalogWatchdog = setTimeout(() => {
       if (this.radioStatus === 'loading-stations') {
-        this.setRadioError('The station list is taking too long to load. Please try again.', 'catalog');
+        this.setRadioError(
+          'The station list is taking too long to load. Please try again.',
+          'catalog',
+        );
       }
     }, this.playerTimeoutMs);
   }
@@ -1185,7 +1332,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private setRadioError(message: string, scope: Exclude<RadioErrorScope, null>): void {
+  private setRadioError(
+    message: string,
+    scope: Exclude<RadioErrorScope, null>,
+  ): void {
     if (scope === 'player') {
       this.handleStationFailure(message);
       return;
@@ -1207,7 +1357,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.currentVideoId || this.handledFailureAttempt === this.activeStationAttempt) {
+    if (
+      !this.currentVideoId ||
+      this.handledFailureAttempt === this.activeStationAttempt
+    ) {
       return;
     }
 
@@ -1238,15 +1391,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.failedStationIds.add(this.currentVideoId);
-    const maxFailures = Math.min(this.videoIds.length, this.maxAutomaticRecoveryAttempts);
-    const recoveryExpired = Date.now() - this.recoveryStartedAt >= this.maxRecoveryDurationMs;
+    const maxFailures = Math.min(
+      this.videoIds.length,
+      this.maxAutomaticRecoveryAttempts,
+    );
+    const recoveryExpired =
+      Date.now() - this.recoveryStartedAt >= this.maxRecoveryDurationMs;
     const nextIndex = this.findRecoveryCandidate(this.lastNavigationDirection);
 
     if (
-      this.videoIds.length < 2
-      || this.failedStationIds.size >= maxFailures
-      || recoveryExpired
-      || nextIndex === null
+      this.videoIds.length < 2 ||
+      this.failedStationIds.size >= maxFailures ||
+      recoveryExpired ||
+      nextIndex === null
     ) {
       this.finishExhaustedRecovery();
       return;
@@ -1263,20 +1420,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       this.recoveryTimer = undefined;
 
       if (
-        this.isDestroyed
-        || !this.isOnline
-        || this.radioStatus !== 'recovering'
-        || generation !== this.recoveryGeneration
-        || attempt !== this.activeStationAttempt
-        || videoId !== this.currentVideoId
-        || direction !== this.recoveryDirection
+        this.isDestroyed ||
+        !this.isOnline ||
+        this.radioStatus !== 'recovering' ||
+        generation !== this.recoveryGeneration ||
+        attempt !== this.activeStationAttempt ||
+        videoId !== this.currentVideoId ||
+        direction !== this.recoveryDirection
       ) {
         return;
       }
 
       const candidateIndex = this.findRecoveryCandidate(direction);
-      const timedOut = this.recoveryStartedAt !== null
-        && Date.now() - this.recoveryStartedAt >= this.maxRecoveryDurationMs;
+      const timedOut =
+        this.recoveryStartedAt !== null &&
+        Date.now() - this.recoveryStartedAt >= this.maxRecoveryDurationMs;
 
       if (candidateIndex === null || timedOut) {
         this.finishExhaustedRecovery();
@@ -1293,7 +1451,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const stationCount = this.videoIds.length;
 
     for (let offset = 1; offset < stationCount; offset++) {
-      const index = (this.currentIndex + direction * offset + stationCount) % stationCount;
+      const index =
+        (this.currentIndex + direction * offset + stationCount) % stationCount;
 
       if (!this.failedStationIds.has(this.videoIds[index])) {
         return index;
@@ -1347,9 +1506,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private get recoveryAnimationDelayMs(): number {
-    const reduceMotion = typeof window !== 'undefined'
-      && typeof window.matchMedia === 'function'
-      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     return reduceMotion ? 250 : this.autoAdvanceDelayMs;
   }
 
@@ -1370,7 +1530,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private isValidStationIndex(index: number): boolean {
-    return Number.isInteger(index) && index >= 0 && index < this.videoIds.length;
+    return (
+      Number.isInteger(index) && index >= 0 && index < this.videoIds.length
+    );
   }
 
   private isCurrentPlayerEvent(player?: YT.Player): boolean {
@@ -1378,7 +1540,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       return true;
     }
 
-    if (this.retiredPlayers.has(player) || (this.player && player !== this.player)) {
+    if (
+      this.retiredPlayers.has(player) ||
+      (this.player && player !== this.player)
+    ) {
       return false;
     }
 
@@ -1395,11 +1560,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   nextVideo(): void {
     this.navigateManually(1);
   }
-  
+
   previousVideo(): void {
     this.navigateManually(-1);
-  }  
-  
+  }
+
   shuffle(): void {
     if (this.videoIds.length < 2 || !this.isOnline) {
       return;
@@ -1409,8 +1574,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.lastNavigationDirection = 1;
     const candidates = this.videoIds
       .map((_, index) => index)
-      .filter(index => index !== this.currentIndex);
-    const randomIndex = candidates[Math.floor(Math.random() * candidates.length)];
+      .filter((index) => index !== this.currentIndex);
+    const randomIndex =
+      candidates[Math.floor(Math.random() * candidates.length)];
     this.noise();
     this.prepareStation(randomIndex, this.desiredPlayback, true);
   }
@@ -1422,9 +1588,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.resetRecoverySession();
     this.lastNavigationDirection = direction;
-    const nextIndex = (
-      this.currentIndex + direction + this.videoIds.length
-    ) % this.videoIds.length;
+    const nextIndex =
+      (this.currentIndex + direction + this.videoIds.length) %
+      this.videoIds.length;
     this.noise();
     this.prepareStation(nextIndex, this.desiredPlayback, true);
   }
@@ -1437,8 +1603,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const radioStatic = new Audio('assets/sound/static.mp3');
     radioStatic.loop = true;
     radioStatic.volume = 0.1;
-    radioStatic.play().catch(err => console.error('Erro ao reproduzir som de chiado:', err));
-  
+    radioStatic
+      .play()
+      .catch((err) => console.error('Erro ao reproduzir som de chiado:', err));
+
     setTimeout(() => {
       radioStatic.pause();
       radioStatic.currentTime = 0;
@@ -1446,8 +1614,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   setVolume(value: number | string): void {
-    const parsedValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
-    const volumeValue = Number.isFinite(parsedValue) ? Math.min(100, Math.max(0, parsedValue)) : 50;
+    const parsedValue =
+      typeof value === 'string' ? Number.parseInt(value, 10) : value;
+    const volumeValue = Number.isFinite(parsedValue)
+      ? Math.min(100, Math.max(0, parsedValue))
+      : 50;
     this.volume = volumeValue;
     if (this.player) {
       try {
@@ -1457,10 +1628,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
     localStorage.setItem('volume', volumeValue.toString());
-  }  
+  }
 
   setTheme(paletteKey: string): void {
-    const theme = this.themeOptions.find(option => option.id === paletteKey);
+    const theme = this.themeOptions.find((option) => option.id === paletteKey);
     if (theme) {
       this.applyTheme(theme, true);
       this.markThemeAsSeen(theme.id);
@@ -1490,24 +1661,36 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadThemes(): void {
     this.themeSubscription = this.firebase.obterTodosTemas().subscribe({
-      next: res => {
+      next: (res) => {
         const firestoreThemes = res
-          .map(item => ({
+          .map((item) => ({
             id: item.payload.doc.id,
-            ...(item.payload.doc.data() as Omit<SiteTheme, 'id'>)
+            ...(item.payload.doc.data() as Omit<SiteTheme, 'id'>),
           }))
-          .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
-            || a.name.localeCompare(b.name));
+          .sort(
+            (a, b) =>
+              (a.order ?? Number.MAX_SAFE_INTEGER) -
+                (b.order ?? Number.MAX_SAFE_INTEGER) ||
+              a.name.localeCompare(b.name),
+          );
 
-        this.themeOptions = firestoreThemes.length ? firestoreThemes : [FALLBACK_SITE_THEME];
+        this.themeOptions = firestoreThemes.length
+          ? firestoreThemes
+          : [FALLBACK_SITE_THEME];
         this.initializeNewThemes();
 
         const savedPalette = localStorage.getItem(this.selectedThemeKey);
-        const nextPalette = savedPalette && this.themeOptions.some(theme => theme.id === savedPalette)
-          ? savedPalette
-          : (this.themeOptions.find(theme => theme.id === FALLBACK_SITE_THEME.id)?.id || this.themeOptions[0].id);
+        const nextPalette =
+          savedPalette &&
+          this.themeOptions.some((theme) => theme.id === savedPalette)
+            ? savedPalette
+            : this.themeOptions.find(
+                (theme) => theme.id === FALLBACK_SITE_THEME.id,
+              )?.id || this.themeOptions[0].id;
 
-        const theme = this.themeOptions.find(option => option.id === nextPalette);
+        const theme = this.themeOptions.find(
+          (option) => option.id === nextPalette,
+        );
         if (theme) {
           this.applyTheme(theme, true);
         }
@@ -1517,14 +1700,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         const theme = cachedTheme || FALLBACK_SITE_THEME;
         this.themeOptions = [theme];
         this.applyTheme(theme, false);
-      }
+      },
     });
   }
 
   private applyTheme(theme: SiteTheme, persist: boolean): void {
-    Object.entries(siteThemeToCssVariables(theme.colors)).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(key, value);
-    });
+    Object.entries(siteThemeToCssVariables(theme.colors)).forEach(
+      ([key, value]) => {
+        document.documentElement.style.setProperty(key, value);
+      },
+    );
     this.selectedPalette = theme.id;
 
     if (persist) {
@@ -1560,13 +1745,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         'secondary',
         'accent',
         'accentLight',
-        'text'
+        'text',
       ];
-      const hasValidColors = theme.colors && colorKeys.every(key =>
-        typeof theme.colors?.[key] === 'string' && /^#[0-9a-fA-F]{6}$/.test(theme.colors[key])
-      );
+      const hasValidColors =
+        theme.colors &&
+        colorKeys.every(
+          (key) =>
+            typeof theme.colors?.[key] === 'string' &&
+            /^#[0-9a-fA-F]{6}$/.test(theme.colors[key]),
+        );
 
-      if (typeof theme.id !== 'string' || typeof theme.name !== 'string' || !hasValidColors) {
+      if (
+        typeof theme.id !== 'string' ||
+        typeof theme.name !== 'string' ||
+        !hasValidColors
+      ) {
         return null;
       }
 
@@ -1577,10 +1770,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initializeNewThemes(): void {
-    const isCatalogInitialized = localStorage.getItem(this.themeCatalogInitializedKey) === 'true';
+    const isCatalogInitialized =
+      localStorage.getItem(this.themeCatalogInitializedKey) === 'true';
 
     if (!isCatalogInitialized) {
-      this.themeOptions.forEach(theme => {
+      this.themeOptions.forEach((theme) => {
         localStorage.setItem(`${this.seenThemePrefix}${theme.id}`, 'true');
       });
       localStorage.setItem(this.themeCatalogInitializedKey, 'true');
@@ -1590,16 +1784,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.newThemeIds = new Set(
       this.themeOptions
-        .filter(theme => localStorage.getItem(`${this.seenThemePrefix}${theme.id}`) === null)
-        .map(theme => theme.id)
+        .filter(
+          (theme) =>
+            localStorage.getItem(`${this.seenThemePrefix}${theme.id}`) === null,
+        )
+        .map((theme) => theme.id),
     );
   }
 
-  getLogin(){
+  getLogin() {
     return this.auth.isLoggedIn;
   }
 
-  goAdm(){
+  goAdm() {
     this.router.navigate(['/adm']);
   }
 
@@ -1614,7 +1811,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (event) {
       this.addEmoji('♥');
-      event.stopPropagation(); 
+      event.stopPropagation();
       event.preventDefault();
     }
     this.radioFavorites.toggle(this.videoIds[index]);
@@ -1622,7 +1819,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private syncFavoriteView(): void {
-    this.favorites = this.videoIds.map(videoId => this.radioFavorites.isFavorite(videoId));
+    this.favorites = this.videoIds.map((videoId) =>
+      this.radioFavorites.isFavorite(videoId),
+    );
   }
 
   toggleFullScreen() {
