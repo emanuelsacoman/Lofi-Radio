@@ -703,13 +703,19 @@ span {
 }
 
 .adm,
-.aside {
+.aside,
+.left,
+.right,
+.index {
   opacity: 1;
   transition: opacity 350ms ease;
 }
 
 .adm.controls-hidden,
-.aside.controls-hidden {
+.aside.controls-hidden,
+.left.controls-hidden,
+.right.controls-hidden,
+.index.controls-hidden {
   opacity: 0;
   pointer-events: none;
 }

@@ -686,9 +686,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 500);
   }
 
-  ngAfterViewInit() {}
+  ngAfterViewInit(): void {
+    this.monitorMouse();
+  }
 
   ngOnDestroy() {
+    this.mouseSubscription?.unsubscribe();
+    clearTimeout(this.inactivityTimer);
+
     this.visualizerAudio.stopCapture();
     this.themeSubscription?.unsubscribe();
     this.isDestroyed = true;
@@ -1856,14 +1861,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   togglePanel() {
     this.panelOpen = !this.panelOpen;
-  }
-
-  @HostListener('window:pointermove', ['$event'])
-  onMouseMove(event: PointerEvent): void {
-    if (event.pointerType !== 'mouse') return;
-
-    console.log('Mouse X:', event.clientX);
-    console.log('Mouse Y:', event.clientY);
   }
 
   private monitorMouse(): void {

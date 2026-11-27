@@ -3,7 +3,7 @@
   
     <main class="fadeIn">
       <app-visualizer class="visualizer" [playing]="isPlaying" [palette]="selectedPalette"></app-visualizer>
-        <p class="index">
+        <p class="index" [class.controls-hidden]="!sideControlsVisible">
             {{ totalVideos ? currentIndex + 1 : 0 }} / {{ totalVideos }}
         </p>
           
@@ -255,7 +255,7 @@
         </div>
 
         <div class="footer">
-            <div class="left">
+            <div class="left" [class.controls-hidden]="!sideControlsVisible">
                 <a class="icon" 
                     href="https://github.com/emanuelsacoman" 
                     target="_blank" 
@@ -300,7 +300,7 @@
                 </div>
               </div>       
               
-            <div class="right">
+            <div class="right" [class.controls-hidden]="!sideControlsVisible">
               <div class="image-query">
                    <input
                      type="text"
